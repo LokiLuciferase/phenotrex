@@ -25,8 +25,7 @@ class TrainingRecordResampler:
         :param verb: Toggle verbosity
         """
         self.logger = get_logger(initname=self.__class__.__name__, verb=verb)
-        self.random_state = random_state
-        self.numpy_random_state = RandomState(random_state)
+        self.random_state = RandomState(random_state)  # use numpy RandomState here. sklearn is ok with that.
         self.conta_source_pos = None
         self.conta_source_neg = None
         self.fitted = False
@@ -87,7 +86,7 @@ class TrainingRecordResampler:
             conta_source = self.conta_source_pos
         else:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
-        conta_features = list(self.numpy_random_state.choice(a=conta_source, size=n_features_conta, replace=False))
+        conta_features = list(self.random_state.choice(a=conta_source, size=n_features_conta, replace=False))
         # TODO: what if not enough conta features?
         self.logger.info(f"Enriched features of TrainingRecord {record.identifier} "
                          f"with {len(conta_features)} features from {'positive' if record_class == 0 else 'negative'} set.")
