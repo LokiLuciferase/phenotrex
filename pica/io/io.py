@@ -97,7 +97,7 @@ def load_training_files(genotype_file: str, phenotype_file: str, verb=False) -> 
                                                                                       List[GenotypeRecord],
                                                                                       List[PhenotypeRecord]]:
     """
-    Convenience function to load phenotype and genotype file together.
+    Convenience function to load phenotype and genotype file together, and return a list of TrainingRecord.
     :param genotype_file: The path to the input genotype file.
     :param phenotype_file: The path to the input phenotype file.
     :return: Tuple[List[GenotypeRecord], List[PhenotypeRecord]] of loaded genotype and phenotype records.

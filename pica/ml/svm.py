@@ -3,7 +3,7 @@
 # Created by Lukas Lüftinger on 2/5/19.
 #
 from time import time
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 from sklearn.pipeline import Pipeline
@@ -76,7 +76,7 @@ class PICASVM:
         self.logger.info("Classifier training completed.")
         return True
 
-    def crossvalidate(self, records: List[TrainingRecord], cv=5,
+    def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
                       scoring: str = "balanced_accuracy", **kwargs) -> Tuple[float, float, float, float]:
         """
         Perform cv-fold crossvalidation
@@ -99,6 +99,21 @@ class PICASVM:
         self.logger.info(f"Average fit time: {np.round(fit_time_mean, 2)} seconds.")
         self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return score_mean, score_sd, fit_time_mean, fit_time_sd
+
+    def completeness_CV(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
+                        scoring: str = "balanced_accuracy", **kwargs) -> Dict[str, Dict[str, List[float]]]:
+        """
+        Perform cross-validation while resampling training features,
+        simulating differential completeness and contamination.
+        :param records: List[TrainingRecords] to perform crossvalidation on.
+        :param cv: Number of folds in crossvalidation. Default: 5
+        :param samples: # TODO: add
+        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param kwargs: Unused
+        :return: A dict # TODO: add; also return more stuff
+        """
+        # TODO: implement
+        pass
 
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
