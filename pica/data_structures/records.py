@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 """Data structures containing Genotype and Phenotype information."""
 
+
 @dataclass
 class GenotypeRecord:
     identifier: str
@@ -20,8 +21,5 @@ class PhenotypeRecord:
 
 
 @dataclass
-class TrainingRecord:
-    identifier: str
-    trait_name: str
-    trait_sign: int
-    features: List[str]
+class TrainingRecord(GenotypeRecord, PhenotypeRecord):
+    pass

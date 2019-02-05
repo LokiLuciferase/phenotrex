@@ -5,4 +5,4 @@ Credits
 Development Lead
 ----------------
 
-* Lukas Lüftinger <lukas.lueftinger@outlook.com>
+* Lukas Lueftinger <lukas.lueftinger@outlook.com>

@@ -9,11 +9,11 @@ from pica.util.logging import get_logger
 from pica.data_structures.records import GenotypeRecord, PhenotypeRecord, TrainingRecord
 
 DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
-LOGGER_TITLE = "IO"
+
 
 def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     """
-    Loads a genotype .TSV file and returns a list of GenotypeRecord for each entry.
+    Loads a genotype .tsv file and returns a list of GenotypeRecord for each entry.
     :param input_file: The path to the input genotype file.
     :return: List[GenotypeRecord] of records in the genotype file
     """
@@ -31,7 +31,7 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
 
 def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int]=None) -> List[PhenotypeRecord]:
     """
-    Loads a phenotype .TSV file and returns a list of PhenotypeRecord for each entry.
+    Loads a phenotype .tsv file and returns a list of PhenotypeRecord for each entry.
     :param input_file: The path to the input phenotype file.
     :param sign_mapping: an optional Dict to change mappings of trait sign. Default: {"YES": 1, "NO": 0}
     :return: List[PhenotypeRecord] of records in the phenotype file
@@ -61,42 +61,49 @@ def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int]=None) -> L
     return ret
 
 
-def load_phenotype_and_genotype_file(genotype_file: str, phenotype_file: str, verb=False) -> Tuple[List[GenotypeRecord], List[PhenotypeRecord]]:
+def collate_training_data(genotype_records, phenotype_records, verb=False) -> List[TrainingRecord]:
+    """
+    Returns a list of TrainingRecord from two lists of GenotypeRecord and PhenotypeRecord.
+    To be used for training and CV of PICASVM.
+    Checks if 1:1 mapping of phenotypes and genotypes exists,
+    and if all PhenotypeRecords pertain to same trait.
+    :param genotype_records: List[GenotypeRecord]
+    :param phenotype_records: List[PhenotypeRecord]
+    :return: List[TrainingRecord]
+    """
+    logger = get_logger(__name__, verb=verb)
+    gr_dict = {x.identifier: x for x in genotype_records}
+    pr_dict = {x.identifier: x for x in phenotype_records}
+    traits = set(x.trait_name for x in phenotype_records)
+    if len(gr_dict.keys()) != len(pr_dict.keys()):
+        raise RuntimeError("Phenotype and genotype records are of unequal length."
+                           "Cannot collate to TrainingRecords.")
+    if set(gr_dict.keys()) != set(pr_dict.keys()):
+        raise RuntimeError("Different identifiers found among genotype and phenotype records. "
+                           "Cannot collate to TrainingRecords.")
+    if len(traits) > 1:
+        raise RuntimeError("More than one traits have been found in phenotype records. "
+                           "Cannot collate to TrainingRecords.")
+
+    ret = [TrainingRecord(identifier=gr_dict[x].identifier,
+                          trait_name=pr_dict[x].trait_name,
+                          trait_sign=pr_dict[x].trait_sign,
+                          features=gr_dict[x].features) for x in gr_dict.keys()]
+    logger.info(f"Collated genotype and phenotype records into {len(ret)} TrainingRecord.")
+    return ret
+
+
+def load_training_files(genotype_file: str, phenotype_file: str, verb=False) -> Tuple[List[TrainingRecord],
+                                                                                      List[GenotypeRecord],
+                                                                                      List[PhenotypeRecord]]:
     """
     Convenience function to load phenotype and genotype file together.
     :param genotype_file: The path to the input genotype file.
     :param phenotype_file: The path to the input phenotype file.
     :return: Tuple[List[GenotypeRecord], List[PhenotypeRecord]] of loaded genotype and phenotype records.
     """
-    logger = get_logger(LOGGER_TITLE, loglevel=logging.INFO if verb else logging.WARNING)
+    logger = get_logger(__name__, verb=verb)
     gr = load_genotype_file(genotype_file)
     pr = load_phenotype_file(phenotype_file)
     logger.info("Genotype and Phenotype records successfully loaded from file.")
-    return gr, pr
-
-
-def collate_training_data(genotype_records, phenotype_records, verb=False) -> List[TrainingRecord]:
-    """
-    Returns a list of TrainingRecord from two lists of GenotypeRecord and PhenotypeRecord.
-    To be used for training and CV of PICASVM.
-    Checks if all genotype and phenotype records have matching identifiers,
-    and if all PhenotypeRecords pertain to same trait.
-    :param genotype_records: List[GenotypeRecord]
-    :param phenotype_records: List[PhenotypeRecord]
-    :return: List[TrainingRecord]
-    """
-    logger = get_logger(LOGGER_TITLE, loglevel=logging.INFO if verb else logging.WARNING)
-    gr_dict  = {x.identifier: x for x in genotype_records}
-    pr_dict = {x.identifier: x for x in phenotype_records}
-    traits = set(x.trait_name for x in phenotype_records)
-    if set(gr_dict.keys()) != set(pr_dict.keys()):
-        raise RuntimeError("Different identifiers found among genotype and phenotype records. Cannot collate to TrainingRecords.")
-    if len(traits) > 1:
-        raise RuntimeError("More than one traits have been found in phenotype records. Cannot collate to TrainingRecords.")
-
-    ret = [TrainingRecord(identifier=gr_dict[x].identifier,
-                           trait_name=pr_dict[x].trait_name,
-                           trait_sign=pr_dict[x].trait_sign,
-                           features=gr_dict[x].features) for x in gr_dict.keys()]
-    logger.info(f"Collated genotype and phenotype records into {len(ret)} TrainingRecord.")
-    return ret
+    return collate_training_data(gr, pr, verb=verb), gr, pr

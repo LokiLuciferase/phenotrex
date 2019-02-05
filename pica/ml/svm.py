@@ -2,7 +2,7 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-import logging
+from time import time
 from typing import List, Tuple
 
 import numpy as np
@@ -15,12 +15,13 @@ from sklearn.feature_extraction.text import CountVectorizer
 from pica.data_structures.records import TrainingRecord, GenotypeRecord
 from pica.util.logging import get_logger
 
+
 # TODO: For now NO crossvalidation over completeness-contamination gradients, no feature grouping and no plotting.
 class PICASVM:
     def __init__(self,
-                 C: float=5,
-                 penalty: str="l2",
-                 tol: float=1,
+                 C: float = 5,
+                 penalty: str = "l2",
+                 tol: float = 1,
                  verb=False,
                  *args, **kwargs):
         """
@@ -36,7 +37,7 @@ class PICASVM:
         self.C = C
         self.penalty = penalty
         self.tol = tol
-        self.logger = get_logger("PICASVM", loglevel=logging.INFO if verb else logging.WARNING)
+        self.logger = get_logger(__name__, verb=verb)
         self.pipeline = Pipeline(steps=[
             ("vec", CountVectorizer()),
             ("clf", CalibratedClassifierCV(LinearSVC(C=self.C,
@@ -44,10 +45,12 @@ class PICASVM:
                                                      penalty=self.penalty,
                                                      **kwargs),
                                            method="sigmoid", cv=5))])
+
     @staticmethod
     def __get_x_y_tn(records: List[TrainingRecord]):
         """
-        Get separate X and y from list of TrainingRecord. Also infer trait name PICASVM from first TrainingRecord.
+        Get separate X and y from list of TrainingRecord.
+        Also infer trait name from first TrainingRecord.
         :param records: a List[TrainingRecord]
         :return: separate lists of features and targets, and the trait name
         """
@@ -74,7 +77,7 @@ class PICASVM:
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv=5,
-                      scoring: str="balanced_accuracy", **kwargs) -> Tuple[float, float, float, float]:
+                      scoring: str = "balanced_accuracy", **kwargs) -> Tuple[float, float, float, float]:
         """
         Perform cv-fold crossvalidation
         :param records: List[TrainingRecords] to perform crossvalidation on.
@@ -84,22 +87,20 @@ class PICASVM:
         :return: A list of mean score, score SD, mean fit time and fit time SD.
         """
         self.logger.info("Begin cross-validation on training data.")
+        t1 = time()
         X, y, tn = self.__get_x_y_tn(records)
         crossval = cross_validate(estimator=self.pipeline, X=X, y=y, scoring=scoring, cv=cv)
-
-        # TODO: rewrite this crap
-        fit_time_mean = float(np.mean(crossval.get("fit_time", None)))
-        score_time_mean = float(np.mean(crossval.get("score_time", None)))
-        score_mean = float(np.mean(crossval.get("test_score", None)))
-
-        fit_time_sd = float(np.std(crossval.get("fit_time", None)))
-        score_time_sd = float(np.std(crossval.get("score_time", None)))
-        score_sd = float(np.std(crossval.get("test_score", None)))
-
-        self.logger.info(f"Cross-validation completed. Average fit time: {fit_time_mean}")
+        fit_times, score_times, scores = [crossval.get(x) for x in ("fit_time", "score_time", "test_score")]
+        fit_time_mean, fit_time_sd = float(np.mean(fit_times)), float(np.std(fit_times))
+        score_time_mean, score_time_sd = float(np.mean(score_times)), float(np.std(score_times))
+        score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
+        t2 = time()
+        self.logger.info(f"Cross-validation completed.")
+        self.logger.info(f"Average fit time: {np.round(fit_time_mean, 2)} seconds.")
+        self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return score_mean, score_sd, fit_time_mean, fit_time_sd
 
-    def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.array]:
+    def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
         Predict trait sign and probability of each class for each supplied GenotypeRecord.
         :param X: A List of GenotypeRecord for each of which to predict the trait sign
@@ -107,5 +108,5 @@ class PICASVM:
         """
         features: List[str] = [" ".join(x.features) for x in X]
         preds = self.pipeline.predict(X=features)
-        probas = self.pipeline.predict_proba(X=features)
+        probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling
         return preds, probas
