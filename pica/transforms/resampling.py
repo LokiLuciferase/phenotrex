@@ -18,9 +18,7 @@ class TrainingRecordResampler:
         """
         Instantiates an object which can generate versions of a TrainingRecord
         resampled to defined completeness and contamination levels.
-        Requires sources of contamination for both classes (the full set of all features in each class # TODO: set or list?
-        :param conta_source_pos: np.ndarray of all features of positive class
-        :param conta_source_neg: np.ndarray of all features of negative class
+        Requires prior fitting with full List[TrainingRecord] to get sources of contamination for both classes.
         :param random_state: Randomness seed to use while resampling
         :param verb: Toggle verbosity
         """
@@ -69,16 +67,20 @@ class TrainingRecordResampler:
             raise RuntimeError("TrainingRecordResampler is not fitted on full TrainingRecord set. Aborting.")
         if not 0 <= comple <= 1 or not 0 <= conta <= 1:
             raise RuntimeError("Invalid comple/conta settings. Must be between 0 and 1.")
+
         features = record.features
         n_features_comple = int(np.floor(len(features) * comple))
         n_features_conta = int(np.floor(len(features) * conta))  # TODO: calculate after or before incompleting?
 
         # make incomplete
-        incomplete_features = resample(features, replace=False, n_samples=n_features_comple, random_state=self.random_state)
+        incomplete_features = resample(features,
+                                       replace=False,
+                                       n_samples=n_features_comple,
+                                       random_state=self.random_state)
         self.logger.info(f"Reduced features of TrainingRecord {record.identifier} "
                          f"from {len(features)} to {n_features_comple}.")
 
-        # make contaminated
+        # make contaminations
         record_class = record.trait_sign
         if record.trait_sign == 1:
             conta_source = self.conta_source_neg
@@ -86,7 +88,9 @@ class TrainingRecordResampler:
             conta_source = self.conta_source_pos
         else:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
-        conta_features = list(self.random_state.choice(a=conta_source, size=n_features_conta, replace=False))
+        conta_features = list(self.random_state.choice(a=conta_source,
+                                                       size=n_features_conta,
+                                                       replace=False))
         # TODO: what if not enough conta features?
         self.logger.info(f"Enriched features of TrainingRecord {record.identifier} "
                          f"with {len(conta_features)} features from {'positive' if record_class == 0 else 'negative'} set.")

@@ -35,7 +35,8 @@ if __name__ == "__main__":
           len(set(resampled_record.features) - set(lone_record.features)))
 
     # make single input function to compare speed of regular map with parallel map
-    resampled_curried = lambda x: trr.get_resampled(x, 0.9, 0.1)
+    # resample to super shitty quality
+    resampled_curried = lambda x: trr.get_resampled(x, comple=0.2, conta=0.1)
     t1 = time.time()
     resampled_list = list(map(resampled_curried, td))
     t2 = time.time()
@@ -50,3 +51,8 @@ if __name__ == "__main__":
     t4 = time.time()
 
     print("Parallel duration of single resampling of full TrainingRecord list:", t4 - t3)
+
+
+    # train pica with bad quality training set:
+    third_svm = PICASVM(verb=True, random_state=2)
+    print("Crossvalidation:", svm.crossvalidate(records=resampled_list))  # crossvalidation bacc gets correctly shitty
