@@ -6,7 +6,7 @@ from typing import List, Dict, Tuple
 from collections import Counter
 
 from pica.util.logging import get_logger
-from pica.data_structures.records import GenotypeRecord, PhenotypeRecord, TrainingRecord
+from pica.struct.records import GenotypeRecord, PhenotypeRecord, TrainingRecord
 
 DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
 

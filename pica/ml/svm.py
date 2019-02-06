@@ -12,7 +12,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
-from pica.data_structures.records import TrainingRecord, GenotypeRecord
+from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.transforms.resampling import TrainingRecordResampler
 from pica.util.logging import get_logger
 
