@@ -57,7 +57,7 @@ class TrainingRecordResampler:
                       comple: float = 1,
                       conta: float = 0) -> TrainingRecord:
         """
-        Resample a TrainingRecord to defined completeness and contamination levels.
+        Resample a TrainingRecord to defined completeness and contamination levels. Comple=1, Conta=2 will double set size.
         :param comple: completeness of returned TrainingRecord features. Range: 0 - 1
         :param conta: contamination of returned TrainingRecord features. Range: 0 - 1
         :param record: the input TrainingRecord
@@ -99,4 +99,57 @@ class TrainingRecordResampler:
                                     trait_name=record.trait_name,
                                     trait_sign=record.trait_sign,
                                     features=incomplete_features + conta_features)
+        return new_record
+
+    # TODO: UNTESTED!
+    def get_resampled2(self, record: TrainingRecord,
+                      comple: float = 1,
+                      conta: float = 0) -> TrainingRecord:
+        """
+        Resample a TrainingRecord to defined completeness and contamination levels. Total set will be same size as original.
+        :param comple: completeness of returned TrainingRecord features. Range: 0 - 1
+        :param conta: contamination of returned TrainingRecord features. Range: 0 - 1
+        :param record: the input TrainingRecord
+        :return: a resampled TrainingRecord.
+        """
+        if not self.fitted:
+            raise RuntimeError("TrainingRecordResampler is not fitted on full TrainingRecord set. Aborting.")
+        if not 0 <= comple <= 1 or not 0 <= conta <= 1:
+            raise RuntimeError("Invalid comple/conta settings. Must be between 0 and 1.")
+
+        features = record.features
+        n_features_comple = int(np.floor(len(features) * comple))
+        n_features_conta = int(np.floor(n_features_comple * conta))  # TODO: calculate after or before incompleting?
+
+        # make incomplete
+        incomplete_features = resample(features,
+                                       replace=False,
+                                       n_samples=n_features_comple,
+                                       random_state=self.random_state)
+        self.logger.info(f"Reduced features of TrainingRecord {record.identifier} "
+                         f"from {len(features)} to {n_features_comple}.")
+
+        # make contaminations
+        record_class = record.trait_sign
+        if record.trait_sign == 1:
+            conta_source = self.conta_source_neg
+        elif record.trait_sign == 0:
+            conta_source = self.conta_source_pos
+        else:
+            raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
+        conta_features = list(self.random_state.choice(a=conta_source,
+                                                       size=n_features_conta,
+                                                       replace=False))
+
+        incomplete_downsampled = resample(incomplete_features, replace=False,
+                                          n_samples=n_features_comple - n_features_conta)
+
+        # TODO: what if not enough conta features?
+        self.logger.info(f"Enriched features of TrainingRecord {record.identifier} "
+                         f"with {len(conta_features)} features from {'positive' if record_class == 0 else 'negative'} set.")
+
+        new_record = TrainingRecord(identifier=record.identifier,
+                                    trait_name=record.trait_name,
+                                    trait_sign=record.trait_sign,
+                                    features=incomplete_downsampled + conta_features)
         return new_record

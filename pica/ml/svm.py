@@ -13,6 +13,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
 from pica.data_structures.records import TrainingRecord, GenotypeRecord
+from pica.transforms.resampling import TrainingRecordResampler
 from pica.util.logging import get_logger
 
 
@@ -77,43 +78,70 @@ class PICASVM:
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = "balanced_accuracy", **kwargs) -> Tuple[float, float, float, float]:
+                      scoring: str = "balanced_accuracy", n_jobs=-1,  # TODO: add more complex scoring/reporting, e.g. AUC
+                      demote=False, **kwargs) -> Tuple[float, float, float, float]:
         """
         Perform cv-fold crossvalidation
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
+        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param kwargs: Unused
         :return: A list of mean score, score SD, mean fit time and fit time SD.
         """
-        self.logger.info("Begin cross-validation on training data.")
+        log_function = self.logger.debug if demote else self.logger.info
+        log_function("Begin cross-validation on training data.")
         t1 = time()
         X, y, tn = self.__get_x_y_tn(records)
-        crossval = cross_validate(estimator=self.pipeline, X=X, y=y, scoring=scoring, cv=cv)
+        crossval = cross_validate(estimator=self.pipeline, X=X, y=y, scoring=scoring, cv=cv, n_jobs=n_jobs)
         fit_times, score_times, scores = [crossval.get(x) for x in ("fit_time", "score_time", "test_score")]
+        # score_time_mean, score_time_sd = float(np.mean(score_times)), float(np.std(score_times))
         fit_time_mean, fit_time_sd = float(np.mean(fit_times)), float(np.std(fit_times))
-        score_time_mean, score_time_sd = float(np.mean(score_times)), float(np.std(score_times))
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
         t2 = time()
-        self.logger.info(f"Cross-validation completed.")
-        self.logger.info(f"Average fit time: {np.round(fit_time_mean, 2)} seconds.")
-        self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
+        log_function(f"Cross-validation completed.")
+        log_function(f"Average fit time: {np.round(fit_time_mean, 2)} seconds.")
+        log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return score_mean, score_sd, fit_time_mean, fit_time_sd
 
-    def completeness_CV(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
-                        scoring: str = "balanced_accuracy", **kwargs) -> Dict[str, Dict[str, List[float]]]:
+    def completeness_cv(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
+                        scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[float, Dict[float, List[float]]]:
         """
         Perform cross-validation while resampling training features,
         simulating differential completeness and contamination.
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param cv: Number of folds in crossvalidation. Default: 5
-        :param samples: # TODO: add
+        :param samples: # TODO: add functionality
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param kwargs: Unused
-        :return: A dict # TODO: add; also return more stuff
+        :return: A dict of cross validation scores and SD at defined completeness/contamination levels.
         """
-        # TODO: implement
-        pass
+        # TODO: is parallelization over folds or over compleconta levels more efficient?
+        self.logger.info("Creating and fitting TrainingRecordResampler.")
+        resampler = TrainingRecordResampler(random_state=2, verb=False)
+        resampler.fit(records=records)
+        self.logger.info("TrainingRecordResampler ready. Begin cross-validation over comple/conta values...")
+        t1 = time()
+        cv_scores = {}
+        # iterate over comple/conta levels
+        for comple in np.arange(0, 1.05, 0.05):
+            comple = np.round(comple, 2)
+            self.logger.info(f"Comple: {comple}")
+            cv_scores[comple] = {}
+            for conta in np.arange(0, 1.05, 0.05):
+                conta = np.round(conta, 2)
+                try:
+                    self.logger.info(f"\tConta: {conta}")
+                    resampled_set = [resampler.get_resampled(x, comple, conta) for x in records]
+                    cv_scores[comple][conta] = self.crossvalidate(resampled_set, demote=True)  # disable spam
+                except ValueError:  # error due to inability to perform cv (no features)
+                    self.logger.warning("Cross-validation failed for Completeness {comple} and Contamination {conta}."
+                                        "\nThis is likely due to too small feature set at low comple/conta levels.")
+                    cv_scores[comple][conta] = (0.5, 0, 0, 0)
+        t2 = time()
+        self.logger.info(f"Resampling CV completed in {round((t2 - t1)/60, 2)} mins.")
+        return cv_scores
 
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
