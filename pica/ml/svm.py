@@ -105,6 +105,7 @@ class PICASVM:
         return score_mean, score_sd, fit_time_mean, fit_time_sd
 
     def completeness_cv(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
+                        comple_steps: int = 20, conta_steps: int = 20,
                         scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[float, Dict[float, List[float]]]:
         """
         Perform cross-validation while resampling training features,
@@ -125,6 +126,7 @@ class PICASVM:
         t1 = time()
         cv_scores = {}
         # iterate over comple/conta levels
+        # TODO: make comple and conta steps settable
         for comple in np.arange(0, 1.05, 0.05):
             comple = np.round(comple, 2)
             self.logger.info(f"Comple: {comple}")
@@ -138,7 +140,7 @@ class PICASVM:
                 except ValueError:  # error due to inability to perform cv (no features)
                     self.logger.warning("Cross-validation failed for Completeness {comple} and Contamination {conta}."
                                         "\nThis is likely due to too small feature set at low comple/conta levels.")
-                    cv_scores[comple][conta] = (0.5, 0, 0, 0)
+                    cv_scores[comple][conta] = (np.nan, np.nan, np.nan, np.nan)
         t2 = time()
         self.logger.info(f"Resampling CV completed in {round((t2 - t1)/60, 2)} mins.")
         return cv_scores
