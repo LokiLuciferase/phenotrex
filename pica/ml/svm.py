@@ -40,8 +40,8 @@ class PICASVM:
         self.tol = tol
         self.logger = get_logger(__name__, verb=verb)
         self.pipeline = Pipeline(steps=[
-            ("vec", CountVectorizer()),
-            ("clf", CalibratedClassifierCV(LinearSVC(C=self.C,
+            ("vec", CountVectorizer(binary=True, dtype=np.bool)),
+            ("clf", CalibratedClassifierCVwithFW(LinearSVC(C=self.C,
                                                      tol=self.tol,
                                                      penalty=self.penalty,
                                                      **kwargs),
@@ -155,3 +155,35 @@ class PICASVM:
         preds = self.pipeline.predict(X=features)
         probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling
         return preds, probas
+
+    def get_feature_weights(self):
+        """
+        Extract the weights for features from pipeline/model
+        :return: lists of feature names and weights
+        """
+        names = self.pipeline.named_steps["vec"].get_feature_names()
+        weights = self.pipeline.named_steps["clf"].get_coef_()
+
+        return names, weights
+        pass
+
+class CalibratedClassifierCVwithFW(CalibratedClassifierCV):
+    """
+    Inherit form CalibratedClassifierCV, but needed method to estimate feature weights
+    Analogous to the prediction probability of the calibrated classifiers, we take the arithmetic mean for the weights
+    of each base estimator.
+
+    IMPORTANT: in LinearSVC this is only functional for linear kernels
+    :returns a vector of weights
+    """
+    def get_coef_(self):
+
+        numFeatures = len(self.calibrated_classifiers_[0].base_estimator.coef_[0])
+        mean_weights = np.zeros(numFeatures)
+        for calibrated_classifier in self.calibrated_classifiers_:
+            weights = calibrated_classifier.base_estimator.coef_[0]
+            mean_weights += weights
+
+        mean_weights /= len(self.calibrated_classifiers_)
+
+        return mean_weights
