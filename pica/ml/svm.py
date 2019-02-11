@@ -6,6 +6,7 @@ from time import time
 from typing import List, Tuple, Dict
 
 import six
+import copy
 from operator import itemgetter
 
 import numpy as np
@@ -163,28 +164,31 @@ class PICASVM:
 
     def compress_vocabulary(self, records: List[TrainingRecord]):
         """
-        Method to group features, that store redundant information in the first place
-        to avoid overfitting and speed up process. Might be replaced by a feature selection method in future
+        Method to group features, that store redundant information.
+        To avoid overfitting and speed up process.
+        Might be replaced or complemented by a feature selection method in future
 
-        :return: a dictionary (vocabulary to use with CountVectorizer
+        compressing features is optional, for the test dataset it appears to be a lot slower:
+        2.5 min compression + 2.1 sec cv. vs 3.3 sec cv without compression. TODO: Look for a faster way to compression?
+
+        :return: nothing, sets the vocabulary for CountVectorizer step
         """
 
-        X, y, tn = self.__get_x_y_tn(records) # we actually only need X
+        t1 = time()
 
-        self.logger.info("Compressing features ...")
+        X, y, tn = self.__get_x_y_tn(records) # we actually only need X
         vec = CountVectorizer(binary=True, dtype=np.bool)
         vec.fit(X)
-        X_trans = vec.transform(X)
         names = vec.get_feature_names()
+        X_trans = vec.transform(X)
+
         size = len(names)
-        #print(vec.vocabulary_)
+        self.logger.info(f"{size} Features found, starting compression")
         seen = {}
         vocabulary = {}
         for i in range(len(names)):   # num of features
             column = X_trans.A[:, i]
-
             key = tuple(column)
-            #print(key)
             found_id = seen.get(key)
             if not found_id:
                 seen[key] = i
@@ -192,15 +196,13 @@ class PICASVM:
             else:
                 vocabulary[names[i]] = found_id
         size_after = len(seen)
-        self.logger.info(f"{size} total features compressed to {size_after} unique features")
+        t2 = time()
+
+        self.logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
 
         # set vocabulary to vectorizer
         self.pipeline.named_steps["vec"].vocabulary = vocabulary
         self.pipeline.named_steps["vec"].fixed_vocabulary_ = True
-
-        #print(vocabulary)
-        #return vocabulary
-        #
 
     def get_feature_weights(self):
         """
@@ -227,12 +229,78 @@ class PICASVM:
         weights=[]
         name_list=[]
         for feature, i in names:
-            print(feature, i)
             name_list.append(feature)
             weights.append(mean_weights[i]) # use the group weight for all members currently
             # TODO: weights should be adjusted if multiple original features were grouped together.
 
         return name_list, weights
+
+    @staticmethod
+    def validate_(X_test, y_test, estimator):
+        """
+        part of the crossvalidation (or compleconta) where only validation is performed
+        :param X_test: test-records X values
+        :param y_test: test-records y values
+        :param estimator: classifier previously trained
+        :return: score #TODO: expand, what else can be useful?
+        """
+        preds = estimator.predict(X_test)
+        tot_per_y = np.array([y_test.count(x) for x in range(len(set(y_test)))])
+        count_per_y = np.zeros(len(set(y_test)))
+        for p, y in zip(preds, y_test):
+            if p == y:
+                count_per_y[y] += 1
+
+        score = count_per_y / tot_per_y
+        # mba = np.mean(score)
+        # std = np.std(score)
+        return score
+
+    def crossvalidate2(self, records: List[TrainingRecord], cv: int = 5,
+                      scoring: str = "balanced_accuracy", n_jobs=-1,
+                      # TODO: add more complex scoring/reporting, e.g. AUC
+                      demote=False, **kwargs) -> Tuple[float, float]:
+        """
+        Perform cv-fold crossvalidation, own function replacing module from sklearn.
+        TODO: modify to simulate compleconta, crossvalidation could be still used from sklearn build in, I guess.
+        TODO: parallelization
+        :param records: List[TrainingRecords] to perform crossvalidation on.
+        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param cv: Number of folds in crossvalidation. Default: 5
+        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used) #TODO not currently implemented
+        :param kwargs: Unused
+        :return: A list of mean score, score SD, mean fit time and fit time SD.
+        """
+        log_function = self.logger.debug if demote else self.logger.info
+        log_function("Begin cross-validation on training data.")
+        X, y, tn = self.__get_x_y_tn(records)
+        skf = StratifiedKFold(n_splits=cv)
+
+        t1 = time()
+        classifier = copy.deepcopy(self.pipeline)
+        scores=[]
+        for train_index, test_index in skf.split(X, y):
+            # separate in test and training set lists:
+            X_test=[X[i] for i in test_index]
+            X_train=[X[i] for i in train_index]
+            y_test=[y[i] for i in test_index]
+            y_train=[y[i] for i in train_index]
+
+            # fit the copy of the pipeline
+            classifier.fit(X=X_train, y=y_train, **kwargs)
+
+            # validate and keep scores
+            score = self.validate_(X_test, y_test, classifier)
+            scores=np.append(scores, score)
+
+        score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
+        t2 = time()
+        log_function(f"Cross-validation completed.")
+        log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
+        return score_mean, score_sd
+
+
+
 
 class CustomVectorizer(CountVectorizer):
     """
@@ -246,7 +314,11 @@ class CustomVectorizer(CountVectorizer):
         """
         overriding the validation which does not accept multiple feature-names to encode for one feature
         """
-        self.vocabulary_ = dict(self.vocabulary)
+        if self.vocabulary:
+            self.vocabulary_ = dict(self.vocabulary)
+            self.fixed_vocabulary_ = True
+        else:
+            self.fixed_vocabulary_ = False
 
 
     def get_feature_names(self):

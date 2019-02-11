@@ -61,8 +61,11 @@ if __name__ == "__main__":
 
 
     # try cv over comple/conta, unoptimized (parallelized over folds of single CVs, via sklearn)
+    svm.crossvalidate(td)
+
     svm.compress_vocabulary(td)
-    svm.train(td)
+    svm.crossvalidate(td)
+    #svm.train(td)
     #cv_dict = svm.completeness_cv(td, cv=5)
 
 
@@ -78,4 +81,5 @@ if __name__ == "__main__":
             if count == 20:
                 break
 
-    print_weights()
+    print(svm.crossvalidate2(td))
+    #print_weights()
