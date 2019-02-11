@@ -5,10 +5,13 @@
 from time import time
 from typing import List, Tuple, Dict
 
+import six
+from operator import itemgetter
+
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, StratifiedKFold
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -40,7 +43,7 @@ class PICASVM:
         self.tol = tol
         self.logger = get_logger(__name__, verb=verb)
         self.pipeline = Pipeline(steps=[
-            ("vec", CountVectorizer(binary=True, dtype=np.bool)),
+            ("vec", CustomVectorizer(binary=True, dtype=np.bool)),
             ("clf", CalibratedClassifierCV(LinearSVC(C=self.C,
                                                      tol=self.tol,
                                                      penalty=self.penalty,
@@ -158,6 +161,47 @@ class PICASVM:
         probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling
         return preds, probas
 
+    def compress_vocabulary(self, records: List[TrainingRecord]):
+        """
+        Method to group features, that store redundant information in the first place
+        to avoid overfitting and speed up process. Might be replaced by a feature selection method in future
+
+        :return: a dictionary (vocabulary to use with CountVectorizer
+        """
+
+        X, y, tn = self.__get_x_y_tn(records) # we actually only need X
+
+        self.logger.info("Compressing features ...")
+        vec = CountVectorizer(binary=True, dtype=np.bool)
+        vec.fit(X)
+        X_trans = vec.transform(X)
+        names = vec.get_feature_names()
+        size = len(names)
+        #print(vec.vocabulary_)
+        seen = {}
+        vocabulary = {}
+        for i in range(len(names)):   # num of features
+            column = X_trans.A[:, i]
+
+            key = tuple(column)
+            #print(key)
+            found_id = seen.get(key)
+            if not found_id:
+                seen[key] = i
+                vocabulary[names[i]] = i
+            else:
+                vocabulary[names[i]] = found_id
+        size_after = len(seen)
+        self.logger.info(f"{size} total features compressed to {size_after} unique features")
+
+        # set vocabulary to vectorizer
+        self.pipeline.named_steps["vec"].vocabulary = vocabulary
+        self.pipeline.named_steps["vec"].fixed_vocabulary_ = True
+
+        #print(vocabulary)
+        #return vocabulary
+        #
+
     def get_feature_weights(self):
         """
         Extract the weights for features from pipeline/model
@@ -176,7 +220,43 @@ class PICASVM:
 
         mean_weights /= len(clf.calibrated_classifiers_)
 
-        # get original names of the features from vectorization step
+        # get original names of the features from vectorization step, they might be compressed
         names = self.pipeline.named_steps["vec"].get_feature_names()
 
-        return names, mean_weights
+        # decompress
+        weights=[]
+        name_list=[]
+        for feature, i in names:
+            print(feature, i)
+            name_list.append(feature)
+            weights.append(mean_weights[i]) # use the group weight for all members currently
+            # TODO: weights should be adjusted if multiple original features were grouped together.
+
+        return name_list, weights
+
+class CustomVectorizer(CountVectorizer):
+    """
+    modified from CountVectorizer to override the _validate_vocabulary function, which invoked an error because
+    multiple indices of the dictionary contained the same feature index. However, this is we intend.
+    Other functions had to be adopted to allow decompression: get_feature_names,
+    """
+
+
+    def _validate_vocabulary(self):
+        """
+        overriding the validation which does not accept multiple feature-names to encode for one feature
+        """
+        self.vocabulary_ = dict(self.vocabulary)
+
+
+    def get_feature_names(self):
+        """Array mapping from feature integer indices to feature name"""
+        if not hasattr(self, 'vocabulary_'):
+            self._validate_vocabulary()
+
+        self._check_vocabulary()
+
+        # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
+        return sorted(six.iteritems(self.vocabulary_),
+                                     key=itemgetter(1))
+

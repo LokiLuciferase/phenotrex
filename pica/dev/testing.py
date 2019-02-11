@@ -61,6 +61,7 @@ if __name__ == "__main__":
 
 
     # try cv over comple/conta, unoptimized (parallelized over folds of single CVs, via sklearn)
+    svm.compress_vocabulary(td)
     svm.train(td)
     #cv_dict = svm.completeness_cv(td, cv=5)
 
