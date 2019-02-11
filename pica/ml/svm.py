@@ -41,7 +41,7 @@ class PICASVM:
         self.logger = get_logger(__name__, verb=verb)
         self.pipeline = Pipeline(steps=[
             ("vec", CountVectorizer(binary=True, dtype=np.bool)),
-            ("clf", CalibratedClassifierCVwithFW(LinearSVC(C=self.C,
+            ("clf", CalibratedClassifierCV(LinearSVC(C=self.C,
                                                      tol=self.tol,
                                                      penalty=self.penalty,
                                                      **kwargs),
@@ -78,7 +78,8 @@ class PICASVM:
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = "balanced_accuracy", n_jobs=-1,  # TODO: add more complex scoring/reporting, e.g. AUC
+                      scoring: str = "balanced_accuracy", n_jobs=-1,
+                      # TODO: add more complex scoring/reporting, e.g. AUC
                       demote=False, **kwargs) -> Tuple[float, float, float, float]:
         """
         Perform cv-fold crossvalidation
@@ -106,7 +107,8 @@ class PICASVM:
 
     def completeness_cv(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
                         comple_steps: int = 20, conta_steps: int = 20,
-                        scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[float, Dict[float, List[float]]]:
+                        scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[
+        float, Dict[float, List[float]]]:
         """
         Perform cross-validation while resampling training features,
         simulating differential completeness and contamination.
@@ -142,7 +144,7 @@ class PICASVM:
                                         "\nThis is likely due to too small feature set at low comple/conta levels.")
                     cv_scores[comple][conta] = (np.nan, np.nan, np.nan, np.nan)
         t2 = time()
-        self.logger.info(f"Resampling CV completed in {round((t2 - t1)/60, 2)} mins.")
+        self.logger.info(f"Resampling CV completed in {round((t2 - t1) / 60, 2)} mins.")
         return cv_scores
 
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
@@ -159,31 +161,22 @@ class PICASVM:
     def get_feature_weights(self):
         """
         Extract the weights for features from pipeline/model
-        :return: lists of feature names and weights
+        :return: tuple of lists: feature names and weights
         """
-        names = self.pipeline.named_steps["vec"].get_feature_names()
-        weights = self.pipeline.named_steps["clf"].get_coef_()
+        # get weights directly from the CalibratedClassifierCV object.
+        # Each classifier has numpy array .coef_ of which we simply take the mean
+        # this is not necessary the actual weight used in the final classifier, but enough to determine importance
 
-        return names, weights
-        pass
-
-class CalibratedClassifierCVwithFW(CalibratedClassifierCV):
-    """
-    Inherit form CalibratedClassifierCV, but needed method to estimate feature weights
-    Analogous to the prediction probability of the calibrated classifiers, we take the arithmetic mean for the weights
-    of each base estimator.
-
-    IMPORTANT: in LinearSVC this is only functional for linear kernels
-    :returns a vector of weights
-    """
-    def get_coef_(self):
-
-        numFeatures = len(self.calibrated_classifiers_[0].base_estimator.coef_[0])
-        mean_weights = np.zeros(numFeatures)
-        for calibrated_classifier in self.calibrated_classifiers_:
+        clf = self.pipeline.named_steps["clf"]
+        num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
+        mean_weights = np.zeros(num_features)
+        for calibrated_classifier in clf.calibrated_classifiers_:
             weights = calibrated_classifier.base_estimator.coef_[0]
             mean_weights += weights
 
-        mean_weights /= len(self.calibrated_classifiers_)
+        mean_weights /= len(clf.calibrated_classifiers_)
 
-        return mean_weights
+        # get original names of the features from vectorization step
+        names = self.pipeline.named_steps["vec"].get_feature_names()
+
+        return names, mean_weights
