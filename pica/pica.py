@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import argparse
+import json
 
 from pica.io.io import load_training_files, load_genotype_file
 from pica.ml.svm import PICASVM
@@ -28,10 +29,14 @@ def get_args():
     sp_compleconta_cv = subparsers.add_parser("cccv", description=sp_compleconta_cv_descr)
     sp_compleconta_cv.add_argument("--cv", type=int, default=5,
                                    help="Number of folds in cross-validation.")
-    sp_compleconta_cv.add_argument("--comple-steps", required=True, type=float,
+    sp_compleconta_cv.add_argument("--comple-steps", type=int, default=20,
                                    help="Number of equidistant completeness levels to resample to.")
-    sp_compleconta_cv.add_argument("--conta-steps", required=True, type=float,
+    sp_compleconta_cv.add_argument("--conta-steps", type=int, default=20,
                                    help="Number of equidistant contamination levels to resample to.")
+    sp_compleconta_cv.add_argument("--repeats", type=int, default=10,
+                                   help="Number of repeats for the cross-validation.")
+    sp_compleconta_cv.add_argument("--threads", type=int, default=4,
+                                   help="Number of threads to be used for this calculation.")
     sp_compleconta_cv.add_argument("-o", "--out", required=True, type=str,
                                    help="Filename of output file.")
 
@@ -78,8 +83,13 @@ def call(args):
             print(cv)
 
         elif sn == "cccv":
-            cccv = svm.completeness_cv(records=training_records, cv=args.cv)  # TODO: make comple and conta steps settable
-            print(cccv)
+            cccv = svm.completeness_cv(records=training_records, cv=args.cv,
+                                       comple_steps=args.comple_steps,
+                                       conta_steps=args.conta_steps, n_jobs=args.threads,
+                                       repeats=args.repeats)
+            # write output in JSON-format as old pica did
+            # TODO: add a graphical output?
+            json.dump(cccv, args.out, indent="\t")
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)

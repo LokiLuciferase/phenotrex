@@ -43,9 +43,9 @@ class TrainingRecordResampler:
         total_pos_featureset = []
         for record in records:
             if record.trait_sign == 1:
-                total_pos_featureset += record.features
+                total_pos_featureset.append(record.features)
             elif record.trait_sign == 0:
-                total_neg_featureset += record.features
+                total_neg_featureset.append(record.features)
             else:
                 raise RuntimeError("Unexpected record sign found. Aborting.")
         self.conta_source_pos = np.array(total_pos_featureset)
@@ -70,7 +70,6 @@ class TrainingRecordResampler:
 
         features = record.features
         n_features_comple = int(np.floor(len(features) * comple))
-        n_features_conta = int(np.floor(len(features) * conta))  # TODO: calculate after or before incompleting?
 
         # make incomplete
         incomplete_features = resample(features,
@@ -83,11 +82,16 @@ class TrainingRecordResampler:
         # make contaminations
         record_class = record.trait_sign
         if record.trait_sign == 1:
-            conta_source = self.conta_source_neg
+            source_set_id=self.random_state.randint(0,self.conta_source_neg.shape[0]-1)
+            conta_source = list(self.conta_source_neg[source_set_id])
         elif record.trait_sign == 0:
-            conta_source = self.conta_source_pos
+            source_set_id=self.random_state.randint(0,self.conta_source_pos.shape[0]-1)
+            conta_source = list(self.conta_source_pos[source_set_id])
+            #conta_source = list(self.random_state.choice(self.conta_source_pos,size=1))
         else:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
+
+        n_features_conta = min(len(conta_source),int(np.floor(len(conta_source) * conta)))
         conta_features = list(self.random_state.choice(a=conta_source,
                                                        size=n_features_conta,
                                                        replace=False))
@@ -100,3 +104,4 @@ class TrainingRecordResampler:
                                     trait_sign=record.trait_sign,
                                     features=incomplete_features + conta_features)
         return new_record
+
