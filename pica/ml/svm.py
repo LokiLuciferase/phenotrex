@@ -8,6 +8,7 @@ from typing import List, Tuple, Dict
 import six
 import copy
 from operator import itemgetter
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 from sklearn.pipeline import Pipeline
@@ -71,6 +72,8 @@ class PICASVM:
         :param kwargs: additional named arguments are passed to the fit() method of Pipeline.
         :returns: Whether the Pipeline has been fitted on the records.
         """
+        # TODO: run compress vocabulary before?
+
         self.logger.info("Begin training classifier.")
         X, y, tn = self.__get_x_y_tn(records)
         if self.trait_name is not None:
@@ -84,6 +87,7 @@ class PICASVM:
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
                       scoring: str = "balanced_accuracy", n_jobs=-1,
                       # TODO: add more complex scoring/reporting, e.g. AUC
+                      # TODO: StratifiedKFold
                       demote=False, **kwargs) -> Tuple[float, float, float, float]:
         """
         Perform cv-fold crossvalidation
@@ -94,6 +98,9 @@ class PICASVM:
         :param kwargs: Unused
         :return: A list of mean score, score SD, mean fit time and fit time SD.
         """
+
+        # TODO: run compress vocabulary before?
+
         log_function = self.logger.debug if demote else self.logger.info
         log_function("Begin cross-validation on training data.")
         t1 = time()
@@ -109,11 +116,12 @@ class PICASVM:
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return score_mean, score_sd, fit_time_mean, fit_time_sd
 
-    def completeness_cv(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
-                        comple_steps: int = 20, conta_steps: int = 20,
-                        scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[
+    def completeness_cv_old(self, records: List[TrainingRecord], cv: int = 5, samples: int = 10,
+                            comple_steps: int = 20, conta_steps: int = 20,
+                            scoring: str = "balanced_accuracy", n_jobs=-1, **kwargs) -> Dict[
         float, Dict[float, List[float]]]:
         """
+        deprecated: does not support multiprocessing
         Perform cross-validation while resampling training features,
         simulating differential completeness and contamination.
         :param records: List[TrainingRecords] to perform crossvalidation on.
@@ -164,19 +172,19 @@ class PICASVM:
 
     def compress_vocabulary(self, records: List[TrainingRecord]):
         """
-        Method to group features, that store redundant information.
-        To avoid overfitting and speed up process.
-        Might be replaced or complemented by a feature selection method in future
+        Method to group features, that store redundant information, to avoid overfitting and speed up process (in some
+        cases). Might be replaced or complemented by a feature selection method in future versions.
 
-        compressing features is optional, for the test dataset it appears to be a lot slower:
-        2.5 min compression + 2.1 sec cv. vs 3.3 sec cv without compression. TODO: Look for a faster way to compression?
+        Compressing vocabulary is optional, for the test dataset it took 30 seconds, while the time saved later on is not
+        significant.
 
+        :param records: a list of TrainingRecord objects.
         :return: nothing, sets the vocabulary for CountVectorizer step
         """
 
         t1 = time()
 
-        X, y, tn = self.__get_x_y_tn(records) # we actually only need X
+        X, y, tn = self.__get_x_y_tn(records)  # we actually only need X
         vec = CountVectorizer(binary=True, dtype=np.bool)
         vec.fit(X)
         names = vec.get_feature_names()
@@ -186,8 +194,8 @@ class PICASVM:
         self.logger.info(f"{size} Features found, starting compression")
         seen = {}
         vocabulary = {}
-        for i in range(len(names)):   # num of features
-            column = X_trans.A[:, i]
+        for i in range(len(names)):
+            column = X_trans.getcol(i).nonzero()[0]
             key = tuple(column)
             found_id = seen.get(key)
             if not found_id:
@@ -206,9 +214,10 @@ class PICASVM:
 
     def get_feature_weights(self):
         """
-        Extract the weights for features from pipeline/model
+        Extract the weights for features from pipeline
         :return: tuple of lists: feature names and weights
         """
+        # TODO: find different way to feature weights that is closer to the real weight used for classification
         # get weights directly from the CalibratedClassifierCV object.
         # Each classifier has numpy array .coef_ of which we simply take the mean
         # this is not necessary the actual weight used in the final classifier, but enough to determine importance
@@ -226,28 +235,30 @@ class PICASVM:
         names = self.pipeline.named_steps["vec"].get_feature_names()
 
         # decompress
-        weights=[]
-        name_list=[]
+        weights = []
+        name_list = []
         for feature, i in names:
             name_list.append(feature)
-            weights.append(mean_weights[i]) # use the group weight for all members currently
+            weights.append(mean_weights[i])  # use the group weight for all members currently
             # TODO: weights should be adjusted if multiple original features were grouped together.
 
         return name_list, weights
 
     @staticmethod
-    def validate_(X_test, y_test, estimator):
+    def _validate(records: List[TrainingRecord], estimator: Pipeline):
         """
-        part of the crossvalidation (or compleconta) where only validation is performed
-        :param X_test: test-records X values
-        :param y_test: test-records y values
-        :param estimator: classifier previously trained
+        part of the compleconta crossvalidation where only validation is performed.
+        it returns the scores in an array: [true positive rate, true negative rate] -> the mean of it is the
+        mean balanced accuracy
+        :param records: test-records as a List of TrainingRecord objects
+        :param estimator: classifier previously trained as a sklearn.Pipeline object
         :return: score #TODO: expand, what else can be useful?
         """
-        preds = estimator.predict(X_test)
-        tot_per_y = np.array([y_test.count(x) for x in range(len(set(y_test)))])
-        count_per_y = np.zeros(len(set(y_test)))
-        for p, y in zip(preds, y_test):
+        X, y, tn = PICASVM.__get_x_y_tn(records)
+        preds = estimator.predict(X)
+        tot_per_y = np.array([y.count(i) for i in range(len(set(y)))])
+        count_per_y = np.zeros(len(set(y)))
+        for p, y in zip(preds, y):
             if p == y:
                 count_per_y[y] += 1
 
@@ -256,50 +267,112 @@ class PICASVM:
         # std = np.std(score)
         return score
 
-    def crossvalidate2(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = "balanced_accuracy", n_jobs=-1,
-                      # TODO: add more complex scoring/reporting, e.g. AUC
-                      demote=False, **kwargs) -> Tuple[float, float]:
+    def completeness_cv(self, records: List[TrainingRecord], cv: int = 5,
+                        comple_steps: int = 20, conta_steps: int = 20,
+                        n_jobs: int = -1, demote: bool = False, repeats: int = 10):
         """
-        Perform cv-fold crossvalidation, own function replacing module from sklearn.
-        TODO: modify to simulate compleconta, crossvalidation could be still used from sklearn build in, I guess.
-        TODO: parallelization
+        #TODO: logging
         :param records: List[TrainingRecords] to perform crossvalidation on.
-        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy. #TODO not currently implemented
         :param cv: Number of folds in crossvalidation. Default: 5
-        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used) #TODO not currently implemented
-        :param kwargs: Unused
-        :return: A list of mean score, score SD, mean fit time and fit time SD.
+        :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
+        :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
+        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
+        :param repeats: Number of times the crossvalidation is repeated
+        :param demote: if True toggles the logger used from info to debug.
+        :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
+        # TODO: run compress_vocabulary before?
+
         log_function = self.logger.debug if demote else self.logger.info
-        log_function("Begin cross-validation on training data.")
-        X, y, tn = self.__get_x_y_tn(records)
-        skf = StratifiedKFold(n_splits=cv)
-
+        log_function("Begin completeness/contamination matrix crossvalidation on training data.")
         t1 = time()
-        classifier = copy.deepcopy(self.pipeline)
-        scores=[]
-        for train_index, test_index in skf.split(X, y):
-            # separate in test and training set lists:
-            X_test=[X[i] for i in test_index]
-            X_train=[X[i] for i in train_index]
-            y_test=[y[i] for i in test_index]
-            y_train=[y[i] for i in train_index]
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
+            cv_scores = executor.map(self._completeness_cv,
+                                     self._replicates_completeness(records, cv, comple_steps, conta_steps, repeats))
 
-            # fit the copy of the pipeline
-            classifier.fit(X=X_train, y=y_train, **kwargs)
-
-            # validate and keep scores
-            score = self.validate_(X_test, y_test, classifier)
-            scores=np.append(scores, score)
-
-        score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
         t2 = time()
-        log_function(f"Cross-validation completed.")
+        mba = {}
+        cv_scores_list = [x for x in cv_scores]
+
+        for comple in cv_scores_list[0].keys():
+            mba[comple] = {}
+            for conta in cv_scores_list[0][comple].keys():
+                single_result = np.concatenate([cv_scores_list[r][comple][conta] for r in range(repeats * cv)])
+                mean_over_fold_and_replicates=np.mean(single_result)
+                self.logger.info(f"MBA {comple},{conta}={mean_over_fold_and_replicates}")
+                mba[comple][conta] = mean_over_fold_and_replicates
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
-        return score_mean, score_sd
 
+        return mba
 
+    def _replicates_completeness(self, records: List[TrainingRecord], cv: int = 5,
+                                 comple_steps: int = 20, conta_steps: int = 20,
+                                 repeats: int = 10):
+        """
+        Generator function to yield test/training sets which will be fed into subprocesses
+        :param records: the complete set of TrainingRecords
+        :param cv: number of folds in the crossvalidation to be performed
+        :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
+        :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
+        :param repeats: number of repeats for the entire crossvalidation
+        :return: parameter list to submit to worker process
+        """
+
+        for r in range(repeats):
+            X, y, tn = self.__get_x_y_tn(records)
+            skf = StratifiedKFold(n_splits=cv)
+            fold = 0
+            for train_index, test_index in skf.split(X, y):
+                fold += 1
+                # separate in training set lists:
+                X_train = [X[i] for i in train_index]
+                y_train = [y[i] for i in train_index]
+                test_records = [records[i] for i in test_index]
+                starting_message = f"Starting comple/conta replicate {r + 1}/{repeats}: fold {fold}"
+                yield [test_records, X_train, y_train, comple_steps, conta_steps, self.logger.level, starting_message]
+
+    def _completeness_cv(self, param, **kwargs) -> Dict[float, float]:
+        """
+        Perform completeness/contamination simulation and testing for one fold. This is a separate function only called
+        by completeness_cv which spawns subprocesses using a ProcessPoolExecutor from concurrent.futures
+        :param param: List [test_records, X_train, y_train, comple_steps, conta_steps, starting_message]
+        workaround to get multiple parameters into this function. (using processor.map) #TODO find nicer solution?
+        """
+        # unpack parameters
+        test_records, X_train, y_train, comple_steps, conta_steps, verb, starting_message = param
+
+        # needed to create a new logger, self.logger not accessible from a different process
+        logger=get_logger(__name__, verb=verb)
+        logger.info(starting_message)
+
+        # fit a copy of the pipeline #TODO: do we really need a calibrated classifier in this crossvalidation?
+        classifier = copy.deepcopy(self.pipeline)
+        classifier.fit(X=X_train, y=y_train, **kwargs)
+
+        # initialize the resampler with the test_records only, so the samples are unknown to the classifier
+        resampler = TrainingRecordResampler(random_state=2, verb=False)
+        resampler.fit(records=test_records)
+        cv_scores = {}
+        comple_increment = 1 / comple_steps
+        conta_increment = 1 / conta_steps
+        for comple in np.arange(0, 1.05, comple_increment):
+            comple = np.round(comple, 2)
+            #self.logger.info(f"Comple: {comple}")
+            cv_scores[comple] = {}
+            for conta in np.arange(0, 1.05, conta_increment):
+                conta = np.round(conta, 2)
+                try:
+                    #self.logger.info(f"\tConta: {conta}")
+                    resampled_set = [resampler.get_resampled(x, comple, conta) for x in test_records]
+                    cv_scores[comple][conta] = self._validate(resampled_set, classifier)  # disable spam
+                except ValueError:  # error due to inability to perform cv (no features)
+                    self.logger.warning(
+                        "Cross-validation failed for Completeness {comple} and Contamination {conta}."
+                        "\nThis is likely due to too small feature set at low comple/conta levels.")
+                    cv_scores[comple][conta] = (np.nan, np.nan)
+
+        return cv_scores
 
 
 class CustomVectorizer(CountVectorizer):
@@ -308,7 +381,6 @@ class CustomVectorizer(CountVectorizer):
     multiple indices of the dictionary contained the same feature index. However, this is we intend.
     Other functions had to be adopted to allow decompression: get_feature_names,
     """
-
 
     def _validate_vocabulary(self):
         """
@@ -320,7 +392,6 @@ class CustomVectorizer(CountVectorizer):
         else:
             self.fixed_vocabulary_ = False
 
-
     def get_feature_names(self):
         """Array mapping from feature integer indices to feature name"""
         if not hasattr(self, 'vocabulary_'):
@@ -330,5 +401,4 @@ class CustomVectorizer(CountVectorizer):
 
         # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
         return sorted(six.iteritems(self.vocabulary_),
-                                     key=itemgetter(1))
-
+                      key=itemgetter(1))
