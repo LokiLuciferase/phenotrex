@@ -4,12 +4,13 @@
 import os
 import copy
 from time import time
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Callable
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import balanced_accuracy_score
 
 from pica.struct.records import TrainingRecord
 from pica.transforms.resampling import TrainingRecordResampler
@@ -18,12 +19,12 @@ from pica.util.helpers import get_x_y_tn
 
 
 class CompleContaCV:
-    def __init__(self, pipeline: Pipeline, cv: int = 5,
+    def __init__(self, pipeline: Pipeline, scoring: Callable = balanced_accuracy_score, cv: int = 5,
                  comple_steps: int = 20, conta_steps: int = 20,
                  n_jobs: int = -1, repeats: int = 10, verb: bool = False):
         """
         A class containing all custom completeness/contamination cross-validation functionality.
-        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy. #TODO not currently implemented
+        :param scoring: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
         :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
@@ -32,33 +33,24 @@ class CompleContaCV:
         """
         self.pipeline = pipeline
         self.cv = cv
+        self.scoring_method = scoring
         self.comple_steps = comple_steps
         self.conta_steps = conta_steps
         self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
         self.repeats = repeats
         self.logger = get_logger(__name__, verb=verb)
 
-    @staticmethod
-    def _validate_subset(records: List[TrainingRecord], estimator: Pipeline):
+    def _validate_subset(self, records: List[TrainingRecord], estimator: Pipeline):
         """
         Use a fitted Pipeline to predict scores on resampled test data.
         part of the compleconta crossvalidation where only validation is performed.
-        it returns the scores in an array: [true positive rate, true negative rate] -> the mean of it is the
-        mean balanced accuracy
         :param records: test records as a List of TrainingRecord objects
         :param estimator: classifier previously trained as a sklearn.Pipeline object
-        :return: score  # TODO: expand, what else can be useful?
+        :return: score
         """
         X, y, tn = get_x_y_tn(records)
         preds = estimator.predict(X)
-
-        tot_per_y = np.array([y.count(i) for i in range(len(set(y)))])
-        count_per_y = np.zeros(len(set(y)))
-        for p, y in zip(preds, y):
-            if p == y:
-                count_per_y[y] += 1
-
-        score = count_per_y / tot_per_y
+        score = self.scoring_method(y, preds)
         return score
 
     def _replicates(self, records: List[TrainingRecord], cv: int = 5,
@@ -115,14 +107,8 @@ class CompleContaCV:
             cv_scores[comple] = {}
             for conta in np.arange(0, 1.05, conta_increment):
                 conta = np.round(conta, 2)
-                try:
-                    resampled_set = [resampler.get_resampled(x, comple, conta) for x in test_records]
-                    cv_scores[comple][conta] = self._validate_subset(resampled_set, classifier)
-                except ValueError:  # error due to inability to perform cv (no features)
-                    self.logger.warning(
-                        f"Cross-validation failed for Completeness {comple} and Contamination {conta}."
-                        f"\nThis is likely due to too small feature set at low comple/conta levels.")
-                    cv_scores[comple][conta] = (np.nan, np.nan)
+                resampled_set = [resampler.get_resampled(x, comple, conta) for x in test_records]
+                cv_scores[comple][conta] = self._validate_subset(resampled_set, classifier)
         return cv_scores
 
     def run(self, records: List[TrainingRecord]):
@@ -147,9 +133,10 @@ class CompleContaCV:
         for comple in cv_scores_list[0].keys():
             mba[comple] = {}
             for conta in cv_scores_list[0][comple].keys():
-                single_result = np.concatenate([cv_scores_list[r][comple][conta] for r in range(self.repeats * self.cv)])
+                single_result = [cv_scores_list[r][comple][conta] for r in range(self.repeats * self.cv)]
                 mean_over_fold_and_replicates = np.mean(single_result)
-                self.logger.info(f"MBA {comple},{conta}={mean_over_fold_and_replicates}")
-                mba[comple][conta] = mean_over_fold_and_replicates
+                std_over_fold_and_replicates = np.std(single_result)
+                mba[comple][conta] = {"mean_score": mean_over_fold_and_replicates,
+                                      "score_sd": std_over_fold_and_replicates}
         self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return mba
