@@ -8,7 +8,7 @@ from typing import List, Tuple, Dict
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-from sklearn.model_selection import cross_validate, StratifiedKFold
+from sklearn.model_selection import cross_validate
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -18,7 +18,6 @@ from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
 
 
-# TODO: For now NO crossvalidation over completeness-contamination gradients, no feature grouping and no plotting.
 class PICASVM:
     def __init__(self,
                  C: float = 5,
@@ -36,18 +35,26 @@ class PICASVM:
         :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
         """
         self.trait_name = None
+        self.cccv_result = None  # result of compleconta-crossvalidation saved in object so it gets pickled
+
         self.C = C
         self.penalty = penalty
         self.tol = tol
         self.logger = get_logger(__name__, verb=verb)
-        self.pipeline = Pipeline(steps=[
-            ("vec", CustomVectorizer(binary=True, dtype=np.bool)),
-            ("clf", CalibratedClassifierCV(LinearSVC(C=self.C,
-                                                     tol=self.tol,
-                                                     penalty=self.penalty,
-                                                     **kwargs),
-                                           method="sigmoid", cv=5))])
         self.verb = verb
+
+        vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
+        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, **kwargs)
+
+        self.pipeline = Pipeline(steps=[
+            ("vec", vectorizer),
+            ("clf", CalibratedClassifierCV(classifier, method="sigmoid", cv=5))
+        ])
+        self.cv_pipeline = Pipeline(steps=[
+            ("vec", vectorizer),
+            ("clf", classifier)
+        ])
+
 
     def train(self, records: List[TrainingRecord], **kwargs):
         """
@@ -202,13 +209,11 @@ class PICASVM:
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
 
-        # TODO: either create pipeline from first principles here, or define above.
-        #  But don't use calibratedClassifierCV as it is unnecessary.
-
-        cccv = CompleContaCV(pipeline=self.pipeline, cv=cv,
+        cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
                              n_jobs=n_jobs, repeats=repeats, verb=self.verb)
         score_dict = cccv.run(records=records)
+        self.cccv_result = score_dict
         return score_dict
 
 
