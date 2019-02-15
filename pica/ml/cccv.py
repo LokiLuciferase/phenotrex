@@ -19,12 +19,12 @@ from pica.util.helpers import get_x_y_tn
 
 
 class CompleContaCV:
-    def __init__(self, pipeline: Pipeline, scoring: Callable = balanced_accuracy_score, cv: int = 5,
+    def __init__(self, pipeline: Pipeline, scoring_function: Callable = balanced_accuracy_score, cv: int = 5,
                  comple_steps: int = 20, conta_steps: int = 20,
                  n_jobs: int = -1, repeats: int = 10, verb: bool = False):
         """
         A class containing all custom completeness/contamination cross-validation functionality.
-        :param scoring: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
         :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
@@ -33,7 +33,7 @@ class CompleContaCV:
         """
         self.pipeline = pipeline
         self.cv = cv
-        self.scoring_method = scoring
+        self.scoring_method = scoring_function
         self.comple_steps = comple_steps
         self.conta_steps = conta_steps
         self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
@@ -92,7 +92,6 @@ class CompleContaCV:
         logger = get_logger(__name__, verb=verb)
         logger.info(starting_message)
 
-        # fit a copy of the pipeline #TODO: do we really need a calibrated classifier in this crossvalidation?
         classifier = copy.deepcopy(self.pipeline)
         classifier.fit(X=X_train, y=y_train, **kwargs)
 
@@ -117,7 +116,6 @@ class CompleContaCV:
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
         # TODO: run compress_vocabulary before?
-        # TODO: also return SD!
 
         self.logger.info("Begin completeness/contamination matrix crossvalidation on training data.")
         t1 = time()
@@ -136,7 +134,7 @@ class CompleContaCV:
                 single_result = [cv_scores_list[r][comple][conta] for r in range(self.repeats * self.cv)]
                 mean_over_fold_and_replicates = np.mean(single_result)
                 std_over_fold_and_replicates = np.std(single_result)
-                mba[comple][conta] = {"mean_score": mean_over_fold_and_replicates,
+                mba[comple][conta] = {"score_mean": mean_over_fold_and_replicates,
                                       "score_sd": std_over_fold_and_replicates}
         self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return mba

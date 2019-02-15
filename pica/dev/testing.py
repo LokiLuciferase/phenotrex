@@ -85,5 +85,5 @@ if __name__ == "__main__":
     #
     # print_weights()
 
-    cccv = svm.crossvalidate_cc(records=td, comple_steps=3, conta_steps=3)
-    pprint(cccv)
+    svm.crossvalidate_cc(records=td, comple_steps=3, conta_steps=3)
+    pprint(svm.cccv_result)
