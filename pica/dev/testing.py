@@ -4,6 +4,7 @@
 #
 import time
 import logging
+from pprint import pprint
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 import numpy as np
@@ -61,25 +62,28 @@ if __name__ == "__main__":
 
 
     # try cv over comple/conta, unoptimized (parallelized over folds of single CVs, via sklearn)
-    svm.crossvalidate(td)
-
-    svm.compress_vocabulary(td)
-    svm.crossvalidate(td)
+    # svm.crossvalidate(td)
+    #
+    # svm.compress_vocabulary(td)
+    # svm.crossvalidate(td)
     #svm.train(td)
     #cv_dict = svm.completeness_cv(td, cv=5)
 
 
     #print(cv_dict)  # takes 9 min on 6 Ryzen 5 cores
 
-    def print_weights():
-        names, weights=svm.get_feature_weights()
-        weights, names = zip(*sorted(zip(weights,names),reverse=True))
-        count=0
-        for name, weight in zip(names, weights):
-            count+=1
-            print(count,name.upper(),weight)
-            if count == 20:
-                break
+    # def print_weights():
+    #     names, weights=svm.get_feature_weights()
+    #     weights, names = zip(*sorted(zip(weights,names),reverse=True))
+    #     count=0
+    #     for name, weight in zip(names, weights):
+    #         count+=1
+    #         print(count,name.upper(),weight)
+    #         if count == 20:
+    #             break
+    #
+    #
+    # print_weights()
 
-    print(svm.crossvalidate2(td))
-    #print_weights()
+    cccv = svm.crossvalidate_cc(records=td, comple_steps=3, conta_steps=3)
+    pprint(cccv)
