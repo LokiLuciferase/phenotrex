@@ -21,7 +21,7 @@ from pica.util.helpers import get_x_y_tn
 class CompleContaCV:
     def __init__(self, pipeline: Pipeline, scoring_function: Callable = balanced_accuracy_score, cv: int = 5,
                  comple_steps: int = 20, conta_steps: int = 20,
-                 n_jobs: int = -1, repeats: int = 10, verb: bool = False):
+                 n_jobs: int = -1, repeats: int = 10, random_state: np.random.RandomState = None, verb: bool = False):
         """
         A class containing all custom completeness/contamination cross-validation functionality.
         :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
@@ -30,6 +30,7 @@ class CompleContaCV:
         :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param repeats: Number of times the crossvalidation is repeated
+        :param random_state: An integer random seed or instance of np.random.RandomState
         """
         self.pipeline = pipeline
         self.cv = cv
@@ -38,6 +39,7 @@ class CompleContaCV:
         self.conta_steps = conta_steps
         self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
         self.repeats = repeats
+        self.random_state = random_state if type(random_state) is np.random.RandomState else np.random.RandomState(random_state)
         self.logger = get_logger(__name__, verb=verb)
 
     def _validate_subset(self, records: List[TrainingRecord], estimator: Pipeline):
@@ -67,7 +69,7 @@ class CompleContaCV:
         """
         for r in range(repeats):
             X, y, tn = get_x_y_tn(records)
-            skf = StratifiedKFold(n_splits=cv)
+            skf = StratifiedKFold(n_splits=cv, random_state=self.random_state)
             fold = 0
             for train_index, test_index in skf.split(X, y):
                 fold += 1
@@ -96,7 +98,7 @@ class CompleContaCV:
         classifier.fit(X=X_train, y=y_train, **kwargs)
 
         # initialize the resampler with the test_records only, so the samples are unknown to the classifier
-        resampler = TrainingRecordResampler(random_state=2, verb=False)
+        resampler = TrainingRecordResampler(random_state=self.random_state, verb=False)
         resampler.fit(records=test_records)
         cv_scores = {}
         comple_increment = 1 / comple_steps

@@ -61,7 +61,8 @@ def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int]=None) -> L
     return ret
 
 
-def collate_training_data(genotype_records, phenotype_records, verb=False) -> List[TrainingRecord]:
+def collate_training_data(genotype_records: List[GenotypeRecord], phenotype_records: List[PhenotypeRecord],
+                          universal_genotype: bool = False, verb: bool = False) -> List[TrainingRecord]:
     """
     Returns a list of TrainingRecord from two lists of GenotypeRecord and PhenotypeRecord.
     To be used for training and CV of PICASVM.
@@ -69,41 +70,51 @@ def collate_training_data(genotype_records, phenotype_records, verb=False) -> Li
     and if all PhenotypeRecords pertain to same trait.
     :param genotype_records: List[GenotypeRecord]
     :param phenotype_records: List[PhenotypeRecord]
+    :param universal_genotype: Whether to use an universal genotype file.
+    :param verb: toggle verbosity.
     :return: List[TrainingRecord]
     """
     logger = get_logger(__name__, verb=verb)
     gr_dict = {x.identifier: x for x in genotype_records}
     pr_dict = {x.identifier: x for x in phenotype_records}
     traits = set(x.trait_name for x in phenotype_records)
-    if len(gr_dict.keys()) != len(pr_dict.keys()):
-        raise RuntimeError("Phenotype and genotype records are of unequal length."
-                           "Cannot collate to TrainingRecords.")
-    if set(gr_dict.keys()) != set(pr_dict.keys()):
-        raise RuntimeError("Different identifiers found among genotype and phenotype records. "
-                           "Cannot collate to TrainingRecords.")
+    if universal_genotype:
+        if not set(gr_dict.keys()).issuperset(set(pr_dict.keys())):
+            raise RuntimeError("Not all identifiers of phenotype records were found in the universal genotype."
+                               "Cannot collate to TrainingRecords.")
+    else:
+        if len(gr_dict.keys()) != len(pr_dict.keys()):
+            raise RuntimeError("Phenotype and genotype records are of unequal length."
+                               "Cannot collate to TrainingRecords.")
+        if set(gr_dict.keys()) != set(pr_dict.keys()):
+            raise RuntimeError("Different identifiers found among genotype and phenotype records. "
+                               "Cannot collate to TrainingRecords.")
     if len(traits) > 1:
         raise RuntimeError("More than one traits have been found in phenotype records. "
                            "Cannot collate to TrainingRecords.")
 
-    ret = [TrainingRecord(identifier=gr_dict[x].identifier,
+    ret = [TrainingRecord(identifier=pr_dict[x].identifier,
                           trait_name=pr_dict[x].trait_name,
                           trait_sign=pr_dict[x].trait_sign,
-                          features=gr_dict[x].features) for x in gr_dict.keys()]
+                          features=gr_dict[x].features) for x in pr_dict.keys()]
     logger.info(f"Collated genotype and phenotype records into {len(ret)} TrainingRecord.")
     return ret
 
 
-def load_training_files(genotype_file: str, phenotype_file: str, verb=False) -> Tuple[List[TrainingRecord],
-                                                                                      List[GenotypeRecord],
-                                                                                      List[PhenotypeRecord]]:
+def load_training_files(genotype_file: str, phenotype_file: str,
+                        universal_genotype: bool = False, verb=False) -> Tuple[List[TrainingRecord],
+                                                                               List[GenotypeRecord],
+                                                                               List[PhenotypeRecord]]:
     """
     Convenience function to load phenotype and genotype file together, and return a list of TrainingRecord.
     :param genotype_file: The path to the input genotype file.
     :param phenotype_file: The path to the input phenotype file.
+    :param universal_genotype: Whether to use an universal genotype file.
+    :param verb: toggle verbosity.
     :return: Tuple[List[TrainingRecord], List[GenotypeRecord], List[PhenotypeRecord]]
     """
     logger = get_logger(__name__, verb=verb)
     gr = load_genotype_file(genotype_file)
     pr = load_phenotype_file(phenotype_file)
     logger.info("Genotype and Phenotype records successfully loaded from file.")
-    return collate_training_data(gr, pr, verb=verb), gr, pr
+    return collate_training_data(gr, pr, universal_genotype=universal_genotype, verb=verb), gr, pr
