@@ -23,7 +23,7 @@ class TrainingRecordResampler:
         :param verb: Toggle verbosity
         """
         self.logger = get_logger(initname=self.__class__.__name__, verb=verb)
-        self.random_state = RandomState(random_state)  # use numpy RandomState here. sklearn is ok with that.
+        self.random_state = random_state if type(random_state) is RandomState else RandomState(random_state)
         self.conta_source_pos = None
         self.conta_source_neg = None
         self.fitted = False
@@ -82,12 +82,17 @@ class TrainingRecordResampler:
         # make contaminations
         record_class = record.trait_sign
         if record.trait_sign == 1:
-            source_set_id=self.random_state.randint(0,self.conta_source_neg.shape[0]-1)
+            if self.conta_source_neg.shape[0] == 1:  # guard against very small sample errors after StratifiedKFold
+                source_set_id = 0
+            else:
+                source_set_id = self.random_state.randint(0,self.conta_source_neg.shape[0]-1)
             conta_source = list(self.conta_source_neg[source_set_id])
         elif record.trait_sign == 0:
-            source_set_id=self.random_state.randint(0,self.conta_source_pos.shape[0]-1)
+            if self.conta_source_pos.shape[0] == 1:
+                source_set_id = 0
+            else:
+                source_set_id = self.random_state.randint(0,self.conta_source_pos.shape[0]-1)
             conta_source = list(self.conta_source_pos[source_set_id])
-            #conta_source = list(self.random_state.choice(self.conta_source_pos,size=1))
         else:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
 

@@ -23,6 +23,7 @@ class PICASVM:
                  C: float = 5,
                  penalty: str = "l2",
                  tol: float = 1,
+                 random_state: int = None,
                  verb=False,
                  *args, **kwargs):
         """
@@ -32,6 +33,7 @@ class PICASVM:
         :param C: Penalty parameter C of the error term. See LinearSVC documentation.
         :param penalty: Specifies the norm used in the penalization. See LinearSVC documentation.
         :param tol: Tolerance for stopping criteria. See LinearSVC documentation.
+        :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
         :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
         """
         self.trait_name = None
@@ -40,11 +42,12 @@ class PICASVM:
         self.C = C
         self.penalty = penalty
         self.tol = tol
+        self.random_state = np.random.RandomState(random_state)
         self.logger = get_logger(__name__, verb=verb)
         self.verb = verb
 
         vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
-        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, **kwargs)
+        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state, **kwargs)
 
         self.pipeline = Pipeline(steps=[
             ("vec", vectorizer),
@@ -211,7 +214,8 @@ class PICASVM:
 
         cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
-                             n_jobs=n_jobs, repeats=repeats, verb=self.verb)
+                             n_jobs=n_jobs, repeats=repeats,
+                             random_state=self.random_state, verb=self.verb)
         score_dict = cccv.run(records=records)
         self.cccv_result = score_dict
         return score_dict
