@@ -140,7 +140,7 @@ class PICASVM:
         vec = self.cv_pipeline.named_steps["vec"]
         if not vec.vocabulary:
             vec.fit(X)
-            names = vec.get_feature_names()
+            names = [name for name, i in vec.get_feature_names()]
         else:
             names = list(vec.vocabulary.keys())
         X_trans = vec.transform(X)
@@ -183,25 +183,25 @@ class PICASVM:
         selector = RFE(estimator, step=n_steps, n_features_to_select=n_features)
 
         X, y, tn = get_x_y_tn(records)
-        vectorizer = self.cv_pipeline.named_steps["vec"]
+        vec = self.cv_pipeline.named_steps["vec"]
 
         # get previous vocabulary (might be already compressed)
-        if not vectorizer.vocabulary:
-            vectorizer.fit(X)
-            names = vectorizer.get_feature_names()
+        if not vec.vocabulary:
+            vec.fit(X)
+            names = [name for name, i in vec.get_feature_names()]
             previous_vocabulary = {names[i]: i for i in range(len(names))}
         else:
-            previous_vocabulary = vectorizer.vocabulary
-        X = vectorizer.transform(X)
+            previous_vocabulary = vec.vocabulary
 
-        selector = selector.fit(X=X, y=y)
+        X_trans = vec.transform(X)
+        selector = selector.fit(X=X_trans, y=y)
 
         original_size = len(previous_vocabulary)
         support = selector.get_support()
         support = support.nonzero()[0]
-        size_after = len(support)
         new_id = {support[x]: x for x in range(len(support))}
         vocabulary = {feature: new_id[i] for feature, i in previous_vocabulary.items() if new_id.get(i)}
+        size_after = len(vocabulary)
 
         t2 = time()
 
@@ -212,21 +212,27 @@ class PICASVM:
         self.cv_pipeline.named_steps["vec"].vocabulary = vocabulary
         self.cv_pipeline.named_steps["vec"].fixed_vocabulary_ = True
 
-    def coef_(self) -> np.array:
+    def get_coef_(self, pipeline: Pipeline = None) -> np.array:
         """
-        coef_ function to get weights from
-
+        Interface function to get coef_ from classifier used in the pipeline specified
+        :param pipeline: pipeline from which the classifier should be used
         :return: coef_ for feature selection
         """
 
-        clf = self.pipeline.named_steps["clf"]
-        num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
-        mean_weights = np.zeros(num_features)
-        for calibrated_classifier in clf.calibrated_classifiers_:
-            weights = calibrated_classifier.base_estimator.coef_[0]
-            mean_weights += weights
+        if not Pipeline:
+            pipeline = self.pipeline
 
-        mean_weights /= len(clf.calibrated_classifiers_)
+        clf = pipeline.named_steps["clf"]
+        if hasattr(clf, "coef_"):
+            mean_weights = clf.coef_
+        else:   # assume calibrated classifier
+            num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
+            mean_weights = np.zeros(num_features)
+            for calibrated_classifier in clf.calibrated_classifiers_:
+                weights = calibrated_classifier.base_estimator.coef_[0]
+                mean_weights += weights
+
+            mean_weights /= len(clf.calibrated_classifiers_)
 
         return mean_weights
 
@@ -244,7 +250,7 @@ class PICASVM:
             self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
             return [], []
 
-        mean_weights = self.coef_()
+        mean_weights = self.get_coef_()
 
         # get original names of the features from vectorization step, they might be compressed
         names = self.pipeline.named_steps["vec"].get_feature_names()
