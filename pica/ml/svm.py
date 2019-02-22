@@ -11,6 +11,7 @@ from sklearn.svm import LinearSVC
 from sklearn.model_selection import cross_validate
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_selection import RFE
 
 from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
@@ -136,32 +137,99 @@ class PICASVM:
         t1 = time()
 
         X, y, tn = get_x_y_tn(records)  # we actually only need X
-        vec = CountVectorizer(binary=True, dtype=np.bool)
-        vec.fit(X)
-        names = vec.get_feature_names()
+        vec = self.cv_pipeline.named_steps["vec"]
+        if not vec.vocabulary:
+            vec.fit(X)
+            names = vec.get_feature_names()
+        else:
+            names = list(vec.vocabulary.keys())
         X_trans = vec.transform(X)
 
         size = len(names)
         self.logger.info(f"{size} Features found, starting compression")
         seen = {}
-        vocabulary = {}
+        new_vocabulary = {}
         for i in range(len(names)):
             column = X_trans.getcol(i).nonzero()[0]
             key = tuple(column)
             found_id = seen.get(key)
             if not found_id:
                 seen[key] = i
-                vocabulary[names[i]] = i
+                new_vocabulary[names[i]] = i
             else:
-                vocabulary[names[i]] = found_id
+                new_vocabulary[names[i]] = found_id
         size_after = len(seen)
         t2 = time()
 
         self.logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
 
         # set vocabulary to vectorizer
-        self.pipeline.named_steps["vec"].vocabulary = vocabulary
+        self.pipeline.named_steps["vec"].vocabulary = new_vocabulary
         self.pipeline.named_steps["vec"].fixed_vocabulary_ = True
+
+    def recursive_feature_elimination(self, records: List[TrainingRecord], n_steps: int = 5, n_features: int = None):
+        """
+        Function to apply RFE to limit the vocabulary used by the CustomVectorizer, optional step.
+        :param records: list of TrainingRecords, entire training set.
+        :param n_steps: number of elimination steps maximal
+        :param n_features: number of features to select (if None: half of the provided features)
+        :return:
+        """
+
+        t1 = time()
+
+        self.logger.info(f"Starting recursive feature elimination")
+        estimator = self.cv_pipeline.named_steps["clf"]
+        selector = RFE(estimator, step=n_steps, n_features_to_select=n_features)
+
+        X, y, tn = get_x_y_tn(records)
+        vectorizer = self.cv_pipeline.named_steps["vec"]
+
+        # get previous vocabulary (might be already compressed)
+        if not vectorizer.vocabulary:
+            vectorizer.fit(X)
+            names = vectorizer.get_feature_names()
+            previous_vocabulary = {names[i]: i for i in range(len(names))}
+        else:
+            previous_vocabulary = vectorizer.vocabulary
+        X = vectorizer.transform(X)
+
+        selector = selector.fit(X=X, y=y)
+
+        original_size = len(previous_vocabulary)
+        support = selector.get_support()
+        support = support.nonzero()[0]
+        size_after = len(support)
+        new_id = {support[x]: x for x in range(len(support))}
+        vocabulary = {feature: new_id[i] for feature, i in previous_vocabulary.items() if new_id.get(i)}
+
+        t2 = time()
+
+        self.logger.info(f"{size_after} features were selected of {original_size} using Recursive Feature Eliminiation"
+                         f" in {np.round(t2 - t1, 2)} seconds.")
+
+        # set vocabulary to vectorizer
+        self.cv_pipeline.named_steps["vec"].vocabulary = vocabulary
+        self.cv_pipeline.named_steps["vec"].fixed_vocabulary_ = True
+
+    def coef_(self) -> np.array:
+        """
+        coef_ function to get weights from
+
+        :return: coef_ for feature selection
+        """
+
+        clf = self.pipeline.named_steps["clf"]
+        num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
+        mean_weights = np.zeros(num_features)
+        for calibrated_classifier in clf.calibrated_classifiers_:
+            weights = calibrated_classifier.base_estimator.coef_[0]
+            mean_weights += weights
+
+        mean_weights /= len(clf.calibrated_classifiers_)
+
+        return mean_weights
+
 
     def get_feature_weights(self) -> Tuple[List, List]:
         """
@@ -176,14 +244,7 @@ class PICASVM:
             self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
             return [], []
 
-        clf = self.pipeline.named_steps["clf"]
-        num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
-        mean_weights = np.zeros(num_features)
-        for calibrated_classifier in clf.calibrated_classifiers_:
-            weights = calibrated_classifier.base_estimator.coef_[0]
-            mean_weights += weights
-
-        mean_weights /= len(clf.calibrated_classifiers_)
+        mean_weights = self.coef_()
 
         # get original names of the features from vectorization step, they might be compressed
         names = self.pipeline.named_steps["vec"].get_feature_names()
