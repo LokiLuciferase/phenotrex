@@ -4,8 +4,13 @@
 #
 from time import time
 from typing import List, Tuple, Dict
+from collections import defaultdict
 
+import array
 import numpy as np
+import scipy.sparse as sp
+
+from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import cross_validate
@@ -149,23 +154,26 @@ class PICASVM:
         self.logger.info(f"{size} Features found, starting compression")
         seen = {}
         new_vocabulary = {}
+        new_index = 0
         for i in range(len(names)):
             column = X_trans.getcol(i).nonzero()[0]
             key = tuple(column)
             found_id = seen.get(key)
             if not found_id:
-                seen[key] = i
-                new_vocabulary[names[i]] = i
+                seen[key] = new_index
+                new_vocabulary[names[i]] = new_index
+                new_index += 1
             else:
                 new_vocabulary[names[i]] = found_id
-        size_after = len(seen)
+        size_after = new_vocabulary[max(new_vocabulary, key=new_vocabulary.get)]
         t2 = time()
 
         self.logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
 
         # set vocabulary to vectorizer
-        self.pipeline.named_steps["vec"].vocabulary = new_vocabulary
-        self.pipeline.named_steps["vec"].fixed_vocabulary_ = True
+        self.cv_pipeline.named_steps["vec"].vocabulary = new_vocabulary
+        self.cv_pipeline.named_steps["vec"].vocabulary_ = new_vocabulary
+        self.cv_pipeline.named_steps["vec"].fixed_vocabulary_ = True
 
     def recursive_feature_elimination(self, records: List[TrainingRecord], n_steps: int = 5, n_features: int = None):
         """
@@ -210,11 +218,14 @@ class PICASVM:
 
         # set vocabulary to vectorizer
         self.cv_pipeline.named_steps["vec"].vocabulary = vocabulary
+        self.cv_pipeline.named_steps["vec"].vocabulary_ = vocabulary
         self.cv_pipeline.named_steps["vec"].fixed_vocabulary_ = True
+
 
     def get_coef_(self, pipeline: Pipeline = None) -> np.array:
         """
         Interface function to get coef_ from classifier used in the pipeline specified
+        this might be useful if we switch the classifier, most of them already have a coef_ attribute
         :param pipeline: pipeline from which the classifier should be used
         :return: coef_ for feature selection
         """
@@ -314,3 +325,69 @@ class CustomVectorizer(CountVectorizer):
 
         # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
         return sorted(self.vocabulary_.items(), key=lambda x: x[1])  # no stdlib dependency when using lambda
+
+    def _count_vocab(self, raw_documents, fixed_vocab):
+        """Create sparse feature matrix, and vocabulary where fixed_vocab=False
+        Modified to reduce the actual size of the matrix returned if compression of vocabulary is used
+        """
+        if fixed_vocab:
+            vocabulary = self.vocabulary_
+        else:
+            vocabulary = defaultdict()
+            vocabulary.default_factory = vocabulary.__len__
+
+        analyze = self.build_analyzer()
+        j_indices = []
+        indptr = []
+
+        values = array.array(str("i"))
+        indptr.append(0)
+        for doc in raw_documents:
+            feature_counter = {}
+            for feature in analyze(doc):
+                try:
+                    feature_idx = vocabulary[feature]
+                    if feature_idx not in feature_counter:
+                        feature_counter[feature_idx] = 1
+                    else:
+                        feature_counter[feature_idx] += 1
+                except KeyError:
+                    # Ignore out-of-vocabulary items for fixed_vocab=True
+                    continue
+
+            j_indices.extend(feature_counter.keys())
+            values.extend(feature_counter.values())
+            indptr.append(len(j_indices))
+
+        if not fixed_vocab:
+            # disable defaultdict behaviour
+            vocabulary = dict(vocabulary)
+            if not vocabulary:
+                raise ValueError("empty vocabulary; perhaps the documents only"
+                                 " contain stop words")
+
+        if indptr[-1] > 2147483648:  # = 2**31 - 1
+            if sp_version >= (0, 14):
+                indices_dtype = np.int64
+            else:
+                raise ValueError(('sparse CSR array has {} non-zero '
+                                  'elements and requires 64 bit indexing, '
+                                  ' which is unsupported with scipy {}. '
+                                  'Please upgrade to scipy >=0.14')
+                                 .format(indptr[-1], '.'.join(sp_version)))
+
+        else:
+            indices_dtype = np.int32
+
+        j_indices = np.asarray(j_indices, dtype=indices_dtype)
+        indptr = np.asarray(indptr, dtype=indices_dtype)
+        values = np.frombuffer(values, dtype=np.intc)
+
+        # modification here:
+        vocab_len = vocabulary[max(vocabulary, key=vocabulary.get)] + 1
+
+        X = sp.csr_matrix((values, j_indices, indptr),
+                          shape=(len(indptr) - 1, vocab_len),
+                          dtype=self.dtype)
+        X.sort_indices()
+        return vocabulary, X

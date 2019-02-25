@@ -50,6 +50,10 @@ def get_args():
                           help="SVM stopping tolerance.")
         subp.add_argument("-r", "--reg", default="l2", choices=["l1", "l2"],
                           help="Regularization strategy.")
+        subp.add_argument("-f", "--reduce_features", default=False,
+                          help="Apply reduction of feature space before training operation")
+        subp.add_argument("--num_of_features", default=5000, type=int,
+                          help="Number of features aimed by recursive feature elimination")
 
     # predict
     sp_predict_descr = """Predict trait sign of .genotype file contents"""
@@ -73,6 +77,10 @@ def call(args):
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _ = load_training_files(args.genotype, args.phenotype, verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+
+        if args.reduce_features:
+            svm.recursive_feature_elimination(records=training_records, n_features=args.num_of_features)
+            svm.compress_vocabulary(records=training_records)
 
         if sn == "train":
             svm.train(records=training_records)
