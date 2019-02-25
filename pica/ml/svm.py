@@ -16,7 +16,7 @@ from sklearn.svm import LinearSVC
 from sklearn.model_selection import cross_validate
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_selection import RFE
+from sklearn.feature_selection import RFECV
 
 from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
@@ -52,8 +52,14 @@ class PICASVM:
         self.logger = get_logger(__name__, verb=verb)
         self.verb = verb
 
+        if self.penalty == "l1":
+            self.dual = False
+        else:
+            self.dual = True
+
         vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
-        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state, **kwargs)
+        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state,
+                               dual=self.dual, **kwargs)
 
         self.pipeline = Pipeline(steps=[
             ("vec", vectorizer),
@@ -72,7 +78,6 @@ class PICASVM:
         :param kwargs: additional named arguments are passed to the fit() method of Pipeline.
         :returns: Whether the Pipeline has been fitted on the records.
         """
-        # TODO: run compress vocabulary before?
 
         self.logger.info("Begin training classifier.")
         X, y, tn = get_x_y_tn(records)
@@ -98,8 +103,6 @@ class PICASVM:
         :param kwargs: Unused
         :return: A list of mean score, score SD, mean fit time and fit time SD.
         """
-
-        # TODO: run compress vocabulary before?
 
         log_function = self.logger.debug if demote else self.logger.info
         log_function("Begin cross-validation on training data.")
@@ -188,7 +191,8 @@ class PICASVM:
 
         self.logger.info(f"Starting recursive feature elimination")
         estimator = self.cv_pipeline.named_steps["clf"]
-        selector = RFE(estimator, step=n_steps, n_features_to_select=n_features)
+        #selector = RFE(estimator, step=n_steps, n_features_to_select=n_features)
+        selector = RFECV(estimator, step=n_steps, min_features_to_select=n_features, cv=5, n_jobs=5)
 
         X, y, tn = get_x_y_tn(records)
         vec = self.cv_pipeline.named_steps["vec"]
