@@ -16,20 +16,25 @@ from pica.struct.records import TrainingRecord
 from pica.transforms.resampling import TrainingRecordResampler
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
+from pica.ml.feature_select import recursive_feature_elimination
 
 
 class CompleContaCV:
     def __init__(self, pipeline: Pipeline, scoring_function: Callable = balanced_accuracy_score, cv: int = 5,
                  comple_steps: int = 20, conta_steps: int = 20,
-                 n_jobs: int = -1, repeats: int = 10, random_state: np.random.RandomState = None, verb: bool = False):
+                 n_jobs: int = -1, repeats: int = 10, random_state: np.random.RandomState = None, verb: bool = False,
+                 reduce_features: bool = False, n_features: int = 10000):
         """
         A class containing all custom completeness/contamination cross-validation functionality.
+        :param pipeline: target pipeline which describes the vectorization and estimator/classifier used
         :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
         :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param repeats: Number of times the crossvalidation is repeated
+        :param reduce_features: toggles feature reduction using recursive feature elimination
+        :param n_features: minimal number of features to retain (if feature reduction is used)
         :param random_state: An integer random seed or instance of np.random.RandomState
         """
         self.pipeline = pipeline
@@ -41,6 +46,8 @@ class CompleContaCV:
         self.repeats = repeats
         self.random_state = random_state if type(random_state) is np.random.RandomState else np.random.RandomState(random_state)
         self.logger = get_logger(__name__, verb=verb)
+        self.reduce_features = reduce_features
+        self.n_features = n_features
 
     def _validate_subset(self, records: List[TrainingRecord], estimator: Pipeline):
         """
@@ -74,11 +81,10 @@ class CompleContaCV:
             for train_index, test_index in skf.split(X, y):
                 fold += 1
                 # separate in training set lists:
-                X_train = [X[i] for i in train_index]
-                y_train = [y[i] for i in train_index]
+                training_records = [records[i] for i in train_index]
                 test_records = [records[i] for i in test_index]
                 starting_message = f"Starting comple/conta replicate {r + 1}/{repeats}: fold {fold}"
-                yield [test_records, X_train, y_train, comple_steps, conta_steps, self.logger.level, starting_message]
+                yield [test_records, training_records, comple_steps, conta_steps, self.logger.level, starting_message]
 
     def _completeness_cv(self, param, **kwargs) -> Dict[float, Dict[float, float]]:
         """
@@ -88,13 +94,18 @@ class CompleContaCV:
         workaround to get multiple parameters into this function. (using processor.map) #TODO find nicer solution?
         """
         # unpack parameters
-        test_records, X_train, y_train, comple_steps, conta_steps, verb, starting_message = param
+        test_records, training_records, comple_steps, conta_steps, verb, starting_message = param
 
         # needed to create a new logger, self.logger not accessible from a different process
         logger = get_logger(__name__, verb=verb)
         logger.info(starting_message)
 
         classifier = copy.deepcopy(self.pipeline)
+        if self.reduce_features:
+            recursive_feature_elimination(training_records, classifier, n_features=10000)
+
+        X_train, y_train, tn = get_x_y_tn(training_records)
+
         classifier.fit(X=X_train, y=y_train, **kwargs)
 
         # initialize the resampler with the test_records only, so the samples are unknown to the classifier

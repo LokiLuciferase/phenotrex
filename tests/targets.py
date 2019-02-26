@@ -53,4 +53,4 @@ num_of_features_uncompressed = {"Sulfate_reducer": 50973}
 
 num_of_features_compressed = {"Sulfate_reducer": 19029}
 
-num_of_features_selected = {"Sulfate_reducer": 25486}
+num_of_features_selected = {"Sulfate_reducer": 9999}
