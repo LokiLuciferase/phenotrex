@@ -91,7 +91,7 @@ class PICASVM:
 
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
-            recursive_feature_elimination(records, self.pipeline, n_features=n_features)
+            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
             compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
@@ -102,20 +102,22 @@ class PICASVM:
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
                       scoring: str = "balanced_accuracy", n_jobs=-1,
+                      n_replicates: int = 10,
                       # TODO: add more complex scoring/reporting, e.g. AUC
                       reduce_features: bool = False, n_features: int = 10000,
-                      demote=False, **kwargs) -> Tuple[float, float]:
+                      demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
         """
         Perform cv-fold crossvalidation
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
+        :param n_replicates: Number of replicates of the crossvalidation
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
         :param demote: toggles logger that is used. if true, msg is written to debug else info
         :param kwargs: Unused
-        :return: A list of mean score, score SD, mean fit time and fit time SD.
+        :return: A list of mean score, score SD, and the percentage of misclassifications per sample
         """
 
         log_function = self.logger.debug if demote else self.logger.info
@@ -132,30 +134,34 @@ class PICASVM:
             vec.fit(X)
         X_trans = vec.transform(X)
 
-        outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-        inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+        misclassifications = np.zeros(len(y))
         scores = []
-        for tr, ts in outer_cv.split(X_trans, y):
-            if reduce_features:
-                est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
-                            step=0.01, min_features_to_select=n_features)
-            else:
-                est = clf
-            est.fit(X_trans[tr], y[tr])
-            y_pred = est.predict(X_trans[ts])
-            score = balanced_accuracy_score(y[ts], y_pred)
-            scores.append(score)
+        for i in range(n_replicates):
+            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state.seed(i))
+            inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state.seed(i))
+            for tr, ts in outer_cv.split(X_trans, y):
+                if reduce_features:
+                    est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
+                                step=0.01, min_features_to_select=n_features)
+                else:
+                    est = clf
+                est.fit(X_trans[tr], y[tr])
+                y_pred = est.predict(X_trans[ts])
+                mismatch = np.logical_xor(y[ts], y_pred)
+                mismatch_indices = np.array([index for index, match in zip(ts, mismatch) if match])
+                if len(mismatch_indices):
+                    add = np.zeros(misclassifications.shape[0])
+                    add[mismatch_indices] = 1
+                    misclassifications += add
+                score = balanced_accuracy_score(y[ts], y_pred)
+                scores.append(score)
 
-        #scores = cross_val_score(estimator=est, X=X_trans, y=y, scoring=scoring, cv=cv, n_jobs=n_jobs)
-        # fit_times, score_times, scores = [crossval.get(x) for x in ("fit_time", "score_time", "test_score")]
-        # score_time_mean, score_time_sd = float(np.mean(score_times)), float(np.std(score_times))
-        # fit_time_mean, fit_time_sd = float(np.mean(fit_times)), float(np.std(fit_times))
+        misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
         t2 = time()
         log_function(f"Cross-validation completed.")
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
-        return score_mean, score_sd
-        # return score_mean, score_sd, fit_time_mean, fit_time_sd
+        return score_mean, score_sd, misclassifications
 
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
@@ -176,7 +182,7 @@ class PICASVM:
         :return: coef_ for feature selection
         """
 
-        if not Pipeline:
+        if not pipeline:
             pipeline = self.pipeline
 
         clf = pipeline.named_steps["clf"]
@@ -193,7 +199,7 @@ class PICASVM:
 
         return mean_weights
 
-    def get_feature_weights(self) -> Tuple[List, List]:
+    def get_feature_weights(self) -> Dict:
         """
         Extract the weights for features from pipeline.
         :return: tuple of lists: feature names and weights
@@ -204,7 +210,7 @@ class PICASVM:
         # this is not necessary the actual weight used in the final classifier, but enough to determine importance
         if self.trait_name is None:
             self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
-            return [], []
+            return {}
 
         mean_weights = self.get_coef_()
 
@@ -212,18 +218,19 @@ class PICASVM:
         names = self.pipeline.named_steps["vec"].get_feature_names()
 
         # decompress
-        weights = []
-        name_list = []
-        for feature, i in names:
-            name_list.append(feature)
-            weights.append(mean_weights[i])  # use the group weight for all members currently
-            # TODO: weights should be adjusted if multiple original features were grouped together.
+        weights = {feature: mean_weights[i] for feature, i in names}
 
-        return name_list, weights
+        # sort by absolute value
+        weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
+                                                                   reverse=True)}
+        # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
+        #  if we rely on feature selection in near future
+
+        return weights
 
     def crossvalidate_cc(self, records: List[TrainingRecord], cv: int = 5,
                          comple_steps: int = 20, conta_steps: int = 20,
-                         n_jobs: int = -1, repeats: int = 10,
+                         n_jobs: int = -1, n_replicates: int = 10,
                          reduce_features: bool = False, n_features: int = 10000):
         """
         Instantiates an CompleContaCV object, and calls its run_cccv method with records. Returns its result.
@@ -232,7 +239,7 @@ class PICASVM:
         :param comple_steps: number of equidistand completeness levels
         :param conta_steps: number of equidistand contamination levels
         :param n_jobs: number of parallel jobs (-1 for n_cpus)
-        :param repeats: Number of times the crossvalidation is repeated
+        :param n_replicates: Number of times the crossvalidation is repeated
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: selects the minimum number of features to retain (if feature reduction is used)
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
@@ -240,7 +247,7 @@ class PICASVM:
 
         cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
-                             n_jobs=n_jobs, repeats=repeats,
+                             n_jobs=n_jobs, n_replicates=n_replicates,
                              random_state=self.random_state, verb=self.verb,
                              reduce_features=reduce_features, n_features=n_features)
         score_dict = cccv.run(records=records)

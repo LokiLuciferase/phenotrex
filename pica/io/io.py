@@ -118,3 +118,19 @@ def load_training_files(genotype_file: str, phenotype_file: str,
     pr = load_phenotype_file(phenotype_file)
     logger.info("Genotype and Phenotype records successfully loaded from file.")
     return collate_training_data(gr, pr, universal_genotype=universal_genotype, verb=verb), gr, pr
+
+
+def write_weights_file(weights_file: str, weights: Dict):
+    """
+    Function to write the weights to specified file in tab-separated fashion with header
+    :param weights_file: The path to the file to which the output will be written
+    :param weights: sorted dictionary storing weights with feature names as indices
+    :return: nothing
+    """
+
+    header = ["Rank", "Feature_name", "Weight"]
+
+    with open(weights_file, "w") as output_file:
+        output_file.write("%s\n" % "\t".join(header))
+        for rank, (name, weight) in enumerate(weights.items()):
+            output_file.write(f"{rank+1}\t{name.upper()}\t{weight}\n")

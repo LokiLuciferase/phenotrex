@@ -18,8 +18,11 @@ if __name__ == "__main__":
                                          phenotype_file=f"tests/test_svm/{name}.phenotype",
                                          verb=True)  # make training data set from genotype and phenotype files
         svm = PICASVM(verb=True)
+        svm.train(records=td, reduce_features=True)
+        #print(svm.get_feature_weights())
+
         svm.crossvalidate(records=td, n_jobs=4, reduce_features=True, n_features=10000)
-        svm.crossvalidate_cc(records=td, comple_steps=10, conta_steps=10, n_jobs=4, repeats=10, reduce_features=True)
+        #svm.crossvalidate_cc(records=td, comple_steps=10, conta_steps=10, n_jobs=4, repeats=10, reduce_features=True)
         cccv_results.append(svm.cccv_result)
         compleconta_plot(svm.cccv_result)
     #compleconta_plot(cccv_results, conditions=names)
