@@ -3,6 +3,8 @@
 #
 from typing import List, Tuple
 
+import numpy as np
+
 from pica.struct.records import TrainingRecord
 
 
@@ -14,6 +16,6 @@ def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[List, List, str]:
     :return: separate lists of features and targets, and the trait name
     """
     trait_name = records[0].trait_name
-    X = [" ".join(x.features) for x in records]
-    y = [x.trait_sign for x in records]
+    X = np.array([" ".join(x.features) for x in records])
+    y = np.array([x.trait_sign for x in records])
     return X, y, trait_name

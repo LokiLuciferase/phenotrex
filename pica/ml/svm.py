@@ -132,18 +132,18 @@ class PICASVM:
             vec.fit(X)
         X_trans = vec.transform(X)
 
-        y=np.array(y)
-
-        split = StratifiedKFold(n_splits=cv)
+        outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+        inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
         scores = []
-        for tr, ts in split.split(X_trans, y):
+        for tr, ts in outer_cv.split(X_trans, y):
             if reduce_features:
-                est = RFECV(estimator=clf, cv=cv, n_jobs=n_jobs,
+                est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
                             step=0.01, min_features_to_select=n_features)
             else:
                 est = clf
             est.fit(X_trans[tr], y[tr])
-            score = balanced_accuracy_score(y[ts], est.predict(X_trans[ts]))
+            y_pred = est.predict(X_trans[ts])
+            score = balanced_accuracy_score(y[ts], y_pred)
             scores.append(score)
 
         #scores = cross_val_score(estimator=est, X=X_trans, y=y, scoring=scoring, cv=cv, n_jobs=n_jobs)
