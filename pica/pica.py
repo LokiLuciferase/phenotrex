@@ -52,7 +52,7 @@ def get_args():
                           help="Regularization strategy.")
         subp.add_argument("-f", "--reduce_features", default=False,
                           help="Apply reduction of feature space before training operation")
-        subp.add_argument("--num_of_features", default=5000, type=int,
+        subp.add_argument("--num_of_features", default=10000, type=int,
                           help="Number of features aimed by recursive feature elimination")
 
     # predict
@@ -78,23 +78,21 @@ def call(args):
         training_records, _, _ = load_training_files(args.genotype, args.phenotype, verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
 
-        if args.reduce_features:
-            svm.recursive_feature_elimination(records=training_records, n_features=args.num_of_features)
-            svm.compress_vocabulary(records=training_records)
-
         if sn == "train":
-            svm.train(records=training_records)
+            svm.train(records=training_records, reduce_features=args.reduce_features, n_features=args.num_of_features)
             save_ml(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
 
         elif sn == "crossvalidate":
-            cv = svm.crossvalidate(records=training_records, cv=args.cv)
+            cv = svm.crossvalidate(records=training_records, cv=args.cv,
+                                   reduce_features=args.reduce_features, n_features=args.num_of_features)
             print(cv)
 
         elif sn == "cccv":
-            cccv = svm.completeness_cv(records=training_records, cv=args.cv,
-                                       comple_steps=args.comple_steps,
-                                       conta_steps=args.conta_steps, n_jobs=args.threads,
-                                       repeats=args.repeats)
+            cccv = svm.crossvalidate_cc(records=training_records, cv=args.cv,
+                                        comple_steps=args.comple_steps,
+                                        conta_steps=args.conta_steps, n_jobs=args.threads,
+                                        repeats=args.repeats, reduce_features=args.reduce_features,
+                                        n_features=args.num_of_features)
             # write output in JSON-format as old pica did
             # TODO: add a graphical output?
             json.dump(cccv, args.out, indent="\t")
