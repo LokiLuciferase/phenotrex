@@ -4,11 +4,18 @@
 #
 from time import time
 from typing import List, Tuple, Dict
+from collections import defaultdict
 
+import array
 import numpy as np
+import scipy.sparse as sp
+
+from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-from sklearn.model_selection import cross_validate
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -16,6 +23,7 @@ from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
 
 
 class PICASVM:
@@ -46,8 +54,14 @@ class PICASVM:
         self.logger = get_logger(__name__, verb=verb)
         self.verb = verb
 
+        if self.penalty == "l1":
+            self.dual = False
+        else:
+            self.dual = True
+
         vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
-        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state, **kwargs)
+        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state,
+                               dual=self.dual, **kwargs)
 
         self.pipeline = Pipeline(steps=[
             ("vec", vectorizer),
@@ -58,57 +72,96 @@ class PICASVM:
             ("clf", classifier)
         ])
 
-
-    def train(self, records: List[TrainingRecord], **kwargs):
+    def train(self, records: List[TrainingRecord], reduce_features: bool = False,
+              n_features: int = 10000, **kwargs):
         """
         Fit CountVectorizer and train LinearSVC on a list of TrainingRecord.
         :param records: a List[TrainingRecord] for fitting of CountVectorizer and training of LinearSVC.
+        :param reduce_features: toggles feature reduction using recursive feature elimination
+        :param n_features: minimum number of features to retain when reducing features
         :param kwargs: additional named arguments are passed to the fit() method of Pipeline.
         :returns: Whether the Pipeline has been fitted on the records.
         """
-        # TODO: run compress vocabulary before?
 
         self.logger.info("Begin training classifier.")
         X, y, tn = get_x_y_tn(records)
         if self.trait_name is not None:
             self.logger.warning("Pipeline is already fitted. Refusing to fit again.")
             return False
+
+        if reduce_features:
+            self.logger.info("using recursive feature elimination as feature selection strategy")
+            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
+            compress_vocabulary(records, self.pipeline)
+
         self.trait_name = tn
+
         self.pipeline.fit(X=X, y=y, **kwargs)
         self.logger.info("Classifier training completed.")
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
                       scoring: str = "balanced_accuracy", n_jobs=-1,
+                      n_replicates: int = 10,
                       # TODO: add more complex scoring/reporting, e.g. AUC
-                      # TODO: StratifiedKFold
-                      demote=False, **kwargs) -> Tuple[float, float, float, float]:
+                      reduce_features: bool = False, n_features: int = 10000,
+                      demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
         """
         Perform cv-fold crossvalidation
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
+        :param n_replicates: Number of replicates of the crossvalidation
+        :param reduce_features: toggles feature reduction using recursive feature elimination
+        :param n_features: minimum number of features to retain when reducing features
+        :param demote: toggles logger that is used. if true, msg is written to debug else info
         :param kwargs: Unused
-        :return: A list of mean score, score SD, mean fit time and fit time SD.
+        :return: A list of mean score, score SD, and the percentage of misclassifications per sample
         """
-
-        # TODO: run compress vocabulary before?
 
         log_function = self.logger.debug if demote else self.logger.info
         log_function("Begin cross-validation on training data.")
         t1 = time()
         X, y, tn = get_x_y_tn(records)
-        crossval = cross_validate(estimator=self.pipeline, X=X, y=y, scoring=scoring, cv=cv, n_jobs=n_jobs)
-        fit_times, score_times, scores = [crossval.get(x) for x in ("fit_time", "score_time", "test_score")]
-        # score_time_mean, score_time_sd = float(np.mean(score_times)), float(np.std(score_times))
-        fit_time_mean, fit_time_sd = float(np.mean(fit_times)), float(np.std(fit_times))
+
+        # unfortunately RFECV does not work with pipelines (need to use the vectorizer separately)
+        self.cv_pipeline.fit(X,y)
+        vec = self.cv_pipeline.named_steps["vec"]
+        clf = self.cv_pipeline.named_steps["clf"]
+
+        if not vec.vocabulary:
+            vec.fit(X)
+        X_trans = vec.transform(X)
+
+        misclassifications = np.zeros(len(y))
+        scores = []
+        for i in range(n_replicates):
+            inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+            for tr, ts in outer_cv.split(X_trans, y):
+                if reduce_features:
+                    est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
+                                step=0.01, min_features_to_select=n_features)
+                else:
+                    est = clf
+                est.fit(X_trans[tr], y[tr])
+                y_pred = est.predict(X_trans[ts])
+                mismatch = np.logical_xor(y[ts], y_pred)
+                mismatch_indices = np.array([index for index, match in zip(ts, mismatch) if match])
+                if len(mismatch_indices):
+                    add = np.zeros(misclassifications.shape[0])
+                    add[mismatch_indices] = 1
+                    misclassifications += add
+                score = balanced_accuracy_score(y[ts], y_pred)
+                scores.append(score)
+
+        misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
         t2 = time()
         log_function(f"Cross-validation completed.")
-        log_function(f"Average fit time: {np.round(fit_time_mean, 2)} seconds.")
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
-        return score_mean, score_sd, fit_time_mean, fit_time_sd
+        return score_mean, score_sd, misclassifications
 
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
@@ -121,49 +174,32 @@ class PICASVM:
         probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling
         return preds, probas
 
-    def compress_vocabulary(self, records: List[TrainingRecord]):
+    def get_coef_(self, pipeline: Pipeline = None) -> np.array:
         """
-        Method to group features, that store redundant information, to avoid overfitting and speed up process (in some
-        cases). Might be replaced or complemented by a feature selection method in future versions.
-
-        Compressing vocabulary is optional, for the test dataset it took 30 seconds, while the time saved later on is not
-        significant.
-
-        :param records: a list of TrainingRecord objects.
-        :return: nothing, sets the vocabulary for CountVectorizer step
+        Interface function to get coef_ from classifier used in the pipeline specified
+        this might be useful if we switch the classifier, most of them already have a coef_ attribute
+        :param pipeline: pipeline from which the classifier should be used
+        :return: coef_ for feature selection
         """
 
-        t1 = time()
+        if not pipeline:
+            pipeline = self.pipeline
 
-        X, y, tn = get_x_y_tn(records)  # we actually only need X
-        vec = CountVectorizer(binary=True, dtype=np.bool)
-        vec.fit(X)
-        names = vec.get_feature_names()
-        X_trans = vec.transform(X)
+        clf = pipeline.named_steps["clf"]
+        if hasattr(clf, "coef_"):
+            mean_weights = clf.coef_
+        else:   # assume calibrated classifier
+            num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
+            mean_weights = np.zeros(num_features)
+            for calibrated_classifier in clf.calibrated_classifiers_:
+                weights = calibrated_classifier.base_estimator.coef_[0]
+                mean_weights += weights
 
-        size = len(names)
-        self.logger.info(f"{size} Features found, starting compression")
-        seen = {}
-        vocabulary = {}
-        for i in range(len(names)):
-            column = X_trans.getcol(i).nonzero()[0]
-            key = tuple(column)
-            found_id = seen.get(key)
-            if not found_id:
-                seen[key] = i
-                vocabulary[names[i]] = i
-            else:
-                vocabulary[names[i]] = found_id
-        size_after = len(seen)
-        t2 = time()
+            mean_weights /= len(clf.calibrated_classifiers_)
 
-        self.logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
+        return mean_weights
 
-        # set vocabulary to vectorizer
-        self.pipeline.named_steps["vec"].vocabulary = vocabulary
-        self.pipeline.named_steps["vec"].fixed_vocabulary_ = True
-
-    def get_feature_weights(self) -> Tuple[List, List]:
+    def get_feature_weights(self) -> Dict:
         """
         Extract the weights for features from pipeline.
         :return: tuple of lists: feature names and weights
@@ -174,33 +210,28 @@ class PICASVM:
         # this is not necessary the actual weight used in the final classifier, but enough to determine importance
         if self.trait_name is None:
             self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
-            return [], []
+            return {}
 
-        clf = self.pipeline.named_steps["clf"]
-        num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
-        mean_weights = np.zeros(num_features)
-        for calibrated_classifier in clf.calibrated_classifiers_:
-            weights = calibrated_classifier.base_estimator.coef_[0]
-            mean_weights += weights
-
-        mean_weights /= len(clf.calibrated_classifiers_)
+        mean_weights = self.get_coef_()
 
         # get original names of the features from vectorization step, they might be compressed
         names = self.pipeline.named_steps["vec"].get_feature_names()
 
         # decompress
-        weights = []
-        name_list = []
-        for feature, i in names:
-            name_list.append(feature)
-            weights.append(mean_weights[i])  # use the group weight for all members currently
-            # TODO: weights should be adjusted if multiple original features were grouped together.
+        weights = {feature: mean_weights[i] for feature, i in names}
 
-        return name_list, weights
+        # sort by absolute value
+        weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
+                                                                   reverse=True)}
+        # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
+        #  if we rely on feature selection in near future
+
+        return weights
 
     def crossvalidate_cc(self, records: List[TrainingRecord], cv: int = 5,
-                           comple_steps: int = 20, conta_steps: int = 20,
-                           n_jobs: int = -1, repeats: int = 10):
+                         comple_steps: int = 20, conta_steps: int = 20,
+                         n_jobs: int = -1, n_replicates: int = 10,
+                         reduce_features: bool = False, n_features: int = 10000):
         """
         Instantiates an CompleContaCV object, and calls its run_cccv method with records. Returns its result.
         :param records: List[TrainingRecord] on which completeness_contamination_CV is to be performed
@@ -208,14 +239,17 @@ class PICASVM:
         :param comple_steps: number of equidistand completeness levels
         :param conta_steps: number of equidistand contamination levels
         :param n_jobs: number of parallel jobs (-1 for n_cpus)
-        :param repeats: Number of times the crossvalidation is repeated
+        :param n_replicates: Number of times the crossvalidation is repeated
+        :param reduce_features: toggles feature reduction using recursive feature elimination
+        :param n_features: selects the minimum number of features to retain (if feature reduction is used)
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
 
         cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
-                             n_jobs=n_jobs, repeats=repeats,
-                             random_state=self.random_state, verb=self.verb)
+                             n_jobs=n_jobs, n_replicates=n_replicates,
+                             random_state=self.random_state, verb=self.verb,
+                             reduce_features=reduce_features, n_features=n_features)
         score_dict = cccv.run(records=records)
         self.cccv_result = score_dict
         return score_dict
@@ -247,3 +281,68 @@ class CustomVectorizer(CountVectorizer):
 
         # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
         return sorted(self.vocabulary_.items(), key=lambda x: x[1])  # no stdlib dependency when using lambda
+
+    def _count_vocab(self, raw_documents, fixed_vocab):
+        """Create sparse feature matrix, and vocabulary where fixed_vocab=False
+        Modified to reduce the actual size of the matrix returned if compression of vocabulary is used
+        """
+        if fixed_vocab:
+            vocabulary = self.vocabulary_
+        else:
+            vocabulary = defaultdict()
+            vocabulary.default_factory = vocabulary.__len__
+
+        analyze = self.build_analyzer()
+        j_indices = []
+        indptr = []
+
+        values = array.array(str("i"))
+        indptr.append(0)
+        for doc in raw_documents:
+            feature_counter = {}
+            for feature in analyze(doc):
+                try:
+                    feature_idx = vocabulary[feature]
+                    if feature_idx not in feature_counter:
+                        feature_counter[feature_idx] = 1
+                    else:
+                        feature_counter[feature_idx] += 1
+                except KeyError:
+                    # Ignore out-of-vocabulary items for fixed_vocab=True
+                    continue
+
+            j_indices.extend(feature_counter.keys())
+            values.extend(feature_counter.values())
+            indptr.append(len(j_indices))
+
+        if not fixed_vocab:
+            # disable defaultdict behaviour
+            vocabulary = dict(vocabulary)
+            if not vocabulary:
+                raise ValueError("empty vocabulary; perhaps the documents only"
+                                 " contain stop words")
+
+        if indptr[-1] > 2147483648:  # = 2**31 - 1
+            if sp_version >= (0, 14):
+                indices_dtype = np.int64
+            else:
+                raise ValueError(f'sparse CSR array has {indptr[-1]} non-zero '
+                                 f'elements and requires 64 bit indexing, '
+                                 f' which is unsupported with scipy {".".join(sp_version)}. '
+                                 f'Please upgrade to scipy >=0.14')
+
+        else:
+            indices_dtype = np.int32
+
+        j_indices = np.asarray(j_indices, dtype=indices_dtype)
+        indptr = np.asarray(indptr, dtype=indices_dtype)
+        values = np.frombuffer(values, dtype=np.intc)
+
+        # modification here:
+        vocab_len = vocabulary[max(vocabulary, key=vocabulary.get)] + 1
+
+        X = sp.csr_matrix((values, j_indices, indptr),
+                          shape=(len(indptr) - 1, vocab_len),
+                          dtype=self.dtype)
+        X.sort_indices()
+        return vocabulary, X

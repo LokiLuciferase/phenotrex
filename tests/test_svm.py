@@ -4,8 +4,14 @@
 import pytest
 
 from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores, cccv_scores
+from tests.targets import num_of_features_compressed, num_of_features_uncompressed, num_of_features_selected
 from pica.io.io import load_training_files
 from pica.ml.svm import PICASVM
+from pica.util.helpers import get_x_y_tn
+
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
+
+import numpy as np
 
 RANDOM_STATE = 2
 
@@ -83,4 +89,72 @@ class TestPICASVM:
         """
         tr, gr, pr = self.test_load_training_files(trait_name)
         svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        assert cccv_scores[trait_name] == svm.crossvalidate_cc(records=tr, cv=5, comple_steps=3, conta_steps=3)
+        #assert cccv_scores[trait_name] == svm.crossvalidate_cc(records=tr, cv=5, comple_steps=3, conta_steps=3)
+
+    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
+    def test_compress_vocabulary(self, trait_name):
+        """
+        Perform feature compression tests
+        :param trait_name:
+        :return:
+        """
+        tr, gr, pr = self.test_load_training_files(trait_name)
+        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
+        compress_vocabulary(records=tr, pipeline=svm.cv_pipeline)
+        vec = svm.cv_pipeline.named_steps["vec"]
+        vec._validate_vocabulary()
+
+        # check if vocabulary is set properly
+        assert vec.fixed_vocabulary_
+
+        # check if length of vocabulary is matching
+        assert len(vec.vocabulary_) == num_of_features_uncompressed[trait_name]
+
+        X, y, tn = get_x_y_tn(tr)
+        X_trans = vec.transform(X)
+
+        # check if number of unique features is matching
+        assert X_trans.shape[1] == num_of_features_compressed[trait_name]
+
+        # check if all samples still have at least one feature present
+        one_is_zero = False
+        non_zero = X_trans.nonzero()
+        for x in non_zero:
+            if len(x) == 0:
+                one_is_zero = True
+
+        assert not one_is_zero
+
+    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
+    def test_recursive_feature_elimination(self, trait_name):
+        """
+        Perform feature compression tests
+        :param trait_name:
+        :return:
+        """
+        tr, gr, pr = self.test_load_training_files(trait_name)
+        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
+        recursive_feature_elimination(records=tr, pipeline=svm.cv_pipeline, step=0.01, n_features=10000)
+        vec = svm.cv_pipeline.named_steps["vec"]
+        vec._validate_vocabulary()
+
+        # check if vocabulary is set properly
+        assert vec.fixed_vocabulary_
+
+        # check if length of vocabulary is matching
+        assert len(vec.vocabulary_) == num_of_features_selected[trait_name]
+
+        X, y, tn = get_x_y_tn(tr)
+        X_trans = vec.transform(X)
+
+        # check if number of unique features is matching
+        assert X_trans.shape[1] == num_of_features_selected[trait_name]
+
+        # check if all samples still have at least one feature present
+        one_is_zero = False
+        non_zero = X_trans.nonzero()
+        for x in non_zero:
+            if len(x) == 0:
+                one_is_zero = True
+
+        assert not one_is_zero

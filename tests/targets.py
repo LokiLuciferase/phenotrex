@@ -48,3 +48,9 @@ cccv_scores = {'Sulfate_reducer': {0.0 : {0.0 : {'score_mean': 0.5, 'score_sd': 
                                                  'score_sd'  : 0.12519463305239853},
                                           1.0 : {'score_mean': 0.5233928571428571,
                                                  'score_sd'  : 0.038916737680017945}}}}
+
+num_of_features_uncompressed = {"Sulfate_reducer": 50973}
+
+num_of_features_compressed = {"Sulfate_reducer": 19029}
+
+num_of_features_selected = {"Sulfate_reducer": 10000}
