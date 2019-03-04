@@ -32,7 +32,7 @@ class CompleContaCV:
         :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
         :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
-        :param replicates: Number of times the crossvalidation is repeated
+        :param n_replicates: Number of times the crossvalidation is repeated
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimal number of features to retain (if feature reduction is used)
         :param random_state: An integer random seed or instance of np.random.RandomState
@@ -102,7 +102,7 @@ class CompleContaCV:
 
         classifier = copy.deepcopy(self.pipeline)
         if self.reduce_features:
-            recursive_feature_elimination(training_records, classifier, n_features=10000)
+            recursive_feature_elimination(training_records, classifier, n_features=self.n_features)
 
         X_train, y_train, tn = get_x_y_tn(training_records)
 

@@ -137,8 +137,8 @@ class PICASVM:
         misclassifications = np.zeros(len(y))
         scores = []
         for i in range(n_replicates):
-            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state.seed(i))
-            inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state.seed(i))
+            inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
             for tr, ts in outer_cv.split(X_trans, y):
                 if reduce_features:
                     est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
@@ -326,11 +326,10 @@ class CustomVectorizer(CountVectorizer):
             if sp_version >= (0, 14):
                 indices_dtype = np.int64
             else:
-                raise ValueError(('sparse CSR array has {} non-zero '
-                                  'elements and requires 64 bit indexing, '
-                                  ' which is unsupported with scipy {}. '
-                                  'Please upgrade to scipy >=0.14')
-                                 .format(indptr[-1], '.'.join(sp_version)))
+                raise ValueError(f'sparse CSR array has {indptr[-1]} non-zero '
+                                 f'elements and requires 64 bit indexing, '
+                                 f' which is unsupported with scipy {".".join(sp_version)}. '
+                                 f'Please upgrade to scipy >=0.14')
 
         else:
             indices_dtype = np.int32

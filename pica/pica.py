@@ -127,7 +127,8 @@ def call(args):
                                         n_features=args.num_of_features)
             # write output in JSON-format as old pica did
             # TODO: add a graphical output?
-            json.dump(cccv, args.out, indent="\t")
+            with open(args.out, "w") as json_file:
+                json.dump(cccv, json_file, indent="\t")
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)
