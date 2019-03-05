@@ -4,7 +4,8 @@ import sys
 import argparse
 import json
 
-from pica.io.io import load_training_files, load_genotype_file, write_weights_file
+from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
+    write_misclassifications_file
 from pica.ml.svm import PICASVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
@@ -30,6 +31,16 @@ def get_args():
                                   help="Filename of output file showing mis-classifications. (optional)")
     sp_crossvalidate.add_argument("--replicates", type=int, default=10,
                                   help="Number of replicates for the cross-validation.")
+
+    # leave one group out (taxonomy)
+    sp_logo_descr = """Leave-one-group-out-validation on data from .phenotype, .genotype and .groups or .taxid files.
+     If no groups file is provided, leave-one-out-validation is performed"""
+    sp_logo = subparsers.add_parser("logo", description=sp_logo_descr)
+    sp_logo.add_argument("--groups", type=str, help="Inputfile that specifies the taxids or groups")
+    sp_logo.add_argument("--rank", required=False, type=str,
+                         help="Taxonomic rank on which the separation should be done (optional), if non specified:"
+                              "use groups without taxonomy")
+    sp_logo.add_argument("-o", "--out", required=False)
 
     # compleconta_cv
     sp_compleconta_cv_descr = """Crossvalidate for each step of completeness/contamination of the input data."""
@@ -88,7 +99,8 @@ def call(args):
     logger = get_logger("PICA", verb=True)
     sn = args.subparser_name
     if sn in ("train", "crossvalidate", "cccv"):
-        training_records, _, _ = load_training_files(args.genotype, args.phenotype, verb=args.verb)
+        training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
+                                                        verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
 
         if sn == "train":
@@ -107,16 +119,7 @@ def call(args):
 
             # write misclassifications output to file if specified
             if args.out:
-                identifier_list = [record.identifier for record in training_records]
-                trait_sign_list = [record.trait_sign for record in training_records]
-                sorted_tuples = sorted(zip(identifier_list, trait_sign_list, misclassifications),
-                                       key=lambda k: k[2], reverse=True)
-                header = ["Identifier", "Trait present", "Mis-classifications [frac.]"]
-                trait_translation = {0: "NO", 1: "YES"}
-                with open(args.out, "w") as output_file:
-                    output_file.write("%s\n" % "\t".join(header))
-                    for identifier, trait_sign, mcs in sorted_tuples:
-                        output_file.write(f"{identifier}\t{trait_translation[trait_sign]}\t{mcs}\n")
+                write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications)
 
 
         elif sn == "cccv":
@@ -129,6 +132,21 @@ def call(args):
             # TODO: add a graphical output?
             with open(args.out, "w") as json_file:
                 json.dump(cccv, json_file, indent="\t")
+
+    elif sn == "logo":
+        training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
+                                                        groups_file=args.groups, selected_rank=args.rank, verb=args.verb)
+        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True,
+                               reduce_features=args.reduce_features, n_features=args.num_of_features)
+        mean_balanced_accuracy, mba_sd, misclassifications = cv
+        logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
+
+        # write misclassifications output to file if specified
+        if args.out:
+            write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications,
+                                          groups=True)
+
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)

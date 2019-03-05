@@ -14,7 +14,7 @@ from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import cross_val_score, StratifiedKFold, LeaveOneGroupOut
 from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
@@ -22,7 +22,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
-from pica.util.helpers import get_x_y_tn
+from pica.util.helpers import get_x_y_tn, get_groups
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
 
 
@@ -102,7 +102,7 @@ class PICASVM:
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
                       scoring: str = "balanced_accuracy", n_jobs=-1,
-                      n_replicates: int = 10,
+                      n_replicates: int = 10, groups: bool = False,
                       # TODO: add more complex scoring/reporting, e.g. AUC
                       reduce_features: bool = False, n_features: int = 10000,
                       demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
@@ -113,6 +113,7 @@ class PICASVM:
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation
+        :param groups: toggles the use of group information stored in TrainingRecords for splitting
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
         :param demote: toggles logger that is used. if true, msg is written to debug else info
@@ -136,10 +137,18 @@ class PICASVM:
 
         misclassifications = np.zeros(len(y))
         scores = []
+
+        if groups:
+            splitting_strategy = LeaveOneGroupOut()
+            group_ids = get_groups(records)
+        else:
+            splitting_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+            group_ids = None
+
         for i in range(n_replicates):
             inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-            for tr, ts in outer_cv.split(X_trans, y):
+            outer_cv = splitting_strategy
+            for tr, ts in outer_cv.split(X_trans, y, groups=group_ids):
                 if reduce_features:
                     est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
                                 step=0.01, min_features_to_select=n_features)
