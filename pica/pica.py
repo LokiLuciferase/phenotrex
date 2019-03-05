@@ -31,6 +31,7 @@ def get_args():
                                   help="Filename of output file showing mis-classifications. (optional)")
     sp_crossvalidate.add_argument("--replicates", type=int, default=10,
                                   help="Number of replicates for the cross-validation.")
+    sp_crossvalidate.add_argument("--threads", type=int, default=-1, help="Number of threads to use.")
 
     # leave one group out (taxonomy)
     sp_logo_descr = """Leave-one-group-out-validation on data from .phenotype, .genotype and .groups or .taxid files.
@@ -41,6 +42,7 @@ def get_args():
                          help="Taxonomic rank on which the separation should be done (optional), if non specified:"
                               "use groups without taxonomy")
     sp_logo.add_argument("-o", "--out", required=False)
+    sp_logo.add_argument("--threads", type=int, default=-1, help="Number of threads to use.")
 
     # compleconta_cv
     sp_compleconta_cv_descr = """Crossvalidate for each step of completeness/contamination of the input data."""
@@ -53,7 +55,7 @@ def get_args():
                                    help="Number of equidistant contamination levels to resample to.")
     sp_compleconta_cv.add_argument("--replicates", type=int, default=10,
                                    help="Number of replicates for the cross-validation.")
-    sp_compleconta_cv.add_argument("--threads", type=int, default=4,
+    sp_compleconta_cv.add_argument("--threads", type=int, default=-1,
                                    help="Number of threads to be used for this calculation.")
     sp_compleconta_cv.add_argument("-o", "--out", required=True, type=str,
                                    help="Filename of output file.")
@@ -112,7 +114,7 @@ def call(args):
             save_ml(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
 
         elif sn == "crossvalidate":
-            cv = svm.crossvalidate(records=training_records, cv=args.cv, n_replicates=args.replicates,
+            cv = svm.crossvalidate(records=training_records, cv=args.cv, n_replicates=args.replicates, n_jobs=args.threads,
                                    reduce_features=args.reduce_features, n_features=args.num_of_features)
             mean_balanced_accuracy, mba_sd, misclassifications = cv
             logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
@@ -137,7 +139,7 @@ def call(args):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
                                                         groups_file=args.groups, selected_rank=args.rank, verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
-        cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True,
+        cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True, n_jobs=args.threads,
                                reduce_features=args.reduce_features, n_features=args.num_of_features)
         mean_balanced_accuracy, mba_sd, misclassifications = cv
         logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
