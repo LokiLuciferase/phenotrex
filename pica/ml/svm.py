@@ -14,7 +14,7 @@ from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import cross_val_score, StratifiedKFold, LeaveOneGroupOut
+from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
@@ -107,13 +107,14 @@ class PICASVM:
                       reduce_features: bool = False, n_features: int = 10000,
                       demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
         """
-        Perform cv-fold crossvalidation
+        Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation
-        :param groups: toggles the use of group information stored in TrainingRecords for splitting
+        :param groups: If True, use group information stored in records for splitting. Otherwise,
+        stratify split according to labels in records. This also resets n_replicates to 1.
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
         :param demote: toggles logger that is used. if true, msg is written to debug else info
@@ -141,6 +142,7 @@ class PICASVM:
         if groups:
             splitting_strategy = LeaveOneGroupOut()
             group_ids = get_groups(records)
+            n_replicates = 1
         else:
             splitting_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
             group_ids = None
@@ -188,7 +190,7 @@ class PICASVM:
         Interface function to get coef_ from classifier used in the pipeline specified
         this might be useful if we switch the classifier, most of them already have a coef_ attribute
         :param pipeline: pipeline from which the classifier should be used
-        :return: coef_ for feature selection
+        :return: coef_ for feature weight report
         """
 
         if not pipeline:
@@ -242,11 +244,11 @@ class PICASVM:
                          n_jobs: int = -1, n_replicates: int = 10,
                          reduce_features: bool = False, n_features: int = 10000):
         """
-        Instantiates an CompleContaCV object, and calls its run_cccv method with records. Returns its result.
+        Instantiates a CompleContaCV object, and calls its run_cccv method with records. Returns its result.
         :param records: List[TrainingRecord] on which completeness_contamination_CV is to be performed
-        :param cv: number of folds
-        :param comple_steps: number of equidistand completeness levels
-        :param conta_steps: number of equidistand contamination levels
+        :param cv: number of folds in StratifiedKFold split
+        :param comple_steps: number of equidistant completeness levels
+        :param conta_steps: number of equidistant contamination levels
         :param n_jobs: number of parallel jobs (-1 for n_cpus)
         :param n_replicates: Number of times the crossvalidation is repeated
         :param reduce_features: toggles feature reduction using recursive feature elimination
@@ -267,8 +269,9 @@ class PICASVM:
 class CustomVectorizer(CountVectorizer):
     """
     modified from CountVectorizer to override the _validate_vocabulary function, which invoked an error because
-    multiple indices of the dictionary contained the same feature index. However, this is we intend.
-    Other functions had to be adopted to allow decompression: get_feature_names,
+    multiple indices of the dictionary contained the same feature index. However, this is we intend with the
+    compress_vocabulary function.
+    Other functions had to be adopted: get_feature_names (allow decompression), _count_vocab (reduce the matrix size)
     """
 
     def _validate_vocabulary(self):
@@ -289,7 +292,7 @@ class CustomVectorizer(CountVectorizer):
         self._check_vocabulary()
 
         # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
-        return sorted(self.vocabulary_.items(), key=lambda x: x[1])  # no stdlib dependency when using lambda
+        return sorted(self.vocabulary_.items(), key=lambda x: x[1])
 
     def _count_vocab(self, raw_documents, fixed_vocab):
         """Create sparse feature matrix, and vocabulary where fixed_vocab=False
