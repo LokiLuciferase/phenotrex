@@ -6,7 +6,6 @@ import numpy as np
 from typing import List, Dict, Tuple
 from collections import Counter
 
-from pica.util.taxonomy import get_taxonomic_group_mapping
 from pica.util.logging import get_logger
 from pica.struct.records import GenotypeRecord, PhenotypeRecord, GroupRecord, TrainingRecord
 
@@ -87,6 +86,7 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
 
     if selected_rank:
         try:
+            from pica.util.taxonomy import get_taxonomic_group_mapping
             group_name_mapping, group_id_mapping = get_taxonomic_group_mapping(group_ids=group_ids,
                                                                                selected_rank=selected_rank)
         except ImportError:
