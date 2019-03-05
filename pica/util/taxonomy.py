@@ -34,7 +34,7 @@ def get_taxonomic_group_mapping(group_ids: List[str], selected_rank: str) -> Tup
             if rank == selected_rank:
                 taxon_ancestor_mapping[taxon] = ancestor_id
 
-    ancestor_ids = list(set([x for _, x in taxon_ancestor_mapping.items()]))
+    ancestor_ids = set(taxon_ancestor_mapping.values())
     ancestor_names = ncbi.get_taxid_translator(ancestor_ids)
     ancestor_names[0] = "unknown"
     ancestor_enumeration = {ancestor_id: x for x, ancestor_id in enumerate(ancestor_ids)}
