@@ -99,6 +99,7 @@ def get_args():
 def call(args):
     """discern subcommand and execute with collected args"""
     logger = get_logger("PICA", verb=True)
+    logger(f"")
     sn = args.subparser_name
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
@@ -146,6 +147,7 @@ def call(args):
 
         # write misclassifications output to file if specified
         if args.out:
+            logger.info(f"Fractions of misclassifications per sample/group are written file: {args.out}")
             write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications,
                                           groups=True)
 

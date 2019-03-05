@@ -123,7 +123,6 @@ class PICASVM:
         """
 
         log_function = self.logger.debug if demote else self.logger.info
-        log_function("Begin cross-validation on training data.")
         t1 = time()
         X, y, tn = get_x_y_tn(records)
 
@@ -140,10 +139,12 @@ class PICASVM:
         scores = []
 
         if groups:
+            log_function("Begin Leave-One-Group-Out validation on training data.")
             splitting_strategy = LeaveOneGroupOut()
             group_ids = get_groups(records)
             n_replicates = 1
         else:
+            log_function("Begin cross-validation on training data.")
             splitting_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
             group_ids = None
 
@@ -166,6 +167,7 @@ class PICASVM:
                     misclassifications += add
                 score = balanced_accuracy_score(y[ts], y_pred)
                 scores.append(score)
+            log_function(f"Finished replicate {i+1} of {n_replicates}")
 
         misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
