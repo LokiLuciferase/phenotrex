@@ -61,7 +61,7 @@ class PICASVM:
 
         vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
         classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state,
-                               dual=self.dual, **kwargs)
+                               dual=self.dual, class_weight="balanced", **kwargs)
 
         self.pipeline = Pipeline(steps=[
             ("vec", vectorizer),
