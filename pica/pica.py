@@ -72,7 +72,7 @@ def get_args():
                           help="Regularization strategy.")
         subp.add_argument("-f", "--reduce_features", action="store_true",
                           help="Apply reduction of feature space before training operation")
-        subp.add_argument("--num_of_features", default=10000, type=int,
+        subp.add_argument("--num_of_features", default=1000, type=int,
                           help="Number of features aimed by recursive feature elimination")
     # predict
     sp_predict_descr = """Predict trait sign of .genotype file contents"""
@@ -99,7 +99,6 @@ def get_args():
 def call(args):
     """discern subcommand and execute with collected args"""
     logger = get_logger("PICA", verb=True)
-    logger(f"")
     sn = args.subparser_name
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
@@ -155,7 +154,13 @@ def call(args):
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)
         svm = load_ml(filename=args.classifier, verb=True)
-        print(svm.predict(X=genotype_records))  # TODO: make proper output/file out
+        results, probabilities = svm.predict(X=genotype_records)
+
+        translate_output = {trait_id: trait_sign for trait_sign, trait_id in DEFAULT_TRAIT_SIGN_MAPPING.items()}
+
+        sys.stdout.write("Identifier\tTrait present\tConfidence\n")
+        for record, result, probability in zip(genotype_records, results, probabilities):
+            sys.stdout.write(f"{record.identifier}\t{translate_output[result]}\t{probability[result]}\n")
 
     elif sn == "weights":
         svm = load_ml(filename=args.classifier, verb=True)
