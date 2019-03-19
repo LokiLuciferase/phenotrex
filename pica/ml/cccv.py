@@ -40,12 +40,19 @@ class CompleContaCV:
         self.pipeline = pipeline
         self.cv = cv
         self.scoring_method = scoring_function
+        self.logger = get_logger(__name__, verb=verb)
+        if comple_steps < 1:
+            self.logger.warn(f"Completeness steps parameter is out of range: {comple_steps}, was set to 1 instead")
+            comple_steps = 1
+        if conta_steps < 1:
+            self.logger.warn(f"Contamination steps parameter is out of range: {conta_steps}, was set to 1 instead")
+            conta_steps = 1
+
         self.comple_steps = comple_steps
         self.conta_steps = conta_steps
         self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
         self.n_replicates = n_replicates
         self.random_state = random_state if type(random_state) is np.random.RandomState else np.random.RandomState(random_state)
-        self.logger = get_logger(__name__, verb=verb)
         self.reduce_features = reduce_features
         self.n_features = n_features
 
