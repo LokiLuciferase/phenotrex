@@ -3,10 +3,13 @@ from typing import List, Tuple, Dict
 
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import StratifiedKFold
 
 from pica.struct.records import TrainingRecord
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
+
+import numpy as np
 
 
 def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
@@ -21,8 +24,6 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     :param pipeline: the targeted pipeline where the vocabulary should be modified
     :return: nothing, sets the vocabulary for CountVectorizer step
     """
-
-    #TODO: enable logging (optional)
 
     X, y, tn = get_x_y_tn(records)  # we actually only need X
     vec = pipeline.named_steps["vec"]
@@ -60,7 +61,7 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     pipeline.named_steps["vec"].fixed_vocabulary_ = True
 
 
-def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipeline, step: float = 0.01,
+def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipeline, step: float = 0.0025,
                                   n_features: int = None):
     """
     Function to apply RFE to limit the vocabulary used by the CustomVectorizer, optional step.
@@ -92,9 +93,10 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
 
     X_trans = vec.transform(X)
 
-    #logger = get_logger(__name__, verb=verb)
-    #logger.info(f"Starting recursive feature elimination, target: {n_features}")
-    selector = RFECV(estimator, step=step, min_features_to_select=n_features, cv=5, n_jobs=5)
+    logger = get_logger(__name__, verb=True)
+    split = StratifiedKFold(shuffle=True, n_splits=5)
+    selector = RFECV(estimator, step=step, min_features_to_select=n_features, cv=split, n_jobs=1,
+                     scoring='balanced_accuracy')
     selector = selector.fit(X=X_trans, y=y)
 
     original_size = len(previous_vocabulary)
@@ -106,8 +108,8 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
 
     t2 = time()
 
-    #logger.info(f"{size_after} features were selected of {original_size} using Recursive Feature Eliminiation"
-    #                 f" in {np.round(t2 - t1, 2)} seconds.")
+    logger.info(f"{size_after} features were selected of {original_size} using Recursive Feature Eliminiation"
+                f" in {np.round(t2 - t1, 2)} seconds.")
 
     # set vocabulary to vectorizer
     pipeline.named_steps["vec"].vocabulary = vocabulary

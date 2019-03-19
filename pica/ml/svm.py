@@ -154,7 +154,8 @@ class PICASVM:
             for tr, ts in outer_cv.split(X_trans, y, groups=group_ids):
                 if reduce_features:
                     est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
-                                step=0.01, min_features_to_select=n_features)
+                                step=0.0025, min_features_to_select=n_features,
+                                scoring='balanced_accuracy')
                 else:
                     est = clf
                 est.fit(X_trans[tr], y[tr])
