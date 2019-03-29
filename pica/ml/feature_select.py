@@ -31,7 +31,8 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
         vec.fit(X)
         names = [name for name, i in vec.get_feature_names()]
     else:
-        names = list(vec.vocabulary.keys())
+        names = sorted(vec.vocabulary, key=vec.vocabulary.get)
+
     X_trans = vec.transform(X)
 
     size = len(names)
@@ -83,8 +84,7 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
     # get previous vocabulary (might be already compressed)
     if not vec.vocabulary:
         vec.fit(X)
-        names = [name for name, i in vec.get_feature_names()]
-        previous_vocabulary = {names[i]: i for i in range(len(names))}
+        previous_vocabulary = {name: i for name, i in vec.get_feature_names()}
     else:
         previous_vocabulary = vec.vocabulary
 
@@ -103,7 +103,7 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
     support = selector.get_support()
     support = support.nonzero()[0]
     new_id = {support[x]: x for x in range(len(support))}
-    vocabulary = {feature: new_id[i] for feature, i in previous_vocabulary.items() if new_id.get(i)}
+    vocabulary = {feature: new_id[i] for feature, i in previous_vocabulary.items() if not new_id.get(i) is None}
     size_after = len(vocabulary)
 
     t2 = time()
