@@ -5,7 +5,7 @@ import argparse
 import json
 
 from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
-    write_misclassifications_file
+    write_misclassifications_file, write_cccv_accuracy_file
 from pica.ml.svm import PICASVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
@@ -132,8 +132,7 @@ def call(args):
                                         n_features=args.num_of_features)
             # write output in JSON-format as old pica did
             # TODO: add a graphical output?
-            with open(args.out, "w") as json_file:
-                json.dump(cccv, json_file, indent="\t")
+            write_cccv_accuracy_file(args.out, cccv)
 
     elif sn == "logo":
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,

@@ -5,6 +5,7 @@ import logging
 import numpy as np
 from typing import List, Dict, Tuple
 from collections import Counter
+import json
 
 from pica.util.logging import get_logger
 from pica.struct.records import GenotypeRecord, PhenotypeRecord, GroupRecord, TrainingRecord
@@ -198,6 +199,28 @@ def write_weights_file(weights_file: str, weights: Dict):
         output_file.write("%s\n" % "\t".join(header))
         for rank, (name, weight) in enumerate(weights.items()):
             output_file.write(f"{rank+1}\t{name.upper()}\t{weight}\n")
+
+def write_cccv_accuracy_file(output_file: str, cccv_results):
+    """
+    Function to write the cccv accuracies in the exact format that phendb uses as input
+    :param output_file: file
+    :param cccv_results:
+    :return: nothing
+    """
+
+    write_list = []
+
+    for completeness, data in cccv_results.items():
+        for contamination, nested_data in data.items():
+            write_item = {
+                "mean_balanced_accuracy": nested_data["score_mean"],
+                "stddev_balanced_accuracy": nested_data["score_sd"],
+                "contamination": contamination,
+                "completeness": completeness
+            }
+            write_list.append(write_item)
+    with open(output_file, "w") as outf_handler:
+        json.dump(write_list, outf_handler, indent="\t")
 
 
 def write_misclassifications_file(output_file: str, records: List[TrainingRecord], misclassifications,
