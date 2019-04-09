@@ -201,12 +201,11 @@ class PICASVM:
 
         clf = pipeline.named_steps["clf"]
         if hasattr(clf, "coef_"):
-            mean_weights = clf.coef_
+            return_weights = clf.coef_
         else:   # assume calibrated classifier
             weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
-            mean_weights = np.median(weights.transpose(), axis=1)
-            mean_weights = mean_weights.flatten()
-        return mean_weights
+            return_weights = np.median(weights, axis=0)
+        return return_weights
 
     def get_feature_weights(self) -> Dict:
         """
