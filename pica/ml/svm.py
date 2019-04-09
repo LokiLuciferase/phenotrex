@@ -203,14 +203,13 @@ class PICASVM:
         if hasattr(clf, "coef_"):
             mean_weights = clf.coef_
         else:   # assume calibrated classifier
-            num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
-            mean_weights = np.zeros(num_features)
-            for calibrated_classifier in clf.calibrated_classifiers_:
-                weights = calibrated_classifier.base_estimator.coef_[0]
-                mean_weights += weights
+            weights_list = [c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_]
+            weights_matrix = np.matrix(weights_list)
 
-            mean_weights /= len(clf.calibrated_classifiers_)
-
+            num_features = weights_matrix.shape[1]
+            mean_weights = np.median(weights_matrix.transpose(), axis=1)
+            mean_weights = np.array(mean_weights).reshape(num_features)
+            print(mean_weights)
         return mean_weights
 
     def get_feature_weights(self) -> Dict:
@@ -235,12 +234,12 @@ class PICASVM:
         weights = {feature: mean_weights[i] for feature, i in names}
 
         # sort by absolute value
-        weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
-                                                                   reverse=True)}
+        sorted_weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
+                                                                          reverse=True)}
         # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
         #  if we rely on feature selection in near future
 
-        return weights
+        return sorted_weights
 
     def crossvalidate_cc(self, records: List[TrainingRecord], cv: int = 5,
                          comple_steps: int = 20, conta_steps: int = 20,
