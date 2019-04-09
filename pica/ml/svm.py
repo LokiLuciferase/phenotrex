@@ -203,12 +203,11 @@ class PICASVM:
         if hasattr(clf, "coef_"):
             mean_weights = clf.coef_
         else:   # assume calibrated classifier
-            weights_list = [c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_]
-            weights_matrix = np.matrix(weights_list)
+            weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
+            num_features = weights.shape[1]
 
-            num_features = weights_matrix.shape[1]
-            mean_weights = np.median(weights_matrix.transpose(), axis=1)
-            mean_weights = np.array(mean_weights).reshape(num_features)
+            mean_weights = np.median(weights.transpose(), axis=1)
+            mean_weights = mean_weights.reshape(num_features)
             print(mean_weights)
         return mean_weights
 
