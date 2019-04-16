@@ -23,7 +23,8 @@ from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups
-from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
+    DEFAULT_SCORING_FUNCTION, multiple_step_rfecv
 
 
 class PICASVM:
@@ -91,6 +92,7 @@ class PICASVM:
 
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
+            # multiple_step_rfecv(records=records, pipeline=self.cv_pipeline, n_features=n_features)
             recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
             compress_vocabulary(records, self.pipeline)
 
@@ -101,7 +103,7 @@ class PICASVM:
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = "balanced_accuracy", n_jobs=-1,
+                      scoring: str = DEFAULT_SCORING_FUNCTION, n_jobs=-1,
                       n_replicates: int = 10, groups: bool = False,
                       # TODO: add more complex scoring/reporting, e.g. AUC
                       reduce_features: bool = False, n_features: int = 10000,
@@ -154,8 +156,8 @@ class PICASVM:
             for tr, ts in outer_cv.split(X_trans, y, groups=group_ids):
                 if reduce_features:
                     est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
-                                step=0.0025, min_features_to_select=n_features,
-                                scoring='balanced_accuracy')
+                                step=DEFAULT_STEP_SIZE, min_features_to_select=n_features,
+                                scoring=DEFAULT_SCORING_FUNCTION)
                 else:
                     est = clf
                 est.fit(X_trans[tr], y[tr])
