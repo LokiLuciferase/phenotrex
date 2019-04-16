@@ -161,11 +161,8 @@ class PICASVM:
                 est.fit(X_trans[tr], y[tr])
                 y_pred = est.predict(X_trans[ts])
                 mismatch = np.logical_xor(y[ts], y_pred)
-                mismatch_indices = np.array([index for index, match in zip(ts, mismatch) if match])
-                if len(mismatch_indices):
-                    add = np.zeros(misclassifications.shape[0])
-                    add[mismatch_indices] = 1
-                    misclassifications += add
+                mismatch_indices = ts[np.where(mismatch)]
+                misclassifications[mismatch_indices] += 1
                 score = balanced_accuracy_score(y[ts], y_pred)
                 scores.append(score)
             log_function(f"Finished replicate {i+1} of {n_replicates}")
