@@ -37,6 +37,8 @@ run:
   - python setup.py bdist_wheel
   # an alternative approach is to install and run:
   - pip install dist/*
+  # create sphinx docs
+  - make docs
   # run the command here
   artifacts:
     paths:
