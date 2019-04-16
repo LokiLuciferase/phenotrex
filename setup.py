@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = []
+# Requirements are required here, while requirements.txt is likely not required.
+requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', ]
 
 setup_requirements = ['pytest-runner', ]
 
