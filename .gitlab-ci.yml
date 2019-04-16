@@ -32,6 +32,7 @@ test:
   # To enable coverage report in gitlab: <project>/settings/ci_cd/js-general-pipeline-settings - Test coverage parsing
   - pytest --cov=pica tests/ --cov-report=html --cov-report=term
 
+
 run:
   script:
   - python setup.py bdist_wheel
