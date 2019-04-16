@@ -4,7 +4,8 @@ import sys
 import argparse
 import json
 
-from pica.io.io import load_training_files, load_genotype_file, write_weights_file
+from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
+    write_misclassifications_file, write_cccv_accuracy_file
 from pica.ml.svm import PICASVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
@@ -30,6 +31,18 @@ def get_args():
                                   help="Filename of output file showing mis-classifications. (optional)")
     sp_crossvalidate.add_argument("--replicates", type=int, default=10,
                                   help="Number of replicates for the cross-validation.")
+    sp_crossvalidate.add_argument("--threads", type=int, default=-1, help="Number of threads to use.")
+
+    # leave one group out (taxonomy)
+    sp_logo_descr = """Leave-one-group-out-validation on data from .phenotype, .genotype and .groups or .taxid files.
+     If no groups file is provided, leave-one-out-validation is performed"""
+    sp_logo = subparsers.add_parser("logo", description=sp_logo_descr)
+    sp_logo.add_argument("--groups", type=str, help="Inputfile that specifies the taxids or groups")
+    sp_logo.add_argument("--rank", required=False, type=str,
+                         help="Taxonomic rank on which the separation should be done (optional), if non specified:"
+                              "use groups without taxonomy")
+    sp_logo.add_argument("-o", "--out", required=False)
+    sp_logo.add_argument("--threads", type=int, default=-1, help="Number of threads to use.")
 
     # compleconta_cv
     sp_compleconta_cv_descr = """Crossvalidate for each step of completeness/contamination of the input data."""
@@ -42,7 +55,7 @@ def get_args():
                                    help="Number of equidistant contamination levels to resample to.")
     sp_compleconta_cv.add_argument("--replicates", type=int, default=10,
                                    help="Number of replicates for the cross-validation.")
-    sp_compleconta_cv.add_argument("--threads", type=int, default=4,
+    sp_compleconta_cv.add_argument("--threads", type=int, default=-1,
                                    help="Number of threads to be used for this calculation.")
     sp_compleconta_cv.add_argument("-o", "--out", required=True, type=str,
                                    help="Filename of output file.")
@@ -59,7 +72,7 @@ def get_args():
                           help="Regularization strategy.")
         subp.add_argument("-f", "--reduce_features", action="store_true",
                           help="Apply reduction of feature space before training operation")
-        subp.add_argument("--num_of_features", default=10000, type=int,
+        subp.add_argument("--num_of_features", default=1000, type=int,
                           help="Number of features aimed by recursive feature elimination")
     # predict
     sp_predict_descr = """Predict trait sign of .genotype file contents"""
@@ -88,7 +101,8 @@ def call(args):
     logger = get_logger("PICA", verb=True)
     sn = args.subparser_name
     if sn in ("train", "crossvalidate", "cccv"):
-        training_records, _, _ = load_training_files(args.genotype, args.phenotype, verb=args.verb)
+        training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
+                                                        verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
 
         if sn == "train":
@@ -100,23 +114,14 @@ def call(args):
             save_ml(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
 
         elif sn == "crossvalidate":
-            cv = svm.crossvalidate(records=training_records, cv=args.cv, n_replicates=args.replicates,
+            cv = svm.crossvalidate(records=training_records, cv=args.cv, n_replicates=args.replicates, n_jobs=args.threads,
                                    reduce_features=args.reduce_features, n_features=args.num_of_features)
             mean_balanced_accuracy, mba_sd, misclassifications = cv
             logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
 
             # write misclassifications output to file if specified
             if args.out:
-                identifier_list = [record.identifier for record in training_records]
-                trait_sign_list = [record.trait_sign for record in training_records]
-                sorted_tuples = sorted(zip(identifier_list, trait_sign_list, misclassifications),
-                                       key=lambda k: k[2], reverse=True)
-                header = ["Identifier", "Trait present", "Mis-classifications [frac.]"]
-                trait_translation = {0: "NO", 1: "YES"}
-                with open(args.out, "w") as output_file:
-                    output_file.write("%s\n" % "\t".join(header))
-                    for identifier, trait_sign, mcs in sorted_tuples:
-                        output_file.write(f"{identifier}\t{trait_translation[trait_sign]}\t{mcs}\n")
+                write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications)
 
 
         elif sn == "cccv":
@@ -127,13 +132,34 @@ def call(args):
                                         n_features=args.num_of_features)
             # write output in JSON-format as old pica did
             # TODO: add a graphical output?
-            with open(args.out, "w") as json_file:
-                json.dump(cccv, json_file, indent="\t")
+            write_cccv_accuracy_file(args.out, cccv)
+
+    elif sn == "logo":
+        training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
+                                                        groups_file=args.groups, selected_rank=args.rank, verb=args.verb)
+        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True, n_jobs=args.threads,
+                               reduce_features=args.reduce_features, n_features=args.num_of_features)
+        mean_balanced_accuracy, mba_sd, misclassifications = cv
+        logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
+
+        # write misclassifications output to file if specified
+        if args.out:
+            logger.info(f"Fractions of misclassifications per sample/group are written file: {args.out}")
+            write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications,
+                                          groups=True)
+
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)
         svm = load_ml(filename=args.classifier, verb=True)
-        print(svm.predict(X=genotype_records))  # TODO: make proper output/file out
+        results, probabilities = svm.predict(X=genotype_records)
+
+        translate_output = {trait_id: trait_sign for trait_sign, trait_id in DEFAULT_TRAIT_SIGN_MAPPING.items()}
+
+        sys.stdout.write("Identifier\tTrait present\tConfidence\n")
+        for record, result, probability in zip(genotype_records, results, probabilities):
+            sys.stdout.write(f"{record.identifier}\t{translate_output[result]}\t{probability[result]}\n")
 
     elif sn == "weights":
         svm = load_ml(filename=args.classifier, verb=True)

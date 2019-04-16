@@ -19,7 +19,12 @@ class PhenotypeRecord:
     trait_name: str
     trait_sign: int
 
+@dataclass
+class GroupRecord:
+    identifier: str
+    group_name: str
+    group_id: int
 
 @dataclass
-class TrainingRecord(GenotypeRecord, PhenotypeRecord):
+class TrainingRecord(GenotypeRecord, PhenotypeRecord, GroupRecord):
     pass

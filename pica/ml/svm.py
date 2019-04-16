@@ -14,7 +14,7 @@ from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
@@ -22,8 +22,9 @@ from sklearn.feature_extraction.text import CountVectorizer
 from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
-from pica.util.helpers import get_x_y_tn
-from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
+from pica.util.helpers import get_x_y_tn, get_groups
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
+    DEFAULT_SCORING_FUNCTION, multiple_step_rfecv
 
 
 class PICASVM:
@@ -61,7 +62,7 @@ class PICASVM:
 
         vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
         classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, random_state=self.random_state,
-                               dual=self.dual, **kwargs)
+                               dual=self.dual, class_weight="balanced", **kwargs)
 
         self.pipeline = Pipeline(steps=[
             ("vec", vectorizer),
@@ -91,6 +92,7 @@ class PICASVM:
 
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
+            # multiple_step_rfecv(records=records, pipeline=self.cv_pipeline, n_features=n_features)
             recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
             compress_vocabulary(records, self.pipeline)
 
@@ -101,18 +103,20 @@ class PICASVM:
         return True
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = "balanced_accuracy", n_jobs=-1,
-                      n_replicates: int = 10,
+                      scoring: str = DEFAULT_SCORING_FUNCTION, n_jobs=-1,
+                      n_replicates: int = 10, groups: bool = False,
                       # TODO: add more complex scoring/reporting, e.g. AUC
                       reduce_features: bool = False, n_features: int = 10000,
                       demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
         """
-        Perform cv-fold crossvalidation
+        Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation
+        :param groups: If True, use group information stored in records for splitting. Otherwise,
+        stratify split according to labels in records. This also resets n_replicates to 1.
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
         :param demote: toggles logger that is used. if true, msg is written to debug else info
@@ -121,7 +125,6 @@ class PICASVM:
         """
 
         log_function = self.logger.debug if demote else self.logger.info
-        log_function("Begin cross-validation on training data.")
         t1 = time()
         X, y, tn = get_x_y_tn(records)
 
@@ -136,25 +139,35 @@ class PICASVM:
 
         misclassifications = np.zeros(len(y))
         scores = []
+
+        if groups:
+            log_function("Begin Leave-One-Group-Out validation on training data.")
+            splitting_strategy = LeaveOneGroupOut()
+            group_ids = get_groups(records)
+            n_replicates = 1
+        else:
+            log_function("Begin cross-validation on training data.")
+            splitting_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+            group_ids = None
+
         for i in range(n_replicates):
             inner_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-            outer_cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-            for tr, ts in outer_cv.split(X_trans, y):
+            outer_cv = splitting_strategy
+            for tr, ts in outer_cv.split(X_trans, y, groups=group_ids):
                 if reduce_features:
                     est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
-                                step=0.01, min_features_to_select=n_features)
+                                step=DEFAULT_STEP_SIZE, min_features_to_select=n_features,
+                                scoring=DEFAULT_SCORING_FUNCTION)
                 else:
                     est = clf
                 est.fit(X_trans[tr], y[tr])
                 y_pred = est.predict(X_trans[ts])
                 mismatch = np.logical_xor(y[ts], y_pred)
-                mismatch_indices = np.array([index for index, match in zip(ts, mismatch) if match])
-                if len(mismatch_indices):
-                    add = np.zeros(misclassifications.shape[0])
-                    add[mismatch_indices] = 1
-                    misclassifications += add
+                mismatch_indices = ts[np.where(mismatch)]
+                misclassifications[mismatch_indices] += 1
                 score = balanced_accuracy_score(y[ts], y_pred)
                 scores.append(score)
+            log_function(f"Finished replicate {i+1} of {n_replicates}")
 
         misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
@@ -179,7 +192,7 @@ class PICASVM:
         Interface function to get coef_ from classifier used in the pipeline specified
         this might be useful if we switch the classifier, most of them already have a coef_ attribute
         :param pipeline: pipeline from which the classifier should be used
-        :return: coef_ for feature selection
+        :return: coef_ for feature weight report
         """
 
         if not pipeline:
@@ -187,17 +200,11 @@ class PICASVM:
 
         clf = pipeline.named_steps["clf"]
         if hasattr(clf, "coef_"):
-            mean_weights = clf.coef_
+            return_weights = clf.coef_
         else:   # assume calibrated classifier
-            num_features = len(clf.calibrated_classifiers_[0].base_estimator.coef_[0])
-            mean_weights = np.zeros(num_features)
-            for calibrated_classifier in clf.calibrated_classifiers_:
-                weights = calibrated_classifier.base_estimator.coef_[0]
-                mean_weights += weights
-
-            mean_weights /= len(clf.calibrated_classifiers_)
-
-        return mean_weights
+            weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
+            return_weights = np.median(weights, axis=0)
+        return return_weights
 
     def get_feature_weights(self) -> Dict:
         """
@@ -221,23 +228,23 @@ class PICASVM:
         weights = {feature: mean_weights[i] for feature, i in names}
 
         # sort by absolute value
-        weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
-                                                                   reverse=True)}
+        sorted_weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
+                                                                          reverse=True)}
         # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
         #  if we rely on feature selection in near future
 
-        return weights
+        return sorted_weights
 
     def crossvalidate_cc(self, records: List[TrainingRecord], cv: int = 5,
                          comple_steps: int = 20, conta_steps: int = 20,
                          n_jobs: int = -1, n_replicates: int = 10,
                          reduce_features: bool = False, n_features: int = 10000):
         """
-        Instantiates an CompleContaCV object, and calls its run_cccv method with records. Returns its result.
+        Instantiates a CompleContaCV object, and calls its run_cccv method with records. Returns its result.
         :param records: List[TrainingRecord] on which completeness_contamination_CV is to be performed
-        :param cv: number of folds
-        :param comple_steps: number of equidistand completeness levels
-        :param conta_steps: number of equidistand contamination levels
+        :param cv: number of folds in StratifiedKFold split
+        :param comple_steps: number of equidistant completeness levels
+        :param conta_steps: number of equidistant contamination levels
         :param n_jobs: number of parallel jobs (-1 for n_cpus)
         :param n_replicates: Number of times the crossvalidation is repeated
         :param reduce_features: toggles feature reduction using recursive feature elimination
@@ -258,8 +265,9 @@ class PICASVM:
 class CustomVectorizer(CountVectorizer):
     """
     modified from CountVectorizer to override the _validate_vocabulary function, which invoked an error because
-    multiple indices of the dictionary contained the same feature index. However, this is we intend.
-    Other functions had to be adopted to allow decompression: get_feature_names,
+    multiple indices of the dictionary contained the same feature index. However, this is we intend with the
+    compress_vocabulary function.
+    Other functions had to be adopted: get_feature_names (allow decompression), _count_vocab (reduce the matrix size)
     """
 
     def _validate_vocabulary(self):
@@ -280,7 +288,7 @@ class CustomVectorizer(CountVectorizer):
         self._check_vocabulary()
 
         # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
-        return sorted(self.vocabulary_.items(), key=lambda x: x[1])  # no stdlib dependency when using lambda
+        return sorted(self.vocabulary_.items(), key=lambda x: x[1])
 
     def _count_vocab(self, raw_documents, fixed_vocab):
         """Create sparse feature matrix, and vocabulary where fixed_vocab=False

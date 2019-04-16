@@ -8,7 +8,7 @@ import numpy as np
 from pica.struct.records import TrainingRecord
 
 
-def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[List, List, str]:
+def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[np.ndarray, np.ndarray, str]:
     """
     Get separate X and y from list of TrainingRecord.
     Also infer trait name from first TrainingRecord.
@@ -19,3 +19,13 @@ def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[List, List, str]:
     X = np.array([" ".join(x.features) for x in records])
     y = np.array([x.trait_sign for x in records])
     return X, y, trait_name
+
+
+def get_groups(records: List[TrainingRecord]) -> np.ndarray:
+    """
+    Get groups from list of TrainingRecords
+    :param records:
+    :return: list for groups
+    """
+    group_ids = np.array([x.group_id for x in records])
+    return group_ids

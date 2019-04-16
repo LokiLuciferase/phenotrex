@@ -107,6 +107,8 @@ class TrainingRecordResampler:
         new_record = TrainingRecord(identifier=record.identifier,
                                     trait_name=record.trait_name,
                                     trait_sign=record.trait_sign,
-                                    features=incomplete_features + conta_features)
+                                    features=incomplete_features + conta_features,
+                                    group_name=None,
+                                    group_id=None)
         return new_record
 
