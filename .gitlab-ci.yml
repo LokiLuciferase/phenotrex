@@ -19,7 +19,7 @@ cache:
 
 before_script:
   - python -V # Print out python version for debugging
-  - pip install virtualenv
+  - pip install virtualenv pytest-cov
   - virtualenv venv
   - source venv/bin/activate
 
@@ -28,6 +28,9 @@ test:
   - python setup.py test
   - pip install tox flake8 # you can also use tox
   - tox -e py37,flake8
+  # Create coverage report in HTML and on terminal (result parsed by Gitlab CI)
+  # To enable coverage report in gitlab: <project>/settings/ci_cd/js-general-pipeline-settings - Test coverage parsing
+  - pytest --cov=pica tests/ --cov-report=html --cov-report=term
 
 run:
   script:
