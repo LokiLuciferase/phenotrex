@@ -90,17 +90,18 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
             from pica.util.taxonomy import get_taxonomic_group_mapping
             group_name_mapping, group_id_mapping = get_taxonomic_group_mapping(group_ids=group_ids,
                                                                                selected_rank=selected_rank)
+            group_records = [GroupRecord(identifier=x, group_id=group_id_mapping[y], group_name=group_name_mapping[y])
+                             for x, y in zip(identifiers, group_ids)]
+
         except ImportError:
             raise RuntimeError("A required package was not found. ete3 is required to support taxonomic ids for"
-                               " grouping."
-                               " Please install or divide your samples into groups manually")
+                               " grouping. Please install or divide your samples into groups manually")
 
     else:
         group_id_mapping = {x: group_id for group_id, x in enumerate(set(group_ids))}
-        group_name_mapping = {x: x for x in set(group_ids)}
+        group_records = [GroupRecord(identifier=x, group_id=group_id_mapping[y], group_name=y)
+                         for x, y in zip(identifiers, group_ids)]
 
-    group_records = [GroupRecord(identifier=x, group_id=group_id_mapping[y], group_name=group_name_mapping[y])
-                     for x, y in zip(identifiers, group_ids)]
     ret = sorted(group_records, key=lambda x: x.identifier)
 
     return ret
@@ -224,19 +225,19 @@ def write_cccv_accuracy_file(output_file: str, cccv_results):
 
 
 def write_misclassifications_file(output_file: str, records: List[TrainingRecord], misclassifications,
-                                  groups: bool = False):
+                                  use_groups: bool = False):
     """
     Function to write the misclassifications file
     :param output_file: name of the outputfile
     :param records: List of trainingRecord objects
     :param misclassifications: List of percentages of misclassifications
-    :param groups: toggles average over groups and groups output
+    :param use_groups: toggles average over groups and groups output
     :return:
     """
 
     identifier_list = [record.identifier for record in records]
     trait_sign_list = [record.trait_sign for record in records]
-    if groups:
+    if use_groups:
         group_names = [record.group_name for record in records]
         identifier_list = list(set(group_names))
         grouped_mcs = []
