@@ -12,6 +12,7 @@ def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[np.ndarray, np.ndarray, s
     """
     Get separate X and y from list of TrainingRecord.
     Also infer trait name from first TrainingRecord.
+
     :param records: a List[TrainingRecord]
     :return: separate lists of features and targets, and the trait name
     """
@@ -24,6 +25,7 @@ def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[np.ndarray, np.ndarray, s
 def get_groups(records: List[TrainingRecord]) -> np.ndarray:
     """
     Get groups from list of TrainingRecords
+
     :param records:
     :return: list for groups
     """

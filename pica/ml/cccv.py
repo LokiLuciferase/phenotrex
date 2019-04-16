@@ -4,7 +4,7 @@
 import os
 import copy
 from time import time
-from typing import List, Tuple, Dict, Callable
+from typing import List, Dict, Callable
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
@@ -20,23 +20,24 @@ from pica.ml.feature_select import recursive_feature_elimination
 
 
 class CompleContaCV:
+    """
+    A class containing all custom completeness/contamination cross-validation functionality.
+
+    :param pipeline: target pipeline which describes the vectorization and estimator/classifier used
+    :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
+    :param cv: Number of folds in crossvalidation. Default: 5
+    :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
+    :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
+    :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
+    :param n_replicates: Number of times the crossvalidation is repeated
+    :param reduce_features: toggles feature reduction using recursive feature elimination
+    :param n_features: minimal number of features to retain (if feature reduction is used)
+    :param random_state: An integer random seed or instance of np.random.RandomState
+    """
     def __init__(self, pipeline: Pipeline, scoring_function: Callable = balanced_accuracy_score, cv: int = 5,
                  comple_steps: int = 20, conta_steps: int = 20,
-                 n_jobs: int = -1, n_replicates: int = 10, random_state: np.random.RandomState = None, verb: bool = False,
-                 reduce_features: bool = False, n_features: int = 10000):
-        """
-        A class containing all custom completeness/contamination cross-validation functionality.
-        :param pipeline: target pipeline which describes the vectorization and estimator/classifier used
-        :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
-        :param cv: Number of folds in crossvalidation. Default: 5
-        :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
-        :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
-        :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
-        :param n_replicates: Number of times the crossvalidation is repeated
-        :param reduce_features: toggles feature reduction using recursive feature elimination
-        :param n_features: minimal number of features to retain (if feature reduction is used)
-        :param random_state: An integer random seed or instance of np.random.RandomState
-        """
+                 n_jobs: int = -1, n_replicates: int = 10, random_state: np.random.RandomState = None,
+                 verb: bool = False, reduce_features: bool = False, n_features: int = 10000):
         self.pipeline = pipeline
         self.cv = cv
         self.scoring_method = scoring_function
@@ -52,7 +53,8 @@ class CompleContaCV:
         self.conta_steps = conta_steps
         self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
         self.n_replicates = n_replicates
-        self.random_state = random_state if type(random_state) is np.random.RandomState else np.random.RandomState(random_state)
+        self.random_state = random_state if type(random_state) is np.random.RandomState \
+            else np.random.RandomState(random_state)
         self.reduce_features = reduce_features
         self.n_features = n_features
 
@@ -60,6 +62,7 @@ class CompleContaCV:
         """
         Use a fitted Pipeline to predict scores on resampled test data.
         part of the compleconta crossvalidation where only validation is performed.
+
         :param records: test records as a List of TrainingRecord objects
         :param estimator: classifier previously trained as a sklearn.Pipeline object
         :return: score
@@ -74,6 +77,7 @@ class CompleContaCV:
                     n_replicates: int = 10):
         """
         Generator function to yield test/training sets which will be fed into subprocesses for _completeness_cv
+
         :param records: the complete set of TrainingRecords
         :param cv: number of folds in the crossvalidation to be performed
         :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
@@ -95,10 +99,12 @@ class CompleContaCV:
 
     def _completeness_cv(self, param, **kwargs) -> Dict[float, Dict[float, float]]:
         """
-        Perform completeness/contamination simulation and testing for one fold. This is a separate function only called
-        by run_cccv which spawns subprocesses using a ProcessPoolExecutor from concurrent.futures
+        Perform completeness/contamination simulation and testing for one fold.
+        This is a separate function only called by run_cccv which spawns
+        subprocesses using a ProcessPoolExecutor from concurrent.futures
+
         :param param: List [test_records, X_train, y_train, comple_steps, conta_steps, starting_message]
-        workaround to get multiple parameters into this function. (using processor.map) #TODO find nicer solution?
+            workaround to get multiple parameters into this function. (using processor.map) #TODO find nicer solution?
         """
         # unpack parameters
         test_records, training_records, comple_steps, conta_steps, verb, starting_message = param
@@ -131,7 +137,8 @@ class CompleContaCV:
         return cv_scores
 
     def run(self, records: List[TrainingRecord]):
-        """
+        """ Perform completeness/contamination cross-validation.
+
         :param records: List[TrainingRecords] to perform compleconta-crossvalidation on.
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
