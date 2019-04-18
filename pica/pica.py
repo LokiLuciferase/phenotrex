@@ -114,8 +114,12 @@ def call(args):
             save_ml(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
 
         elif sn == "crossvalidate":
-            cv = svm.crossvalidate(records=training_records, cv=args.cv, n_replicates=args.replicates, n_jobs=args.threads,
-                                   reduce_features=args.reduce_features, n_features=args.num_of_features)
+            cv = svm.crossvalidate(records=training_records,
+                                   cv=args.cv,
+                                   n_replicates=args.replicates,
+                                   n_jobs=args.threads,
+                                   reduce_features=args.reduce_features,
+                                   n_features=args.num_of_features)
             mean_balanced_accuracy, mba_sd, misclassifications = cv
             logger.info(f"Mean balanced accuracy: {mean_balanced_accuracy} +/- {mba_sd}")
 
@@ -134,8 +138,11 @@ def call(args):
             write_cccv_accuracy_file(args.out, cccv)
 
     elif sn == "logo":
-        training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
-                                                        groups_file=args.groups, selected_rank=args.rank, verb=args.verb)
+        training_records, _, _, _ = load_training_files(genotype_file=args.genotype,
+                                                        phenotype_file=args.phenotype,
+                                                        groups_file=args.groups,
+                                                        selected_rank=args.rank,
+                                                        verb=args.verb)
         svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
         cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True, n_jobs=args.threads,
                                reduce_features=args.reduce_features, n_features=args.num_of_features)
@@ -146,7 +153,7 @@ def call(args):
         if args.out:
             logger.info(f"Fractions of misclassifications per sample/group are written file: {args.out}")
             write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications,
-                                          groups=True)
+                                          use_groups=True)
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)
