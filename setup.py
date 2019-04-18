@@ -3,7 +3,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -35,7 +35,7 @@ setup(
     keywords='pica',
     name='pica',
     entry_points={'console_scripts': ['pica = pica.pica:main'],},
-    packages=find_packages(include=['pica','pica.*']),
+    packages=find_namespace_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
