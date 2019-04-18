@@ -12,6 +12,7 @@ def get_taxonomic_group_mapping(group_ids: List[str], selected_rank: str) -> Tup
     """
     Function to create a mapping from NCBI-taxon ids to groups which are used to split the provided training records
     into training and validation sets
+
     :param group_ids: List of identifiers that should be NCBI taxon ids
     :param selected_rank: selected standard rank determining on which level the set is split in training- and
      validation-set
@@ -48,6 +49,7 @@ def get_taxonomic_group_mapping(group_ids: List[str], selected_rank: str) -> Tup
 def auto_select_rank(group_ids: List[str]) -> str:
     """
     Placeholder function to select a taxonomic rank splitting based on provided data
+
     :param group_ids:
     :return: selected rank
     """

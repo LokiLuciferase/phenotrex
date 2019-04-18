@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 import sys
 import argparse
-import json
 
 from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
     write_misclassifications_file, write_cccv_accuracy_file
 from pica.ml.svm import PICASVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -123,7 +123,6 @@ def call(args):
             if args.out:
                 write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications)
 
-
         elif sn == "cccv":
             cccv = svm.crossvalidate_cc(records=training_records, cv=args.cv,
                                         comple_steps=args.comple_steps,
@@ -148,7 +147,6 @@ def call(args):
             logger.info(f"Fractions of misclassifications per sample/group are written file: {args.out}")
             write_misclassifications_file(args.out, records=training_records, misclassifications=misclassifications,
                                           groups=True)
-
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)

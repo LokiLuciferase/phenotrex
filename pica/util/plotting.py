@@ -10,6 +10,7 @@ def compleconta_plot(cccv_results: List[Dict[float, Dict[float, Dict[str, float]
                      title: str = "", fontsize: int = 16, figsize=(10, 7),
                      plot_comple: bool = True, plot_conta: bool = True,
                      colors: List = None, **kwargs):
+    """ TODO add docstring """
 
     if type(cccv_results) is dict:
         cccv_results = [cccv_results, ]
