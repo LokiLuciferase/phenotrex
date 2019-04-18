@@ -1,7 +1,6 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-import logging
 import numpy as np
 from typing import List, Dict, Tuple
 from collections import Counter
@@ -16,6 +15,7 @@ DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
 def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     """
     Loads a genotype .tsv file and returns a list of GenotypeRecord for each entry.
+
     :param input_file: The path to the input genotype file.
     :return: List[GenotypeRecord] of records in the genotype file
     """
@@ -31,9 +31,10 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     return sorted(genotype_records, key=lambda x: x.identifier)
 
 
-def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int]=None) -> List[PhenotypeRecord]:
+def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int] = None) -> List[PhenotypeRecord]:
     """
     Loads a phenotype .tsv file and returns a list of PhenotypeRecord for each entry.
+
     :param input_file: The path to the input phenotype file.
     :param sign_mapping: an optional Dict to change mappings of trait sign. Default: {"YES": 1, "NO": 0}
     :return: List[PhenotypeRecord] of records in the phenotype file
@@ -66,10 +67,11 @@ def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int]=None) -> L
 def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRecord]:
     """
     Loads a .tsv file which contains group or taxid for each sample in the other training files.
-    Automatically classifies the
+    Automatically classifies the [TODO missing text?]
+
     :param input_file: path to the file that is processed
-    :param selected_rank: the standard rank that is selected (optional) if not set, the inputfile is assumed to contain groups,
-     i.e. each unique entry of the ID will be a new group
+    :param selected_rank: the standard rank that is selected (optional) if not set,
+    the input file is assumed to contain groups, i.e. each unique entry of the ID will be a new group
     :return: a list of GroupRecords
     """
 
@@ -115,6 +117,7 @@ def collate_training_data(genotype_records: List[GenotypeRecord], phenotype_reco
     To be used for training and CV of PICASVM.
     Checks if 1:1 mapping of phenotypes and genotypes exists,
     and if all PhenotypeRecords pertain to same trait.
+
     :param genotype_records: List[GenotypeRecord]
     :param phenotype_records: List[PhenotypeRecord]
     :param group_records: List[GroupRecord] optional, if leave one group out is the split strategy
@@ -166,6 +169,7 @@ def load_training_files(genotype_file: str, phenotype_file: str, groups_file: st
                                                                                List[GroupRecord]]:
     """
     Convenience function to load phenotype and genotype file together, and return a list of TrainingRecord.
+
     :param genotype_file: The path to the input genotype file.
     :param phenotype_file: The path to the input phenotype file.
     :param groups_file: The path to the input groups file.
@@ -189,6 +193,7 @@ def load_training_files(genotype_file: str, phenotype_file: str, groups_file: st
 def write_weights_file(weights_file: str, weights: Dict):
     """
     Function to write the weights to specified file in tab-separated fashion with header
+
     :param weights_file: The path to the file to which the output will be written
     :param weights: sorted dictionary storing weights with feature names as indices
     :return: nothing
@@ -201,9 +206,11 @@ def write_weights_file(weights_file: str, weights: Dict):
         for rank, (name, weight) in enumerate(weights.items()):
             output_file.write(f"{rank+1}\t{name.upper()}\t{weight}\n")
 
+
 def write_cccv_accuracy_file(output_file: str, cccv_results):
     """
-    Function to write the cccv accuracies in the exact format that phendb uses as input
+    Function to write the cccv accuracies in the exact format that phendb uses as input.
+
     :param output_file: file
     :param cccv_results:
     :return: nothing
@@ -227,7 +234,8 @@ def write_cccv_accuracy_file(output_file: str, cccv_results):
 def write_misclassifications_file(output_file: str, records: List[TrainingRecord], misclassifications,
                                   use_groups: bool = False):
     """
-    Function to write the misclassifications file
+    Function to write the misclassifications file.
+
     :param output_file: name of the outputfile
     :param records: List of trainingRecord objects
     :param misclassifications: List of percentages of misclassifications

@@ -12,6 +12,7 @@ logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelNa
 def get_logger(initname, verb=False):
     """
     This function provides a logger to all scripts used in this project.
+
     :param initname: The name of the logger to show up in log.
     :param verb: Toggle verbosity
     :return: the finished Logger object.

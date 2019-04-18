@@ -39,8 +39,8 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     X_trans = vec.transform(X)
 
     size = len(names)
-    #logger = get_logger(__name__, verb=0)
-    #logger.info(f"{size} Features found, starting compression")
+    # logger = get_logger(__name__, verb=0)
+    # logger.info(f"{size} Features found, starting compression")
     seen = {}
     new_vocabulary = {}
     new_index = 0
@@ -57,7 +57,7 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     size_after = new_vocabulary[max(new_vocabulary, key=new_vocabulary.get)]
     t2 = time()
 
-    #logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
+    # logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
 
     # set vocabulary to vectorizer
     pipeline.named_steps["vec"].vocabulary = new_vocabulary
@@ -69,14 +69,16 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
                                   n_features: int = None, random_state: np.random.RandomState = None):
     """
     Function to apply RFE to limit the vocabulary used by the CustomVectorizer, optional step.
+
     :param records: list of TrainingRecords, entire training set.
     :param pipeline: the pipeline which vocabulary should be modified
     :param step: rate of features to eliminate at each step. the lower the number, the more steps
     :param n_features: number of features to select (if None: half of the provided features)
+    :param random_state: random state for deterministic results
     :return: number of features used
     """
 
-    #TODO: enable logging (optional)
+    # TODO: enable logging (optional)
 
     t1 = time()
 
@@ -121,18 +123,21 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
 
     return size_after
 
-def multiple_step_rfecv(records: List[TrainingRecord], pipeline: Pipeline, n_features: int, step=[0.01,0.01, 0.01],
+
+def multiple_step_rfecv(records: List[TrainingRecord], pipeline: Pipeline, n_features: int, step=(0.01, 0.01, 0.01, ),
                         random_state: np.random.RandomState = None):
     """
     Function to apply multiple steps-sizes of RFECV in series, currently not used. Strategy might be problematic,
     no clear benefit. #TODO rethink or remove
+
     :param records: Data used
     :param pipeline: The base estimator used
     :param n_features: Goal number of features
     :param step: List of steps that should be applied
+    :param random_state: random state for deterministic results
     :return:
     """
-    #step = [0.0025]
+    # step = [0.0025]
     for s in step:
         size_after = recursive_feature_elimination(records, pipeline=pipeline, step=s, n_features=n_features,
                                                    random_state=random_state)

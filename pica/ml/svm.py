@@ -28,6 +28,17 @@ from pica.ml.feature_select import recursive_feature_elimination, compress_vocab
 
 
 class PICASVM:
+    """
+    Class which encapsulates a sklearn Pipeline of CountVectorizer (for vectorization of features) and
+    LinearSVC wrapped in CalibratedClassifierCV for provision of probabilities via Platt scaling.
+    Provides train() and crossvalidate() functionality equivalent to train.py and crossvalidateMT.py.
+
+    :param C: Penalty parameter C of the error term. See LinearSVC documentation.
+    :param penalty: Specifies the norm used in the penalization. See LinearSVC documentation.
+    :param tol: Tolerance for stopping criteria. See LinearSVC documentation.
+    :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
+    :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
+    """
     def __init__(self,
                  C: float = 5,
                  penalty: str = "l2",
@@ -35,16 +46,6 @@ class PICASVM:
                  random_state: int = None,
                  verb=False,
                  *args, **kwargs):
-        """
-        Class which encapsulates a sklearn Pipeline of CountVectorizer (for vectorization of features) and
-        LinearSVC wrapped in CalibratedClassifierCV for provision of probabilities via Platt scaling.
-        Provides train() and crossvalidate() functionality equivalent to train.py and crossvalidateMT.py.
-        :param C: Penalty parameter C of the error term. See LinearSVC documentation.
-        :param penalty: Specifies the norm used in the penalization. See LinearSVC documentation.
-        :param tol: Tolerance for stopping criteria. See LinearSVC documentation.
-        :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
-        :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
-        """
         self.trait_name = None
         self.cccv_result = None  # result of compleconta-crossvalidation saved in object so it gets pickled
 
@@ -77,6 +78,7 @@ class PICASVM:
               n_features: int = 10000, **kwargs):
         """
         Fit CountVectorizer and train LinearSVC on a list of TrainingRecord.
+
         :param records: a List[TrainingRecord] for fitting of CountVectorizer and training of LinearSVC.
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
@@ -110,13 +112,14 @@ class PICASVM:
                       demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
         """
         Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
+
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation
         :param groups: If True, use group information stored in records for splitting. Otherwise,
-        stratify split according to labels in records. This also resets n_replicates to 1.
+            stratify split according to labels in records. This also resets n_replicates to 1.
         :param reduce_features: toggles feature reduction using recursive feature elimination
         :param n_features: minimum number of features to retain when reducing features
         :param demote: toggles logger that is used. if true, msg is written to debug else info
@@ -179,6 +182,7 @@ class PICASVM:
     def predict(self, X: List[GenotypeRecord]) -> Tuple[List[str], np.ndarray]:
         """
         Predict trait sign and probability of each class for each supplied GenotypeRecord.
+
         :param X: A List of GenotypeRecord for each of which to predict the trait sign
         :return: a Tuple of predictions and probabilities of each class for each GenotypeRecord in X.
         """
@@ -191,6 +195,7 @@ class PICASVM:
         """
         Interface function to get coef_ from classifier used in the pipeline specified
         this might be useful if we switch the classifier, most of them already have a coef_ attribute
+
         :param pipeline: pipeline from which the classifier should be used
         :return: coef_ for feature weight report
         """
@@ -209,6 +214,7 @@ class PICASVM:
     def get_feature_weights(self) -> Dict:
         """
         Extract the weights for features from pipeline.
+
         :return: tuple of lists: feature names and weights
         """
         # TODO: find different way to feature weights that is closer to the real weight used for classification
@@ -241,6 +247,7 @@ class PICASVM:
                          reduce_features: bool = False, n_features: int = 10000):
         """
         Instantiates a CompleContaCV object, and calls its run_cccv method with records. Returns its result.
+
         :param records: List[TrainingRecord] on which completeness_contamination_CV is to be performed
         :param cv: number of folds in StratifiedKFold split
         :param comple_steps: number of equidistant completeness levels
