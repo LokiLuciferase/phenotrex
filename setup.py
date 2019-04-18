@@ -18,6 +18,9 @@ setup_requirements = ['pytest-runner', ]
 
 test_requirements = ['pytest', ]
 
+# setuptools will copy the following script(s) to PATH and make it available for general use
+scripts = ['pica/pica.py']
+
 setup(
     author="Lukas Lüftinger",
     author_email='lukas.lueftinger@outlook.com',
@@ -36,6 +39,7 @@ setup(
     keywords='pica',
     name='pica',
     packages=find_packages(include=['pica']),
+    scripts=scripts,
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
