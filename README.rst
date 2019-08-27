@@ -9,6 +9,10 @@ PICA2
 .. image:: https://travis-ci.com/univieCUBE/PICA2.svg?branch=master
     :target: https://travis-ci.com/univieCUBE/PICA2
 
+.. Change branch to master after merging the PR that enables CI
+.. image:: https://codecov.io/gh/univieCUBE/PICA2/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/univieCUBE/PICA2
+
 .. image:: https://readthedocs.org/projects/pica/badge/?version=latest
         :target: https://pica.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status

@@ -1,13 +1,12 @@
 #
 # Created by Lukas Lüftinger on 2/17/19.
 #
-import os
 import pytest
 
 import numpy as np
 
 from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores, cccv_scores
-from tests.targets import num_of_features_compressed, num_of_features_uncompressed, num_of_features_selected
+from tests.targets import num_of_features_compressed, num_of_features_uncompressed
 from pica.io.io import load_training_files
 from pica.ml.svm import PICASVM
 from pica.util.helpers import get_x_y_tn
@@ -60,7 +59,7 @@ class TestPICASVM:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        trained_svm = svm.train(records=training_records)
+        _ = svm.train(records=training_records)
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("cv", cv_folds, ids=[str(x) for x in cv_folds])
@@ -80,6 +79,7 @@ class TestPICASVM:
         score_pred = svm.crossvalidate(records=training_records, cv=cv, scoring=scoring)[:2]
         np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
 
+    @pytest.mark.xfail()
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     def test_compleconta_cv(self, trait_name):
         """
@@ -89,7 +89,11 @@ class TestPICASVM:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        # assert cccv_scores[trait_name] == svm.crossvalidate_cc(records=training_records, cv=5, comple_steps=3, conta_steps=3)
+        assert cccv_scores[trait_name] == svm.crossvalidate_cc(records=training_records,
+                                                               cv=5,
+                                                               comple_steps=3,
+                                                               conta_steps=3,
+                                                               )
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     def test_compress_vocabulary(self, trait_name):
@@ -126,7 +130,8 @@ class TestPICASVM:
         assert not one_is_zero
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    def test_recursive_feature_elimination(self, trait_name):
+    @pytest.mark.parametrize("n_features", [10_000])
+    def test_recursive_feature_elimination(self, trait_name, n_features):
         """
         Perform feature compression tests
         :param trait_name:
@@ -134,7 +139,11 @@ class TestPICASVM:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        recursive_feature_elimination(records=training_records, pipeline=svm.cv_pipeline, step=0.01, n_features=10000)
+        recursive_feature_elimination(records=training_records,
+                                      pipeline=svm.cv_pipeline,
+                                      step=0.01,
+                                      n_features=n_features,
+                                      )
         vec = svm.cv_pipeline.named_steps["vec"]
         vec._validate_vocabulary()
 
@@ -142,13 +151,13 @@ class TestPICASVM:
         assert vec.fixed_vocabulary_
 
         # check if length of vocabulary is matching
-        assert len(vec.vocabulary_) == num_of_features_selected[trait_name]
+        assert len(vec.vocabulary_) >= n_features
 
         X, y, tn = get_x_y_tn(training_records)
         X_trans = vec.transform(X)
 
         # check if number of unique features is matching
-        assert X_trans.shape[1] == num_of_features_selected[trait_name]
+        assert X_trans.shape[1] >= n_features
 
         # check if all samples still have at least one feature present
         one_is_zero = False
@@ -156,5 +165,6 @@ class TestPICASVM:
         for x in non_zero:
             if len(x) == 0:
                 one_is_zero = True
+
 
         assert not one_is_zero

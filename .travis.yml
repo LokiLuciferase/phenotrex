@@ -34,10 +34,10 @@ before_script:
 script:
   - python setup.py test
   - pytest --cov=pica
-  - codecov  # remove here, when tests are fixed, then enable after_success
+  - codecov
 
-# after_success:
-#   - codecov
+after_success:
+  - codecov
 
 cache:
   - pip
