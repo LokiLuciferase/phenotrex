@@ -3,6 +3,6 @@
 set -e
 
 echo "pip installing required python packages"
-pip install -r requirements.txt
+pip install -r requirements_dev.txt
 
 python --version
