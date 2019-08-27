@@ -166,5 +166,4 @@ class TestPICASVM:
             if len(x) == 0:
                 one_is_zero = True
 
-
         assert not one_is_zero
