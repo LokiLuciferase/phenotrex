@@ -1,13 +1,13 @@
-====
-PICA
-====
+
+PICA2
+=====
 
 
 .. image:: https://img.shields.io/pypi/v/pica.svg
         :target: https://pypi.python.org/pypi/pica
 
-.. image:: https://img.shields.io/travis/LokiLuciferase/pica.svg
-        :target: https://travis-ci.org/LokiLuciferase/pica
+.. image:: https://travis-ci.com/univieCUBE/PICA2.svg?branch=master
+    :target: https://travis-ci.com/univieCUBE/PICA2
 
 .. image:: https://readthedocs.org/projects/pica/badge/?version=latest
         :target: https://pica.readthedocs.io/en/latest/?badge=latest
