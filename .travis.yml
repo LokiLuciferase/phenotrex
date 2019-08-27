@@ -19,10 +19,10 @@ env:
   - PYTHONIOENCODING=UTF8
 
 before_install:
-  - travis/install-conda.sh
+  - bash travis/install-conda.sh
   - export PATH="$MINICONDA_DIR/bin:$PATH"
   - hash -r
-  - travis/install-pip.sh
+  - bash travis/install-pip.sh
 
 install:
   - python setup.py build
