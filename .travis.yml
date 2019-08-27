@@ -1,26 +1,77 @@
-# Config file for automatic testing at travis-ci.org
+lanuage: python
 
-language: python
 python:
-  - 3.7
+  - '3.7'
 
-# Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: pip install -U tox-travis
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      sudo: false
+    - os: osx
+      # osx_image: xcode10.2
+      sudo: true
 
-# Command to run tests, e.g. python setup.py test
-script: tox
+env:
+  global:
+  - CACHE_DIR="$HOME/virtualenv"
+  - MINICONDA_DIR="$HOME/miniconda"
+  - PYTHONIOENCODING=UTF8
 
-# Assuming you have installed the travis-ci CLI tool, after you
-# create the Github repo and add it to Travis, run the
-# following command to finish PyPI deployment setup:
-# $ travis encrypt --add deploy.password
-deploy:
-  provider: pypi
-  distributions: sdist bdist_wheel
-  user: LokiLuciferase
-  password:
-    secure: PLEASE_REPLACE_ME
-  on:
-    tags: true
-    repo: LokiLuciferase/pica
-    python: 3.6
+before_install:
+  - travis/install-conda.sh
+  - export PATH="$MINICONDA_DIR/bin:$PATH"
+  - hash -r
+  - travis/install-pip.sh
+
+install:
+  - python setup.py build
+  - python setup.py install
+
+before_script:
+  - flake8 --exit-zero .
+
+script:
+  - python setup.py test
+  - pytest --cov=pica
+
+after_success:
+  - codecov
+
+cache:
+  - pip
+  - ccache
+  - packages
+  - directories:
+      - "$HOME/.cache/pip"
+      - "$HOME/virtualenv"
+      - "$HOME/miniconda"
+
+branches:
+  only:
+  - master
+  - develop
+  - dev
+
+# TODO enable tox usage as originial intended
+#
+## Command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+#install: pip install -U tox-travis
+#
+## Command to run tests, e.g. python setup.py test
+#script: tox
+#
+## Assuming you have installed the travis-ci CLI tool, after you
+## create the Github repo and add it to Travis, run the
+## following command to finish PyPI deployment setup:
+## $ travis encrypt --add deploy.password
+#deploy:
+#  provider: pypi
+#  distributions: sdist bdist_wheel
+#  user: LokiLuciferase
+#  password:
+#    secure: PLEASE_REPLACE_ME
+#  on:
+#    tags: true
+#    repo: LokiLuciferase/pica
+#    python: 3.6
