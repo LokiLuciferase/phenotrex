@@ -1,5 +1,5 @@
-Welcome to PICA's documentation!
-================================
+Welcome to the PICA2 documentation!
+===================================
 
 .. toctree::
    :maxdepth: 2

@@ -23,7 +23,7 @@ from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups
-from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE, \
     DEFAULT_SCORING_FUNCTION, multiple_step_rfecv
 
 
@@ -39,6 +39,7 @@ class PICASVM:
     :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
     :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
     """
+
     def __init__(self,
                  C: float = 5,
                  penalty: str = "l2",
@@ -95,7 +96,8 @@ class PICASVM:
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
             # multiple_step_rfecv(records=records, pipeline=self.cv_pipeline, n_features=n_features)
-            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
+            recursive_feature_elimination(records, self.cv_pipeline,
+                                          n_features=n_features)  # use non-calibrated classifier
             compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
@@ -132,7 +134,7 @@ class PICASVM:
         X, y, tn = get_x_y_tn(records)
 
         # unfortunately RFECV does not work with pipelines (need to use the vectorizer separately)
-        self.cv_pipeline.fit(X,y)
+        self.cv_pipeline.fit(X, y)
         vec = self.cv_pipeline.named_steps["vec"]
         clf = self.cv_pipeline.named_steps["clf"]
 
@@ -170,7 +172,7 @@ class PICASVM:
                 misclassifications[mismatch_indices] += 1
                 score = balanced_accuracy_score(y[ts], y_pred)
                 scores.append(score)
-            log_function(f"Finished replicate {i+1} of {n_replicates}")
+            log_function(f"Finished replicate {i + 1} of {n_replicates}")
 
         misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
@@ -192,12 +194,12 @@ class PICASVM:
         return preds, probas
 
     def get_coef_(self, pipeline: Pipeline = None) -> np.array:
-        """
-        Interface function to get coef_ from classifier used in the pipeline specified
-        this might be useful if we switch the classifier, most of them already have a coef_ attribute
+        r"""
+        Interface function to get `coef\_` from classifier used in the pipeline specified
+        this might be useful if we switch the classifier, most of them already have a `coef\_` attribute
 
         :param pipeline: pipeline from which the classifier should be used
-        :return: coef_ for feature weight report
+        :return: `coef\_` for feature weight report
         """
 
         if not pipeline:
@@ -206,7 +208,7 @@ class PICASVM:
         clf = pipeline.named_steps["clf"]
         if hasattr(clf, "coef_"):
             return_weights = clf.coef_
-        else:   # assume calibrated classifier
+        else:  # assume calibrated classifier
             weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
             return_weights = np.median(weights, axis=0)
         return return_weights

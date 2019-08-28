@@ -9,8 +9,8 @@ PICA
 .. image:: https://img.shields.io/travis/LokiLuciferase/pica.svg
         :target: https://travis-ci.org/LokiLuciferase/pica
 
-.. image:: https://readthedocs.org/projects/pica/badge/?version=latest
-        :target: https://pica.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/pica2-test/badge/?version=latest
+        :target: https://pica2_test.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 

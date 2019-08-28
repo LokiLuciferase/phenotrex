@@ -71,7 +71,7 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
 
     :param input_file: path to the file that is processed
     :param selected_rank: the standard rank that is selected (optional) if not set,
-    the input file is assumed to contain groups, i.e. each unique entry of the ID will be a new group
+        the input file is assumed to contain groups, i.e. each unique entry of the ID will be a new group
     :return: a list of GroupRecords
     """
 
