@@ -35,7 +35,7 @@ setup(
     include_package_data=True,
     keywords='pica',
     name='pica',
-    entry_points={'console_scripts': ['pica = pica.pica:main'],},
+    entry_points={'console_scripts': ['pica = pica.pica:main'], },
     packages=find_namespace_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
