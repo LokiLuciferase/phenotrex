@@ -1,5 +1,5 @@
 from time import time
-from typing import List, Tuple, Dict
+from typing import List
 
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
@@ -38,9 +38,6 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
 
     X_trans = vec.transform(X)
 
-    size = len(names)
-    # logger = get_logger(__name__, verb=0)
-    # logger.info(f"{size} Features found, starting compression")
     seen = {}
     new_vocabulary = {}
     new_index = 0
@@ -54,10 +51,6 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
             new_index += 1
         else:
             new_vocabulary[names[i]] = found_id
-    size_after = new_vocabulary[max(new_vocabulary, key=new_vocabulary.get)]
-    t2 = time()
-
-    # logger.info(f"Features compressed to {size_after} unique features in {np.round(t2 - t1, 2)} seconds.")
 
     # set vocabulary to vectorizer
     pipeline.named_steps["vec"].vocabulary = new_vocabulary
