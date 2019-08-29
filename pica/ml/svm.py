@@ -24,7 +24,7 @@ from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
-    DEFAULT_SCORING_FUNCTION, multiple_step_rfecv
+    DEFAULT_SCORING_FUNCTION
 
 
 class PICASVM:
@@ -94,8 +94,8 @@ class PICASVM:
 
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
-            # multiple_step_rfecv(records=records, pipeline=self.cv_pipeline, n_features=n_features)
-            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features) # use non-calibrated classifier
+            # use non-calibrated classifier
+            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features)
             compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
@@ -132,7 +132,7 @@ class PICASVM:
         X, y, tn = get_x_y_tn(records)
 
         # unfortunately RFECV does not work with pipelines (need to use the vectorizer separately)
-        self.cv_pipeline.fit(X,y)
+        self.cv_pipeline.fit(X, y)
         vec = self.cv_pipeline.named_steps["vec"]
         clf = self.cv_pipeline.named_steps["clf"]
 
