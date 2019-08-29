@@ -69,6 +69,8 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
     Loads a .tsv file which contains group or taxid for each sample in the other training files.
     Group-Ids may be ncbi-taxon-ids or arbitrary group names. Taxon-Ids are only used if a standard rank is selected,
     otherwise user-specified group-ids are assumed.
+    Automatically classifies the [TODO missing text?]
+
 
     :param input_file: path to the file that is processed
     :param selected_rank: the standard rank that is selected (optional) if not set,

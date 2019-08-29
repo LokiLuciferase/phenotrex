@@ -170,7 +170,7 @@ class PICASVM:
                 misclassifications[mismatch_indices] += 1
                 score = balanced_accuracy_score(y[ts], y_pred)
                 scores.append(score)
-            log_function(f"Finished replicate {i+1} of {n_replicates}")
+            log_function(f"Finished replicate {i + 1} of {n_replicates}")
 
         misclassifications /= n_replicates
         score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
@@ -192,21 +192,21 @@ class PICASVM:
         return preds, probas
 
     def get_coef_(self, pipeline: Pipeline = None) -> np.array:
-        """
-        Interface function to get coef_ from classifier used in the pipeline specified
-        this might be useful if we switch the classifier, most of them already have a coef_ attribute
+        r"""
+        Interface function to get `coef\_` from classifier used in the pipeline specified
+        this might be useful if we switch the classifier, most of them already have a `coef\_` attribute
+
 
         :param pipeline: pipeline from which the classifier should be used
-        :return: coef_ for feature weight report
+        :return: `coef\_` for feature weight report
         """
-
         if not pipeline:
             pipeline = self.pipeline
 
         clf = pipeline.named_steps["clf"]
         if hasattr(clf, "coef_"):
             return_weights = clf.coef_
-        else:   # assume calibrated classifier
+        else:  # assume calibrated classifier
             weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
             return_weights = np.median(weights, axis=0)
         return return_weights

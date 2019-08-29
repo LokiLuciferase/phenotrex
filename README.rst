@@ -15,8 +15,8 @@ PICA2
 .. image:: https://ci.appveyor.com/api/projects/status/iursmhw1wocfgpua?svg=true
   :target: https://ci.appveyor.com/project/VarIr/pica2
 
-.. image:: https://readthedocs.org/projects/pica/badge/?version=latest
-        :target: https://pica.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/pica2-test/badge/?version=latest
+        :target: https://pica2_test.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
