@@ -23,8 +23,13 @@ from pica.struct.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups
+<<<<<<< HEAD
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE, \
     DEFAULT_SCORING_FUNCTION, multiple_step_rfecv
+=======
+from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
+    DEFAULT_SCORING_FUNCTION
+>>>>>>> dev
 
 
 class PICASVM:
@@ -39,7 +44,10 @@ class PICASVM:
     :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
     :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
     """
+<<<<<<< HEAD
 
+=======
+>>>>>>> dev
     def __init__(self,
                  C: float = 5,
                  penalty: str = "l2",
@@ -95,9 +103,14 @@ class PICASVM:
 
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
+<<<<<<< HEAD
             # multiple_step_rfecv(records=records, pipeline=self.cv_pipeline, n_features=n_features)
             recursive_feature_elimination(records, self.cv_pipeline,
                                           n_features=n_features)  # use non-calibrated classifier
+=======
+            # use non-calibrated classifier
+            recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features)
+>>>>>>> dev
             compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
@@ -198,10 +211,10 @@ class PICASVM:
         Interface function to get `coef\_` from classifier used in the pipeline specified
         this might be useful if we switch the classifier, most of them already have a `coef\_` attribute
 
+
         :param pipeline: pipeline from which the classifier should be used
         :return: `coef\_` for feature weight report
         """
-
         if not pipeline:
             pipeline = self.pipeline
 

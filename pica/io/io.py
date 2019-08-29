@@ -67,11 +67,14 @@ def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int] = None) ->
 def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRecord]:
     """
     Loads a .tsv file which contains group or taxid for each sample in the other training files.
+    Group-Ids may be ncbi-taxon-ids or arbitrary group names. Taxon-Ids are only used if a standard rank is selected,
+    otherwise user-specified group-ids are assumed.
     Automatically classifies the [TODO missing text?]
+
 
     :param input_file: path to the file that is processed
     :param selected_rank: the standard rank that is selected (optional) if not set,
-        the input file is assumed to contain groups, i.e. each unique entry of the ID will be a new group
+    the input file is assumed to contain groups, i.e. each unique entry of the ID will be a new group
     :return: a list of GroupRecords
     """
 

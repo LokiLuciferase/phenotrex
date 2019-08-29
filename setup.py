@@ -3,7 +3,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = []
+# Requirements are required here, while requirements.txt is likely not required.
+requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -34,7 +35,8 @@ setup(
     include_package_data=True,
     keywords='pica',
     name='pica',
-    packages=find_packages(include=['pica']),
+    entry_points={'console_scripts': ['pica = pica.pica:main'], },
+    packages=find_namespace_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
