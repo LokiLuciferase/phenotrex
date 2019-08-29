@@ -19,7 +19,7 @@ from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import CountVectorizer
 
-from pica.struct.records import TrainingRecord, GenotypeRecord
+from pica.structure.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups

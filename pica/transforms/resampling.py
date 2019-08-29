@@ -8,7 +8,7 @@ from numpy.random import RandomState
 from sklearn.utils import resample
 
 from pica.util.logging import get_logger
-from pica.struct.records import TrainingRecord
+from pica.structure.records import TrainingRecord
 
 
 class TrainingRecordResampler:

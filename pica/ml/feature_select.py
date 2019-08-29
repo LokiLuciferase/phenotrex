@@ -5,7 +5,7 @@ from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 
-from pica.struct.records import TrainingRecord
+from pica.structure.records import TrainingRecord
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
 

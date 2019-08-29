@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from pica.struct.records import TrainingRecord
+from pica.structure.records import TrainingRecord
 
 
 def get_x_y_tn(records: List[TrainingRecord]) -> Tuple[np.ndarray, np.ndarray, str]:
