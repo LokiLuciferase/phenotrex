@@ -6,9 +6,6 @@
 import pytest
 
 
-from pica import pica
-
-
 @pytest.fixture
 def response():
     """Sample pytest fixture.

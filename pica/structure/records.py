@@ -9,17 +9,28 @@ from dataclasses import dataclass
 
 @dataclass
 class GenotypeRecord:
+    """ TODO add docstring """
     identifier: str
     features:   List[str]
 
 
 @dataclass
 class PhenotypeRecord:
+    """ TODO add docstring """
     identifier: str
     trait_name: str
     trait_sign: int
 
 
 @dataclass
-class TrainingRecord(GenotypeRecord, PhenotypeRecord):
+class GroupRecord:
+    """ TODO add docstring """
+    identifier: str
+    group_name: str
+    group_id: int
+
+
+@dataclass
+class TrainingRecord(GenotypeRecord, PhenotypeRecord, GroupRecord):
+    """ TODO add docstring """
     pass

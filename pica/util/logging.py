@@ -12,6 +12,7 @@ logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelNa
 def get_logger(initname, verb=False):
     """
     This function provides a logger to all scripts used in this project.
+
     :param initname: The name of the logger to show up in log.
     :param verb: Toggle verbosity
     :return: the finished Logger object.
@@ -26,7 +27,7 @@ def get_logger(initname, verb=False):
     logstring = '\033[1;32m[%(asctime)s]\033[1;0m \033[1m%(name)s\033[1;0m - %(levelname)s - %(message)s'
     formatter = logging.Formatter(logstring, '%Y-%m-%d %H:%M:%S')
     ch.setFormatter(formatter)
-    if (logger.hasHandlers()):
+    if logger.hasHandlers():
         logger.handlers.clear()
     logger.addHandler(ch)
     return logger
