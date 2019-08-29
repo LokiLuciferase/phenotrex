@@ -7,7 +7,7 @@ from collections import Counter
 import json
 
 from pica.util.logging import get_logger
-from pica.struct.records import GenotypeRecord, PhenotypeRecord, GroupRecord, TrainingRecord
+from pica.structure.records import GenotypeRecord, PhenotypeRecord, GroupRecord, TrainingRecord
 
 DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
 

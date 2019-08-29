@@ -12,7 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import balanced_accuracy_score
 
-from pica.struct.records import TrainingRecord
+from pica.structure.records import TrainingRecord
 from pica.transforms.resampling import TrainingRecordResampler
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn
