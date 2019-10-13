@@ -5,7 +5,7 @@ import argparse
 
 from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
     write_misclassifications_file, write_cccv_accuracy_file
-from pica.ml.svm import PICASVM
+from pica.ml.classifiers.svm import PICASVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
 

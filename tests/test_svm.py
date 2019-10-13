@@ -8,7 +8,7 @@ import numpy as np
 from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores, cccv_scores
 from tests.targets import num_of_features_compressed, num_of_features_uncompressed
 from pica.io.io import load_training_files
-from pica.ml.svm import PICASVM
+from pica.ml.classifiers.svm import PICASVM
 from pica.util.helpers import get_x_y_tn
 
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary

@@ -118,7 +118,6 @@ class CompleContaCV:
             recursive_feature_elimination(training_records, classifier, n_features=self.n_features)
 
         X_train, y_train, tn = get_x_y_tn(training_records)
-
         classifier.fit(X=X_train, y=y_train, **kwargs)
 
         # initialize the resampler with the test_records only, so the samples are unknown to the classifier
