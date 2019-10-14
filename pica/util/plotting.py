@@ -1,16 +1,24 @@
 #
 # Created by Lukas Lüftinger on 17/02/2019.
 #
-from typing import Dict, List
-import matplotlib.pyplot as plt
+from pathlib import Path
+from typing import Dict, List, Union
 
 
 def compleconta_plot(cccv_results: List[Dict[float, Dict[float, Dict[str, float]]]],
                      conditions: List[str] = (), each_n: List[int] = None,
                      title: str = "", fontsize: int = 16, figsize=(10, 7),
                      plot_comple: bool = True, plot_conta: bool = True,
-                     colors: List = None, **kwargs):
+                     colors: List = None, save_path: Union[str, Path] = None,  **kwargs):
     """ TODO add docstring """
+
+    if save_path is not None:
+        save_path = Path(str(save_path))
+        assert not save_path.exists()
+        assert Path(save_path.parent).is_dir()
+        import matplotlib
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt  # must import this after setting backend if we want to save
 
     if type(cccv_results) is dict:
         cccv_results = [cccv_results, ]
@@ -58,4 +66,7 @@ def compleconta_plot(cccv_results: List[Dict[float, Dict[float, Dict[str, float]
     each_n = [f"(n={y})" for y in each_n] if each_n is not None else ["" for _ in conditions]
     fig.legend([" ".join([x, y]) for x, y in zip(conditions, each_n)], loc=8, prop={"size": fontsize // 1.3})
     plt.subplots_adjust(wspace=0.05, bottom=0.20)
-    plt.show()
+    if save_path is not None:
+        plt.savefig(save_path)
+    else:
+        plt.show()

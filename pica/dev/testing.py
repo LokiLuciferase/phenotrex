@@ -37,7 +37,7 @@ def test_xgb():
                                              phenotype_file=f"tests/test_svm/{name}.phenotype",
                                              groups_file=f"tests/test_svm/{name}.taxid", selected_rank="auto",
                                              verb=True)  # make training data set from genotype and phenotype files
-        xgb = TrexXGB(verb=True, subsample=1, colsample_bytree=1, n_estimators=40, max_depth=5)
+        xgb = TrexXGB(verb=True)
         # svm.train(records=td, reduce_features=True)
         # print(svm.get_feature_weights())
         #svm.crossvalidate(records=td, n_jobs=4, reduce_features=True, n_features=10000, groups=True, n_replicates=1)
