@@ -17,6 +17,9 @@ class TrexXGB(TrexClassifier):
     :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
     :param kwargs: Any additional named arguments are passed to the XGBClassifier constructor.
     """
+
+    identifier = 'XGB'
+
     def __init__(self, max_depth: int = 4, learning_rate: float = 0.05,
                  n_estimators: int = 30, gamma: float = 0., min_child_weight: int = 1,
                  subsample: float = 0.7, colsample_bytree: float = 0.3,

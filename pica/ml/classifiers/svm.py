@@ -25,7 +25,17 @@ from pica.ml.feature_select import recursive_feature_elimination, compress_vocab
 
 
 class TrexSVM(TrexClassifier):
-    """LinearSVM classifier."""
+    """
+    Class which encapsulates a sklearn Pipeline of CountVectorizer (for vectorization of features) and
+    sklearn.svm.LinearSVC.
+    Provides train() and crossvalidate() functionality equivalent to train.py and crossvalidateMT.py.
+
+    :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
+    :param kwargs: Any additional named arguments are passed to the XGBClassifier constructor.
+    """
+
+    identifier = 'SVM'
+
     def __init__(self, C: float = 5., penalty: str = "l2", tol: float = 1.,
                  random_state: int = None, verb=False,
                  *args, **kwargs):

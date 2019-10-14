@@ -52,6 +52,12 @@ cccv_scores = {'Sulfate_reducer': {0.0: {0.0: {'score_mean': 0.5,
                                          1.0: {'score_mean': 0.5233928571428571,
                                                'score_sd': 0.038916737680017945}}}}
 
+cv_scores_trex = {'SVM': cv_scores,
+                  'XGB': {}}
+
+cccv_scores_trex = {'SVM': cccv_scores,
+                    'XGB': {}}
+
 num_of_features_uncompressed = {"Sulfate_reducer": 50973}
 
 num_of_features_compressed = {"Sulfate_reducer": 19029}
