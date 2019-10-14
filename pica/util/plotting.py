@@ -10,7 +10,25 @@ def compleconta_plot(cccv_results: List[Dict[float, Dict[float, Dict[str, float]
                      title: str = "", fontsize: int = 16, figsize=(10, 7),
                      plot_comple: bool = True, plot_conta: bool = True,
                      colors: List = None, save_path: Union[str, Path] = None,  **kwargs):
-    """ TODO add docstring """
+    """
+    Plots Compleconta CV result for one or multiple models.
+    For perfect completeness and variable contamination
+    as well as perfect contamination and variable completeness,
+    the resulting mean balanced accuracy over folds is plotted.
+
+    :param cccv_results: a ComplecontaCV result, or list thereof
+    :param conditions: A list of condition names associated cccv_results
+    :param each_n: A list of sample counts in datasets associated with cccv_results
+    :param title: The plot title
+    :param fontsize: The fontsize of the plot
+    :param figsize: The figure size (tuple of width, height)
+    :param plot_comple: Whether to plot completeness
+    :param plot_conta: Whether to plot contamination
+    :param colors:
+    :param save_path: The save path of the plot; if None, display it with plt.show()
+    :param kwargs: any further keyword arguments passed to plt.plot()
+    :return: None
+    """
 
     if save_path is not None:
         save_path = Path(str(save_path))

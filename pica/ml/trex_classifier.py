@@ -63,6 +63,11 @@ class TrexClassifier(ABC):
 
     @abstractmethod
     def get_feature_weights(self) -> Dict:
+        """
+        Extract the weights for features from pipeline.
+
+        :return: sorted Dict of feature name: weight
+        """
         pass
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
@@ -172,7 +177,6 @@ class TrexClassifier(ABC):
         :param n_features: selects the minimum number of features to retain (if feature reduction is used)
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
-
         cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
                              n_jobs=n_jobs, n_replicates=n_replicates,

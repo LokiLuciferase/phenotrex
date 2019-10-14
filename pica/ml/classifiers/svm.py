@@ -25,7 +25,8 @@ from pica.ml.feature_select import recursive_feature_elimination, compress_vocab
 
 
 class TrexSVM(TrexClassifier):
-    def __init__(self, C: float = 5, penalty: str = "l2", tol: float = 1,
+    """LinearSVM classifier."""
+    def __init__(self, C: float = 5., penalty: str = "l2", tol: float = 1.,
                  random_state: int = None, verb=False,
                  *args, **kwargs):
         super().__init__(random_state=random_state, verb=verb)
@@ -76,7 +77,7 @@ class TrexSVM(TrexClassifier):
         """
         Extract the weights for features from pipeline.
 
-        :return: tuple of lists: feature names and weights
+        :return: sorted Dict of feature name: weight
         """
         # TODO: find different way to feature weights that is closer to the real weight used for classification
         # get weights directly from the CalibratedClassifierCV object.
@@ -114,9 +115,9 @@ class PICASVM:
     :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
     """
     def __init__(self,
-                 C: float = 5,
+                 C: float = 5.,
                  penalty: str = "l2",
-                 tol: float = 1,
+                 tol: float = 1.,
                  random_state: int = None,
                  verb=False,
                  *args, **kwargs):
