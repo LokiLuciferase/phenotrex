@@ -1,6 +1,7 @@
 from time import time
 from typing import List, Tuple, Dict
 
+import numpy as np
 import xgboost as xgb
 from sklearn.pipeline import Pipeline
 
@@ -26,6 +27,13 @@ class TrexXGB(TrexClassifier):
                  n_jobs: int = -1, random_state: int = None, verb=False, *args, **kwargs):
         super().__init__(random_state=random_state, verb=verb)
         self.logger = get_logger(__name__, verb=True)
+        self.default_search_params = {
+            'n_estimators':[20, 30, 50, 100],
+            'subsample': np.arange(0.2, 0.9, 0.1).round(2),
+            'colsample_bytree': np.arange(0.2, 0.9, 0.1).round(2),
+            'min_child_weight': np.arange(1, 20),
+            'max_depth':np.arange(3, 7)
+        }
 
         classifier = xgb.sklearn.XGBClassifier(missing=0, max_depth=max_depth,
                                                learning_rate=learning_rate,
