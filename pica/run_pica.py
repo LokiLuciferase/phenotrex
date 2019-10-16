@@ -5,7 +5,7 @@ import argparse
 
 from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
     write_misclassifications_file, write_cccv_accuracy_file
-from pica.ml.classifiers.svm import PICASVM
+from pica.ml.classifiers.svm import TrexSVM
 from pica.util.serialization import save_ml, load_ml
 from pica.util.logging import get_logger
 
@@ -103,7 +103,7 @@ def call(args):
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
                                                         verb=args.verb)
-        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        svm = TrexSVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
 
         if sn == "train":
             svm.train(records=training_records, reduce_features=args.reduce_features, n_features=args.num_of_features)
@@ -143,7 +143,7 @@ def call(args):
                                                         groups_file=args.groups,
                                                         selected_rank=args.rank,
                                                         verb=args.verb)
-        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        svm = TrexSVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
         cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True, n_jobs=args.threads,
                                reduce_features=args.reduce_features, n_features=args.num_of_features)
         mean_balanced_accuracy, mba_sd, misclassifications = cv

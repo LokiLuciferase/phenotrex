@@ -9,7 +9,7 @@ first_phenotype_accession = {
     "Sulfate_reducer": "GCA_000007085.1",
 }
 
-cv_scores = {'Sulfate_reducer': {3: {'accuracy': (0.9477939477939478, 0.04189200493982592),
+cv_scores_trex = {'SVM':{'Sulfate_reducer': {3: {'accuracy': (0.9477939477939478, 0.04189200493982592),
                                      'balanced_accuracy': (0.94017094017094, 0.04262807124628204),
                                      'f1': (0.9220779220779222, 0.05903974760599939)},
                                  5: {'accuracy': (0.9375494071146246, 0.06028931377996689),
@@ -17,9 +17,10 @@ cv_scores = {'Sulfate_reducer': {3: {'accuracy': (0.9477939477939478, 0.04189200
                                      'f1': (0.9046153846153846, 0.08991777966893824)},
                                  10: {'accuracy': (0.930909090909091, 0.08231108542721141),
                                       'balanced_accuracy': (0.9145833333333334, 0.11427990126585398),
-                                      'f1': (0.8746031746031747, 0.17762606905565204)}}}
+                                      'f1': (0.8746031746031747, 0.17762606905565204)}}},
+             }
 
-cccv_scores = {'Sulfate_reducer': {0.0: {0.0: {'score_mean': 0.5,
+cccv_scores_trex = {'SVM': {'Sulfate_reducer': {0.0: {0.0: {'score_mean': 0.5,
                                                'score_sd': 0.0},
                                          0.33: {'score_mean': 0.04583333333333333,
                                                 'score_sd': 0.044253060157839176},
@@ -50,13 +51,8 @@ cccv_scores = {'Sulfate_reducer': {0.0: {0.0: {'score_mean': 0.5,
                                          0.67: {'score_mean': 0.6789285714285714,
                                                 'score_sd': 0.12519463305239853},
                                          1.0: {'score_mean': 0.5233928571428571,
-                                               'score_sd': 0.038916737680017945}}}}
-
-cv_scores_trex = {'SVM': cv_scores,
-                  'XGB': {}}
-
-cccv_scores_trex = {'SVM': cccv_scores,
-                    'XGB': {}}
+                                               'score_sd': 0.038916737680017945}}}},
+               }
 
 num_of_features_uncompressed = {"Sulfate_reducer": 50973}
 
