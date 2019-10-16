@@ -4,28 +4,113 @@
 #
 from time import time
 from typing import List, Tuple, Dict
-from collections import defaultdict
 
-import array
 import numpy as np
-import scipy.sparse as sp
 
-from sklearn.utils.fixes import sp_version
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut
 from sklearn.feature_selection import RFECV
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.feature_extraction.text import CountVectorizer
 
+from pica.ml.vectorizer import CustomVectorizer
 from pica.structure.records import TrainingRecord, GenotypeRecord
 from pica.ml.cccv import CompleContaCV
+from pica.ml.trex_classifier import TrexClassifier
 from pica.util.logging import get_logger
 from pica.util.helpers import get_x_y_tn, get_groups
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary, DEFAULT_STEP_SIZE,\
     DEFAULT_SCORING_FUNCTION
 
+
+class TrexSVM(TrexClassifier):
+    """
+    Class which encapsulates a sklearn Pipeline of CountVectorizer (for vectorization of features) and
+    sklearn.svm.LinearSVC.
+    Provides train() and crossvalidate() functionality equivalent to train.py and crossvalidateMT.py.
+
+    :param random_state: A integer randomness seed for a Mersienne Twister (see np.random.RandomState)
+    :param kwargs: Any additional named arguments are passed to the XGBClassifier constructor.
+    """
+
+    identifier = 'SVM'
+
+    def __init__(self, C: float = 5., penalty: str = "l2", tol: float = 1.,
+                 random_state: int = None, verb=False,
+                 *args, **kwargs):
+        super().__init__(random_state=random_state, verb=verb)
+
+        self.C = C
+        self.penalty = penalty
+        self.tol = tol
+        self.logger = get_logger(__name__, verb=verb)
+
+        if self.penalty == "l1":
+            self.dual = False
+        else:
+            self.dual = True
+
+        classifier = LinearSVC(C=self.C, tol=self.tol, penalty=self.penalty, dual=self.dual,
+                               class_weight="balanced", random_state=self.random_state, **kwargs)
+
+        self.pipeline = Pipeline(steps=[
+            ("vec", self.vectorizer),
+            ("clf", CalibratedClassifierCV(classifier, method="sigmoid", cv=5))
+        ])
+        self.cv_pipeline = Pipeline(steps=[
+            ("vec", self.vectorizer),
+            ("clf", classifier)
+        ])
+
+    def _get_coef_(self, pipeline: Pipeline = None) -> np.array:
+        r"""
+        Interface function to get `coef\_` from classifier used in the pipeline specified
+        this might be useful if we switch the classifier, most of them already have a `coef\_` attribute
+
+
+        :param pipeline: pipeline from which the classifier should be used
+        :return: `coef\_` for feature weight report
+        """
+        if not pipeline:
+            pipeline = self.pipeline
+
+        clf = pipeline.named_steps["clf"]
+        if hasattr(clf, "coef_"):
+            return_weights = clf.coef_
+        else:  # assume calibrated classifier
+            weights = np.array([c.base_estimator.coef_[0] for c in clf.calibrated_classifiers_])
+            return_weights = np.median(weights, axis=0)
+        return return_weights
+
+    def get_feature_weights(self) -> Dict:
+        """
+        Extract the weights for features from pipeline.
+
+        :return: sorted Dict of feature name: weight
+        """
+        # TODO: find different way to feature weights that is closer to the real weight used for classification
+        # get weights directly from the CalibratedClassifierCV object.
+        # Each classifier has numpy array .coef_ of which we simply take the mean
+        # this is not necessary the actual weight used in the final classifier, but enough to determine importance
+        if self.trait_name is None:
+            self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
+            return {}
+
+        mean_weights = self._get_coef_()
+
+        # get original names of the features from vectorization step, they might be compressed
+        names = self.pipeline.named_steps["vec"].get_feature_names()
+
+        # decompress
+        weights = {feature: mean_weights[i] for feature, i in names}
+
+        # sort by absolute value
+        sorted_weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
+                                                                          reverse=True)}
+        # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
+        #  if we rely on feature selection in near future
+        return sorted_weights
 
 class PICASVM:
     """
@@ -40,9 +125,9 @@ class PICASVM:
     :param kwargs: Any additional named arguments are passed to the LinearSVC constructor.
     """
     def __init__(self,
-                 C: float = 5,
+                 C: float = 5.,
                  penalty: str = "l2",
-                 tol: float = 1,
+                 tol: float = 1.,
                  random_state: int = None,
                  verb=False,
                  *args, **kwargs):
@@ -267,97 +352,3 @@ class PICASVM:
         score_dict = cccv.run(records=records)
         self.cccv_result = score_dict
         return score_dict
-
-
-class CustomVectorizer(CountVectorizer):
-    """
-    modified from CountVectorizer to override the _validate_vocabulary function, which invoked an error because
-    multiple indices of the dictionary contained the same feature index. However, this is we intend with the
-    compress_vocabulary function.
-    Other functions had to be adopted: get_feature_names (allow decompression), _count_vocab (reduce the matrix size)
-    """
-
-    def _validate_vocabulary(self):
-        """
-        overriding the validation which does not accept multiple feature-names to encode for one feature
-        """
-        if self.vocabulary:
-            self.vocabulary_ = dict(self.vocabulary)
-            self.fixed_vocabulary_ = True
-        else:
-            self.fixed_vocabulary_ = False
-
-    def get_feature_names(self):
-        """Array mapping from feature integer indices to feature name"""
-        if not hasattr(self, 'vocabulary_'):
-            self._validate_vocabulary()
-
-        self._check_vocabulary()
-
-        # return value is different from normal CountVectorizer output: maintain dict instead of returning a list
-        return sorted(self.vocabulary_.items(), key=lambda x: x[1])
-
-    def _count_vocab(self, raw_documents, fixed_vocab):
-        """Create sparse feature matrix, and vocabulary where fixed_vocab=False
-        Modified to reduce the actual size of the matrix returned if compression of vocabulary is used
-        """
-        if fixed_vocab:
-            vocabulary = self.vocabulary_
-        else:
-            vocabulary = defaultdict()
-            vocabulary.default_factory = vocabulary.__len__
-
-        analyze = self.build_analyzer()
-        j_indices = []
-        indptr = []
-
-        values = array.array(str("i"))
-        indptr.append(0)
-        for doc in raw_documents:
-            feature_counter = {}
-            for feature in analyze(doc):
-                try:
-                    feature_idx = vocabulary[feature]
-                    if feature_idx not in feature_counter:
-                        feature_counter[feature_idx] = 1
-                    else:
-                        feature_counter[feature_idx] += 1
-                except KeyError:
-                    # Ignore out-of-vocabulary items for fixed_vocab=True
-                    continue
-
-            j_indices.extend(feature_counter.keys())
-            values.extend(feature_counter.values())
-            indptr.append(len(j_indices))
-
-        if not fixed_vocab:
-            # disable defaultdict behaviour
-            vocabulary = dict(vocabulary)
-            if not vocabulary:
-                raise ValueError("empty vocabulary; perhaps the documents only"
-                                 " contain stop words")
-
-        if indptr[-1] > 2147483648:  # = 2**31 - 1
-            if sp_version >= (0, 14):
-                indices_dtype = np.int64
-            else:
-                raise ValueError(f'sparse CSR array has {indptr[-1]} non-zero '
-                                 f'elements and requires 64 bit indexing, '
-                                 f' which is unsupported with scipy {".".join(sp_version)}. '
-                                 f'Please upgrade to scipy >=0.14')
-
-        else:
-            indices_dtype = np.int32
-
-        j_indices = np.asarray(j_indices, dtype=indices_dtype)
-        indptr = np.asarray(indptr, dtype=indices_dtype)
-        values = np.frombuffer(values, dtype=np.intc)
-
-        # modification here:
-        vocab_len = vocabulary[max(vocabulary, key=vocabulary.get)] + 1
-
-        X = sp.csr_matrix((values, j_indices, indptr),
-                          shape=(len(indptr) - 1, vocab_len),
-                          dtype=self.dtype)
-        X.sort_indices()
-        return vocabulary, X

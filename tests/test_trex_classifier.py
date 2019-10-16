@@ -1,18 +1,16 @@
-#
-# Created by Lukas Lüftinger on 2/17/19.
-#
 import pytest
 
 import numpy as np
 
-from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores, cccv_scores
+from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores_trex, \
+    cccv_scores_trex
 from tests.targets import num_of_features_compressed, num_of_features_uncompressed
 from pica.io.io import load_training_files
-from pica.ml.classifiers.svm import PICASVM
+from pica.ml.classifiers.svm import TrexSVM
+from pica.ml.classifiers.xgbm import TrexXGB
 from pica.util.helpers import get_x_y_tn
 
 from pica.ml.feature_select import recursive_feature_elimination, compress_vocabulary
-
 
 RANDOM_STATE = 2
 
@@ -22,18 +20,29 @@ trait_names = [
     # "sporulation",
 ]
 
+classifiers = [
+    TrexSVM,
+    #TrexXGB  # TODO: add data for TrexXGB
+]
+classifier_ids = [
+    'SVM',
+    #'XGB'
+]
+
 cv_folds = [5, ]
 
+# TODO: both in PICASVM as well as in TrexClassifier, scoring cannot be changed atm
 scoring_methods = ["balanced_accuracy",
                    # "accuracy",
                    # "f1"
                    ]
 
 
-class TestPICASVM:
+class TestTrexClassifier:
     @pytest.mark.parametrize("trait_name",
-                             [pytest.param("Sulfate_reducer", id="Sulfate_reducer",),
-                              pytest.param("Aerobe", id="Aerobe", marks=[pytest.mark.xfail])])  # file not found
+                             [pytest.param("Sulfate_reducer", id="Sulfate_reducer", ),
+                              pytest.param("Aerobe", id="Aerobe",
+                                           marks=[pytest.mark.xfail])])  # file not found
     def test_load_training_files(self, trait_name):
         """
         Test training data loading. Check/catch invalid file formats.
@@ -51,61 +60,67 @@ class TestPICASVM:
         return training_records, genotype, phenotype, group
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    def test_train(self, trait_name):
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_train(self, trait_name, classifier):
         """
-        Test PICASVM training. Using different traits.
+        Test TrexClassifier training. Using different traits.
         :param trait_name:
+        :param classifier:
         :return:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
-        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        _ = svm.train(records=training_records)
+        clf = classifier(verb=True, random_state=RANDOM_STATE)
+        _ = clf.train(records=training_records)
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("cv", cv_folds, ids=[str(x) for x in cv_folds])
     @pytest.mark.parametrize("scoring", scoring_methods, ids=scoring_methods)
-    def test_crossvalidate(self, trait_name, cv, scoring):
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_crossvalidate(self, trait_name, cv, scoring, classifier):
         """
         Test default crossvalidation of PICASVM class. Using several different traits, cv folds, and scoring methods.
         Compares with dictionary cv_scores.
         :param trait_name:
         :param cv:
         :param scoring:
+        :param classifier:
         :return:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
-        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        score_target = cv_scores[trait_name][cv][scoring]
-        score_pred = svm.crossvalidate(records=training_records, cv=cv, scoring=scoring)[:2]
+        clf = classifier(verb=True, random_state=RANDOM_STATE)
+        score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring]
+        score_pred = clf.crossvalidate(records=training_records, cv=cv, scoring=scoring)[:2]
         np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
 
     @pytest.mark.xfail()
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    def test_compleconta_cv(self, trait_name):
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_compleconta_cv(self, trait_name, classifier):
         """
         Perform compleconta-cv for each trait name using PICASVM class.
         :param trait_name:
+        :param classifier:
         :return:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
-        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        assert cccv_scores[trait_name] == svm.crossvalidate_cc(records=training_records,
-                                                               cv=5,
-                                                               comple_steps=3,
-                                                               conta_steps=3,
-                                                               )
+        clf = classifier(verb=True, random_state=RANDOM_STATE)
+        cccv_scores = clf.crossvalidate_cc(records=training_records, cv=5, comple_steps=3,
+                                           conta_steps=3)
+        assert cccv_scores_trex[classifier.identifier][trait_name] == cccv_scores
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    def test_compress_vocabulary(self, trait_name):
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_compress_vocabulary(self, trait_name, classifier):
         """
         Perform feature compression tests
         :param trait_name:
+        :param classifier:
         :return:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
-        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
-        compress_vocabulary(records=training_records, pipeline=svm.cv_pipeline)
-        vec = svm.cv_pipeline.named_steps["vec"]
+        clf = classifier(verb=True, random_state=RANDOM_STATE)
+        compress_vocabulary(records=training_records, pipeline=clf.cv_pipeline)
+        vec = clf.cv_pipeline.named_steps["vec"]
         vec._validate_vocabulary()
 
         # check if vocabulary is set properly
@@ -133,12 +148,12 @@ class TestPICASVM:
     @pytest.mark.parametrize("n_features", [10_000])
     def test_recursive_feature_elimination(self, trait_name, n_features):
         """
-        Perform feature compression tests
+        Perform feature compression tests only for SVM; counterindicated for XGB.
         :param trait_name:
         :return:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
-        svm = PICASVM(verb=True, random_state=RANDOM_STATE)
+        svm = TrexSVM(verb=True, random_state=RANDOM_STATE)
         recursive_feature_elimination(records=training_records,
                                       pipeline=svm.cv_pipeline,
                                       step=0.01,

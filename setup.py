@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 # Requirements are required here, while requirements.txt is likely not required.
-requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', ]
+requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', 'xgboost']
 
 setup_requirements = ['pytest-runner', ]
 
