@@ -36,8 +36,9 @@ class TrexSVM(TrexClassifier):
         self.penalty = penalty
         self.tol = tol
         self.default_search_params = {
-            'C': np.logspace(-2, 1.5, 10).round(3),
-            'tol': np.logspace(0, -5, 10)
+            'C': np.logspace(-6, 4, 30),
+            'tol': np.logspace(0, -5, 10),
+            'max_iter': np.logspace(2, 4.3, 20)
         }
         self.logger = get_logger(__name__, verb=verb)
 

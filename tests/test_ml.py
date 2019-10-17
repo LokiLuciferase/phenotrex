@@ -24,19 +24,20 @@ trait_names = [
 
 classifiers = [
     TrexSVM,
-    TrexXGB  # TODO: add data for TrexXGB
+    TrexXGB
 ]
 classifier_ids = [
     'SVM',
     'XGB'
 ]
 
-cv_folds = [5, ]
+cv_folds = [
+    5,
+]
 
-# TODO: both in PICASVM as well as in TrexClassifier, scoring cannot be changed atm
 scoring_methods = ["balanced_accuracy",
                    # "accuracy",
-                   # "f1"
+                   "f1"
                    ]
 
 
@@ -108,9 +109,7 @@ class TestTrexClassifier:
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=True)
-
-        # test retraining
-        clf_opt.train(training_records)
+        assert type(clf_opt) == type(clf)
 
     @pytest.mark.xfail()
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
@@ -131,9 +130,27 @@ class TestTrexClassifier:
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_get_feature_names(self, trait_name, classifier):
+        """
+        Get feature names of classifier.
+
+        :param trait_name:
+        :param classifier:
+        :return:
+        """
+        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        clf = classifier(verb=True, random_state=RANDOM_STATE)
+        clf.train(training_records)
+        fweights = clf.get_feature_weights()
+        print(fweights)
+        print(len(fweights))
+
+    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_compress_vocabulary(self, trait_name, classifier):
         """
         Perform feature compression tests
+
         :param trait_name:
         :param classifier:
         :return:

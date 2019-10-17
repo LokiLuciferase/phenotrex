@@ -1,13 +1,13 @@
 from time import time
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Callable, Union
 from abc import ABC
 from abc import abstractmethod
-from copy import deepcopy
 import gc
 
 import numpy as np
 
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.base import clone
+from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score
 from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut, RandomizedSearchCV
 from sklearn.feature_selection import RFECV
 
@@ -24,6 +24,11 @@ class TrexClassifier(ABC):
     """
     Abstract base class of Trex classifier.
     """
+    scoring_function_mapping = {
+        'accuracy': accuracy_score,
+        'balanced_accuracy': balanced_accuracy_score,
+        'f1': f1_score
+    }
 
     @classmethod
     def get_instance(cls, *args, **kwargs):
@@ -93,7 +98,8 @@ class TrexClassifier(ABC):
         """
         pass
 
-    def parameter_search(self, records: List[TrainingRecord], search_params: Dict[str, List] = None,
+    def parameter_search(self, records: List[TrainingRecord],
+                         search_params: Dict[str, List] = None,
                          cv: int = 5, scoring: str = DEFAULT_SCORING_FUNCTION,
                          n_jobs: int = -1, n_iter: int = 10,
                          return_optimized: bool = False):
@@ -118,12 +124,11 @@ class TrexClassifier(ABC):
         if search_params is None:
             search_params = self.default_search_params
 
-        cv = StratifiedKFold(n_splits=cv, shuffle=True)
-        vec = deepcopy(self.cv_pipeline.named_steps['vec'])
-        clf = deepcopy(self.cv_pipeline.named_steps['clf'])
+        vec = clone(self.cv_pipeline.named_steps['vec'])
+        clf = clone(self.cv_pipeline.named_steps['clf'])
 
         X_trans = vec.fit_transform(X)
-
+        cv = StratifiedKFold(n_splits=cv, shuffle=True)
         rcv = RandomizedSearchCV(estimator=clf,
                                  scoring=scoring,
                                  param_distributions=search_params,
@@ -147,7 +152,8 @@ class TrexClassifier(ABC):
         return best_params
 
     def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: str = DEFAULT_SCORING_FUNCTION, n_jobs=-1,
+                      scoring: Union[str, Callable] = DEFAULT_SCORING_FUNCTION,
+                      n_jobs=-1,
                       n_replicates: int = 10, groups: bool = False,
                       # TODO: add more complex scoring/reporting, e.g. AUC
                       reduce_features: bool = False,
@@ -169,7 +175,8 @@ class TrexClassifier(ABC):
         :param kwargs: Unused
         :return: A list of mean score, score SD, and the percentage of misclassifications per sample
         """
-
+        scoring_func = scoring if hasattr(scoring, '__call__') else self.scoring_function_mapping.get(scoring)
+        assert scoring_func is not None, f'invalid or missing scoring function: {scoring}.'
         log_function = self.logger.debug if demote else self.logger.info
         t1 = time()
         X, y, tn = get_x_y_tn(records)
@@ -213,7 +220,7 @@ class TrexClassifier(ABC):
                 mismatch = np.logical_xor(y[ts], y_pred)
                 mismatch_indices = ts[np.where(mismatch)]
                 misclassifications[mismatch_indices] += 1
-                score = balanced_accuracy_score(y[ts], y_pred)
+                score = scoring_func(y[ts], y_pred)
                 scores.append(score)
             log_function(f"Finished replicate {i + 1} of {n_replicates}")
 
