@@ -2,16 +2,16 @@
 # Created by Lukas Lüftinger on 2/5/19.
 #
 import os
-import logging
 
 from sklearn.externals import joblib
 
 from pica.util.logging import get_logger
 
 
-def save_ml(obj, filename: str, overwrite=False, verb=False):
+def save_classifier(obj, filename: str, overwrite=False, verb=False):
     """
-    Save a PICA ml classifier as a pickled Python3 class. e.g. a fitted PICASVM object
+    Save a TrexClassifier as a pickled object.
+
     :param obj: the Python3 object to be saved.
     :param filename: Output filename
     :param overwrite: Overwrite existing files with same name
@@ -31,9 +31,10 @@ def save_ml(obj, filename: str, overwrite=False, verb=False):
     logger.info("Classifier saved.")
 
 
-def load_ml(filename: str, verb=False):
+def load_classifier(filename: str, verb=False):
     """
-    Load a pickled PICA ml classifier to a usable object. e.g. a fitted PICASVM object
+    Load a pickled TrexClassifier to a usable object.
+
     :param filename: Input filename
     :param verb: Toggle verbosity
     :return: a unpickled PICA ml classifier

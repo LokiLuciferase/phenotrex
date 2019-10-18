@@ -5,4 +5,10 @@ Credits
 Development Lead
 ----------------
 
-* Lukas Lueftinger <lukas.lueftinger@outlook.com>
+* Lukas Lüftinger <lukas.lueftinger@outlook.com>
+
+Contributors
+------------
+
+* Patrick Hyden <hydenp89@univie.ac.at>
+* Roman Feldbauer <roman.feldbauer@univie.ac.at>

@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use PICA in a project::
+To use PICA2 in a project::
 
     import pica
