@@ -118,7 +118,8 @@ class CompleContaCV:
 
         classifier = copy.deepcopy(self.pipeline)
         if self.reduce_features:
-            recursive_feature_elimination(training_records, classifier, n_features=self.n_features)
+            recursive_feature_elimination(training_records, classifier, n_features=self.n_features,
+                                          random_state=self.random_state)
 
         X_train, y_train, tn = get_x_y_tn(training_records)
         classifier.fit(X=X_train, y=y_train, **kwargs)
