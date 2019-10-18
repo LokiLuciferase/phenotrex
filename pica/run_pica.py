@@ -5,8 +5,8 @@ import argparse
 
 from pica.io.io import load_training_files, load_genotype_file, write_weights_file, DEFAULT_TRAIT_SIGN_MAPPING,\
     write_misclassifications_file, write_cccv_accuracy_file
-from pica.ml.classifiers.svm import PICASVM
-from pica.util.serialization import save_ml, load_ml
+from pica.ml.classifiers.svm import TrexSVM
+from pica.util.serialization import save_classifier, load_classifier
 from pica.util.logging import get_logger
 
 
@@ -103,7 +103,7 @@ def call(args):
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
                                                         verb=args.verb)
-        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        svm = TrexSVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
 
         if sn == "train":
             svm.train(records=training_records, reduce_features=args.reduce_features, n_features=args.num_of_features)
@@ -111,7 +111,7 @@ def call(args):
                 weights = svm.get_feature_weights()
                 weights_file_name = f"{args.out}.rank"
                 write_weights_file(weights_file=weights_file_name, weights=weights)
-            save_ml(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
+            save_classifier(obj=svm, filename=args.out, overwrite=False, verb=args.verb)
 
         elif sn == "crossvalidate":
             cv = svm.crossvalidate(records=training_records,
@@ -143,7 +143,7 @@ def call(args):
                                                         groups_file=args.groups,
                                                         selected_rank=args.rank,
                                                         verb=args.verb)
-        svm = PICASVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
+        svm = TrexSVM(C=args.svm_c, penalty=args.reg, tol=args.tol, verb=args.verb)
         cv = svm.crossvalidate(records=training_records, n_replicates=1, groups=True, n_jobs=args.threads,
                                reduce_features=args.reduce_features, n_features=args.num_of_features)
         mean_balanced_accuracy, mba_sd, misclassifications = cv
@@ -157,7 +157,7 @@ def call(args):
 
     elif sn == "predict":
         genotype_records = load_genotype_file(args.genotype)
-        svm = load_ml(filename=args.classifier, verb=True)
+        svm = load_classifier(filename=args.classifier, verb=True)
         results, probabilities = svm.predict(X=genotype_records)
 
         translate_output = {trait_id: trait_sign for trait_sign, trait_id in DEFAULT_TRAIT_SIGN_MAPPING.items()}
@@ -167,7 +167,7 @@ def call(args):
             sys.stdout.write(f"{record.identifier}\t{translate_output[result]}\t{probability[result]}\n")
 
     elif sn == "weights":
-        svm = load_ml(filename=args.classifier, verb=True)
+        svm = load_classifier(filename=args.classifier, verb=True)
         weights = svm.get_feature_weights()
         write_weights_file(weights_file=args.out, weights=weights)
 

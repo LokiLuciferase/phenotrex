@@ -51,7 +51,10 @@ class CompleContaCV:
 
         self.comple_steps = comple_steps
         self.conta_steps = conta_steps
-        self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
+        if n_jobs is not None:
+            self.n_jobs = n_jobs if n_jobs > 0 else os.cpu_count()
+        else:
+            self.n_jobs = None
         self.n_replicates = n_replicates
         self.random_state = random_state if type(random_state) is np.random.RandomState \
             else np.random.RandomState(random_state)
@@ -115,7 +118,8 @@ class CompleContaCV:
 
         classifier = copy.deepcopy(self.pipeline)
         if self.reduce_features:
-            recursive_feature_elimination(training_records, classifier, n_features=self.n_features)
+            recursive_feature_elimination(training_records, classifier, n_features=self.n_features,
+                                          random_state=self.random_state)
 
         X_train, y_train, tn = get_x_y_tn(training_records)
         classifier.fit(X=X_train, y=y_train, **kwargs)
@@ -145,10 +149,18 @@ class CompleContaCV:
 
         self.logger.info("Begin completeness/contamination matrix crossvalidation on training data.")
         t1 = time()
-        with ProcessPoolExecutor(max_workers=self.n_jobs) as executor:
-            cv_scores = executor.map(self._completeness_cv,
-                                     self._replicates(records, self.cv, self.comple_steps, self.conta_steps,
-                                                      self.n_replicates))
+        if self.n_jobs is None:
+            cv_scores = map(self._completeness_cv, self._replicates(records, self.cv,
+                                                                    self.comple_steps,
+                                                                    self.conta_steps,
+                                                                    self.n_replicates))
+        else:
+            with ProcessPoolExecutor(max_workers=self.n_jobs) as executor:
+                cv_scores = executor.map(self._completeness_cv,
+                                         self._replicates(records, self.cv,
+                                                          self.comple_steps,
+                                                          self.conta_steps,
+                                                          self.n_replicates))
         t2 = time()
         mba = {}
         cv_scores_list = [x for x in cv_scores]
