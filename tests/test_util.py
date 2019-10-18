@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 from pica.io.io import load_training_files
 from pica.util.plotting import compleconta_plot
 from pica.ml.classifiers import TrexXGB
-from pica.util.serialization import save_ml, load_ml
+from pica.util.serialization import save_classifier, load_classifier
 
 from .targets import cccv_scores_trex
 from . import DATA_PATH
@@ -30,11 +30,11 @@ class TestUtil:
             td = self.get_training_data()
             xgb = TrexXGB(random_state=2)
             xgb.train(td)
-            save_ml(xgb, mp)
+            save_classifier(xgb, mp)
             assert mp.is_file()
 
     def test_ml_load(self):
         td = self.get_training_data()
-        xgb = load_ml(DATA_PATH/'Sulfate_reducer_xgb.pkl')
+        xgb = load_classifier(DATA_PATH/'Sulfate_reducer_xgb.pkl')
         preds = xgb.predict(td)
         assert preds is not None

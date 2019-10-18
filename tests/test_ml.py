@@ -1,4 +1,5 @@
 import pytest
+import json
 
 import numpy as np
 
@@ -26,6 +27,7 @@ classifiers = [
     TrexSVM,
     TrexXGB,
 ]
+
 classifier_ids = [
     'SVM',
     'XGB',
@@ -43,6 +45,11 @@ scoring_methods = [
 
 
 class TestTrexClassifier:
+
+    @staticmethod
+    def _round_nested_dict(d, decimal=1):
+        return json.loads(json.dumps(d), parse_float=lambda x: round(float(x), decimal))
+
     @pytest.mark.parametrize("trait_name",
                              [pytest.param("Sulfate_reducer", id="Sulfate_reducer", ),
                               pytest.param("Aerobe", id="Aerobe",
@@ -126,7 +133,9 @@ class TestTrexClassifier:
         cccv_scores = clf.crossvalidate_cc(records=training_records, cv=5, comple_steps=3,
                                            conta_steps=3)
         if classifier.identifier in cccv_scores_trex:
-            assert cccv_scores_trex[classifier.identifier][trait_name] == cccv_scores
+            desired = self._round_nested_dict(cccv_scores_trex[classifier.identifier][trait_name])
+            actual = self._round_nested_dict(cccv_scores)
+            assert desired == actual
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
