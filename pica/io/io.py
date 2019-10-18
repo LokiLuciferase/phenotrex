@@ -196,8 +196,8 @@ def load_training_files(genotype_file: str, phenotype_file: str, groups_file: st
         gp = load_groups_file(groups_file, selected_rank=selected_rank)
     else:
         # if not set, each sample gets its own group (not used currently)
-        gp = [GroupRecord(identifier=x.identifier, group_name=x.identifier, group_id=y) for y, x in
-              enumerate(pr)]
+        gp = [GroupRecord(identifier=x.identifier, group_name=x.identifier, group_id=y)
+              for y, x in enumerate(pr)]
     logger.info("Genotype and Phenotype records successfully loaded from file.")
     return collate_training_data(gr, pr, gp, universal_genotype=universal_genotype,
                                  verb=verb), gr, pr, gp
@@ -265,8 +265,8 @@ def write_misclassifications_file(output_file: str, records: List[TrainingRecord
         grouped_mcs = []
         grouped_signs = []
         for group in identifier_list:
-            group_mcs = [mcs for mcs, group_name in zip(misclassifications, group_names) if
-                         group == group_name]
+            group_mcs = [mcs for mcs, group_name in zip(misclassifications, group_names)
+                         if group == group_name]
             group_sign = [trait_sign for trait_sign, group_name in zip(trait_sign_list, group_names)
                           if group == group_name]
             grouped_mcs.append(np.mean(group_mcs))

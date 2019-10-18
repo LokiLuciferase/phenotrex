@@ -8,9 +8,9 @@ from sklearn.externals import joblib
 from pica.util.logging import get_logger
 
 
-def save_ml(obj, filename: str, overwrite=False, verb=False):
+def save_classifier(obj, filename: str, overwrite=False, verb=False):
     """
-    Save a ml classifier as a pickled Python3 class.
+    Save a TrexClassifier as a pickled object.
 
     :param obj: the Python3 object to be saved.
     :param filename: Output filename
@@ -31,9 +31,9 @@ def save_ml(obj, filename: str, overwrite=False, verb=False):
     logger.info("Classifier saved.")
 
 
-def load_ml(filename: str, verb=False):
+def load_classifier(filename: str, verb=False):
     """
-    Load a pickled ml classifier to a usable object.
+    Load a pickled TrexClassifier to a usable object.
 
     :param filename: Input filename
     :param verb: Toggle verbosity

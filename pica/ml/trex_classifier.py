@@ -104,19 +104,19 @@ class TrexClassifier(ABC):
                          n_jobs: int = -1, n_iter: int = 10,
                          return_optimized: bool = False):
         """
-        Perform stratified, randomized parameter search. If desired, update classifier training
-        parameters in the pipeline after search.
+        Perform stratified, randomized parameter search. If desired, return a new class instance
+        with optimized training parameters.
 
         :param records: List[TrainingRecords] to perform crossvalidation on.
         :param search_params: A dictionary of iterables of possible model training parameters.
-                              If none, use default search parameters for the given classifier.
+                              If None, use default search parameters for the given classifier.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_iter: Number of grid points to evaluate. Default: 10
         :param return_optimized: Whether to return a ready-made classifier
                                  with the optimized params instead of a dictionary of params.
-        :return: A dictionary containing best found parameters.
+        :return: A dictionary containing best found parameters or an optimized class instance.
         """
         t1 = time()
         self.logger.info(f'Performing randomized parameter search.')
@@ -163,7 +163,10 @@ class TrexClassifier(ABC):
         Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
 
         :param records: List[TrainingRecords] to perform crossvalidation on.
-        :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
+        :param scoring: String identifying scoring function of crossvalidation, or Callable.
+                        If a callable is passed, it must take two parameters `y_true` and `y_pred`
+                        (iterables of true and predicted class labels, respectively) and return a
+                        (numeric) score.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation

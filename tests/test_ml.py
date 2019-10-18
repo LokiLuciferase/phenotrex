@@ -24,21 +24,22 @@ trait_names = [
 
 classifiers = [
     TrexSVM,
-    TrexXGB
+    TrexXGB,
 ]
 classifier_ids = [
     'SVM',
-    'XGB'
+    'XGB',
 ]
 
 cv_folds = [
     5,
 ]
 
-scoring_methods = ["balanced_accuracy",
-                   # "accuracy",
-                   "f1"
-                   ]
+scoring_methods = [
+    "balanced_accuracy",
+    "f1",
+   # "accuracy",
+]
 
 
 class TestTrexClassifier:
@@ -111,7 +112,6 @@ class TestTrexClassifier:
         clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=True)
         assert type(clf_opt) == type(clf)
 
-    @pytest.mark.xfail()
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_compleconta_cv(self, trait_name, classifier):
