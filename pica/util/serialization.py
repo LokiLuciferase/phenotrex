@@ -3,7 +3,7 @@
 #
 import os
 
-from sklearn.externals import joblib
+import joblib
 
 from pica.util.logging import get_logger
 

@@ -15,7 +15,7 @@ def get_args():
     subparsers = parser.add_subparsers(dest="subparser_name")
 
     # train
-    sp_train_descr = """Train PICA model with .phenotype and .genotype files."""
+    sp_train_descr = """Train model with .phenotype and .genotype files."""
     sp_train = subparsers.add_parser("train", description=sp_train_descr)
     sp_train.add_argument("-w", "--weights", action="store_true",
                           help="Write feature ranks and weights in a separate tsv file named <output file>.rank")
@@ -90,7 +90,7 @@ def get_args():
     sp_weights_decr = """Write feature weights from existing classifier to a specified output file"""
     sp_weights = subparsers.add_parser("weights", description=sp_weights_decr)
     sp_weights.add_argument("-c", "--classifier", required=True,
-                            help="pickled PICA classifier")
+                            help="pickled classifier")
     sp_weights.add_argument("-o", "--out", type=str, required=True, help="Filename of output file")
 
     return parser.parse_args()
@@ -98,7 +98,7 @@ def get_args():
 
 def call(args):
     """discern subcommand and execute with collected args"""
-    logger = get_logger("PICA", verb=True)
+    logger = get_logger("trex", verb=True)
     sn = args.subparser_name
     if sn in ("train", "crossvalidate", "cccv"):
         training_records, _, _, _ = load_training_files(genotype_file=args.genotype, phenotype_file=args.phenotype,
