@@ -27,12 +27,11 @@ class TrexSVM(TrexClassifier):
 
     identifier = 'SVM'
 
-    def __init__(self, c: float = 5., penalty: str = "l2", tol: float = 1.,
+    def __init__(self, C: float = 5., penalty: str = "l2", tol: float = 1.,
                  random_state: int = None, verb=False,
                  *args, **kwargs):
         super().__init__(random_state=random_state, verb=verb)
-
-        self.C = c
+        self.C = C if 'c' not in kwargs else kwargs.pop('c')  # click automatically lowercases args
         self.penalty = penalty
         self.tol = tol
         self.default_search_params = {

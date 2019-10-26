@@ -1,6 +1,6 @@
-from pica.io.io import (load_training_files, write_weights_file, write_misclassifications_file,
-                        write_cccv_accuracy_file)
-from pica.util.serialization import save_classifier
+from pica.io.flat import (load_training_files, write_weights_file, write_misclassifications_file,
+                          write_cccv_accuracy_file)
+from pica.io.serialization import save_classifier
 from pica.util.logging import get_logger
 from pica.ml.classifiers import TrexSVM, TrexXGB
 
@@ -24,25 +24,30 @@ def generic_train(type, genotype, phenotype, verb, weights, out, n_features=None
 
 
 def generic_cv(type, genotype, phenotype, folds, replicates, threads,
-               verb, out=None, n_features=None,  *args, **kwargs):
+               verb, groups=None, rank=None, out=None, n_features=None,  *args, **kwargs):
     """Generic function for model CV."""
     training_records, *_ = load_training_files(genotype_file=genotype,
                                                phenotype_file=phenotype,
+                                               groups_file=groups,
+                                               selected_rank=rank,
                                                verb=verb)
     clf = CLF_MAPPER[type](*args, **kwargs)
     reduce_features = True if n_features is not None else False
+    use_groups = groups is not None
     score_mean, score_sd, misclass = clf.crossvalidate(records=training_records, cv=folds,
-                                                       n_replicates=replicates, n_jobs=threads,
+                                                       n_replicates=replicates, groups=use_groups,
+                                                       n_jobs=threads,
                                                        reduce_features=reduce_features,
                                                        n_features=n_features)
     logger.info(f"CV score: {score_mean} +/- {score_sd}")
     if out is not None:
-        write_misclassifications_file(out, training_records, misclass)
+        write_misclassifications_file(out, training_records, misclass, use_groups=use_groups)
 
 
 def generic_cccv(type, genotype, phenotype, folds, replicates, threads, comple_steps, conta_steps,
-                 verb, out=None, n_features=None,  *args, **kwargs):
+                 verb, groups=None, rank=None, out=None, n_features=None,  *args, **kwargs):
     """Generic function for model CCCV."""
+    assert groups is None, 'Usage of LOGO in CCCV not currently implemented.'
     training_records, *_ = load_training_files(genotype_file=genotype,
                                                phenotype_file=phenotype,
                                                verb=verb)
@@ -52,7 +57,3 @@ def generic_cccv(type, genotype, phenotype, folds, replicates, threads, comple_s
                                 comple_steps=comple_steps, conta_steps=conta_steps,
                                 n_jobs=threads, reduce_features=reduce_features, n_features=n_features)
     write_cccv_accuracy_file(out, cccv)
-
-def generic_logocv():
-    # TODO: implement
-    pass

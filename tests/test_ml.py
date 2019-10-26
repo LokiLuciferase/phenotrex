@@ -8,7 +8,7 @@ import numpy as np
 from tests.targets import first_genotype_accession, first_phenotype_accession, cv_scores_trex, \
     cccv_scores_trex
 from tests.targets import num_of_features_compressed, num_of_features_uncompressed
-from pica.io.io import load_training_files
+from pica.io.flat import load_training_files
 from pica.ml.classifiers.svm import TrexSVM
 from pica.ml.classifiers.xgbm import TrexXGB
 from pica.util.helpers import get_x_y_tn
