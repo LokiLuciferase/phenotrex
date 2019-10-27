@@ -278,6 +278,26 @@ def write_cccv_accuracy_file(output_file: str, cccv_results):
         json.dump(write_list, outf_handler, indent="\t")
 
 
+def load_cccv_accuracy_file(cccv_file: str) -> Dict:
+    """
+    Function to load cccv accuracies from phendb format.
+
+    :param cccv_file: The CCCV results file.
+    :return: A Dict of CCCV results in the internal CCCV results format.
+    """
+    cccv_results = {}
+    with open(cccv_file) as fin:
+        loaded = json.load(fin)
+    for row in loaded:
+        score_mean, score_sd, conta, comple = row.values()
+        comple_dict = cccv_results.setdefault(comple, {})
+        comple_dict[conta] = {
+            'score_mean': score_mean,
+            'score_sd': score_sd
+        }
+    return cccv_results
+
+
 def write_misclassifications_file(output_file: str, records: List[TrainingRecord],
                                   misclassifications,
                                   use_groups: bool = False):
