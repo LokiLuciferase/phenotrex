@@ -2,7 +2,7 @@ from functools import partial
 
 import click
 
-from pica.cli.generic_opt import universal_options, common_train_options
+from pica.cli.generic_opt import universal_options, common_train_options, param_options
 from pica.cli.generic_func import generic_train
 from pica.cli.clf_opt import xgb_options, svm_options
 
@@ -19,6 +19,7 @@ def train():
 @train.command()
 @universal_options
 @common_train_options
+@param_options
 @xgb_options
 def xgb(*args, **kwargs):
     """Train XGB model."""
@@ -27,6 +28,7 @@ def xgb(*args, **kwargs):
 @train.command()
 @universal_options
 @common_train_options
+@param_options
 @svm_options
 def svm(*args, **kwargs):
     """Train SVM model."""

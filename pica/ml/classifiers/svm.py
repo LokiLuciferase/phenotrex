@@ -31,13 +31,13 @@ class TrexSVM(TrexClassifier):
                  random_state: int = None, verb=False,
                  *args, **kwargs):
         super().__init__(random_state=random_state, verb=verb)
-        self.C = C if 'c' not in kwargs else kwargs.pop('c')  # click automatically lowercases args
+        self.C = C
         self.penalty = penalty
         self.tol = tol
         self.default_search_params = {
-            'C': np.logspace(-6, 4, 30),
-            'tol': np.logspace(0, -5, 10),
-            'max_iter': np.logspace(2, 4.3, 20)
+            'C': np.logspace(-6, 4, 30).round(8),
+            'tol': np.logspace(0, -5, 10).round(8),
+            'max_iter': np.logspace(2, 4.3, 20).astype(int)
         }
         self.logger = get_logger(__name__, verb=verb)
 

@@ -115,6 +115,40 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
     return ret
 
 
+def load_params_file(params_file: str) -> Dict:
+    """
+    Load a JSON file of training parameters.
+
+    :param params_file: The input file.
+    :return: A dictionary of training parameters.
+    """
+    with open(params_file, 'r') as fin:
+        return json.load(fin)
+
+
+def write_params_file(params_file: str, params: Dict):
+    """
+    Write a JSON file of training parameters.
+
+    :param params_file: The output file path.
+    :param params: A dictionary of training parameters.
+    :return: A dictionary of training parameters.
+    """
+    class NpEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            else:
+                return super(NpEncoder, self).default(obj)
+
+    with open(params_file, 'w') as fout:
+        json.dump(params, fp=fout, indent=2, cls=NpEncoder)
+
+
 def collate_training_data(genotype_records: List[GenotypeRecord],
                           phenotype_records: List[PhenotypeRecord],
                           group_records: List[GroupRecord],

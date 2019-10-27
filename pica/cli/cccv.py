@@ -2,7 +2,7 @@ from functools import partial
 
 import click
 
-from pica.cli.generic_opt import universal_options, common_cv_options, common_cccv_options
+from pica.cli.generic_opt import universal_options, common_cv_options, common_cccv_options, param_options
 from pica.cli.generic_func import generic_cccv
 from pica.cli.clf_opt import xgb_options, svm_options
 
@@ -20,6 +20,7 @@ def cccv():
 @cccv.command('xgb')
 @universal_options
 @common_cv_options
+@param_options
 @common_cccv_options
 @xgb_options
 def xgb(*args, **kwargs):
@@ -29,6 +30,7 @@ def xgb(*args, **kwargs):
 @cccv.command('svm')
 @universal_options
 @common_cv_options
+@param_options
 @common_cccv_options
 @svm_options
 def svm(*args, **kwargs):
