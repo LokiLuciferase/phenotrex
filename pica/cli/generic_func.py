@@ -1,3 +1,5 @@
+from pprint import pformat
+
 from pica.io.flat import (load_training_files, load_params_file,
                           write_weights_file, write_params_file,
                           write_misclassifications_file,
@@ -28,9 +30,10 @@ def generic_train(type, genotype, phenotype, verb, weights, out,
                                                verb=verb)
     if params_file is not None:
         loaded_params = load_params_file(params_file)
-        logger.info(f'Parameters loaded from file: {loaded_params}')
+        logger.info(f'Parameters loaded from file:')
+        logger.info('\n' + pformat(loaded_params))
         kwargs = {**kwargs, **loaded_params}  # TODO: should loaded params have precendence?
-    clf = CLF_MAPPER[type](*args, **kwargs)
+    clf = CLF_MAPPER[type](verb=verb, *args, **kwargs)
 
     reduce_features = True if n_features is not None else False
     clf.train(records=training_records, reduce_features=reduce_features, n_features=n_features)
@@ -56,10 +59,11 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
                                                verb=verb)
     if params_file is not None:
         loaded_params = load_params_file(params_file)
-        logger.info(f'Parameters loaded from file: {loaded_params}')
+        logger.info(f'Parameters loaded from file:')
+        logger.info('\n' + pformat(loaded_params))
         kwargs = {**kwargs, **loaded_params}  # TODO: should loaded params have precendence?
 
-    clf = CLF_MAPPER[type](*args, **kwargs)
+    clf = CLF_MAPPER[type](verb=verb, *args, **kwargs)
 
     if optimize:
         assert optimize_out is not None, 'No savepath for found parameters passed.'
@@ -68,7 +72,7 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
         params = {**kwargs, **found_params}
         write_params_file(optimize_out, params)
         logger.info(f'Optimized parameters written to file {optimize_out}.')
-        clf = CLF_MAPPER[type](*args, **params)
+        clf = CLF_MAPPER[type](verb=verb, *args, **params)
 
     reduce_features = True if n_features is not None else False
     use_groups = groups is not None
@@ -95,9 +99,10 @@ def generic_cccv(type, genotype, phenotype, folds, replicates, threads, comple_s
                                                verb=verb)
     if params_file is not None:
         loaded_params = load_params_file(params_file)
-        logger.info(f'Parameters loaded from file: {loaded_params}')
+        logger.info(f'Parameters loaded from file:')
+        logger.info('\n' + pformat(loaded_params))
         kwargs = {**kwargs, **loaded_params}  # TODO: should loaded params have precendence?
-    clf = CLF_MAPPER[type](*args, **kwargs)
+    clf = CLF_MAPPER[type](verb=verb, *args, **kwargs)
     reduce_features = True if n_features is not None else False
     cccv = clf.crossvalidate_cc(records=training_records, cv=folds, n_replicates=replicates,
                                 comple_steps=comple_steps, conta_steps=conta_steps,
