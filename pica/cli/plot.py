@@ -8,6 +8,7 @@ from pica.util.plotting import compleconta_plot
 
 click.option = partial(click.option, show_default=True)
 
+
 @click.group()
 def plot():
     """

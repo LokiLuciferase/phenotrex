@@ -42,7 +42,7 @@ cv_folds = [
 scoring_methods = [
     "balanced_accuracy",
     "f1",
-   # "accuracy",
+    # "accuracy",
 ]
 
 

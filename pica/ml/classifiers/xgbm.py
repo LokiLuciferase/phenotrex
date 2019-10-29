@@ -1,5 +1,4 @@
-from time import time
-from typing import List, Tuple, Dict
+from typing import Dict
 
 import numpy as np
 import xgboost as xgb

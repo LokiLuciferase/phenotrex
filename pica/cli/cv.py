@@ -9,6 +9,7 @@ from pica.cli.clf_opt import xgb_options, svm_options
 
 click.option = partial(click.option, show_default=True)
 
+
 @click.group()
 def cv():
     """
@@ -16,6 +17,7 @@ def cv():
     Optionally, save misclassifications file.
     """
     pass
+
 
 def cv_options(f):
     """Options specific for CV (not used in CCCV)."""
@@ -29,6 +31,7 @@ def cv_options(f):
                      help='Split into folds using the groups file.')(f)
     return f
 
+
 @cv.command('xgb')
 @universal_options
 @common_cv_options
@@ -38,6 +41,7 @@ def cv_options(f):
 def xgb(*args, **kwargs):
     """Perform CV on XGB model."""
     generic_cv('xgb', *args, **kwargs)
+
 
 @cv.command('svm')
 @universal_options

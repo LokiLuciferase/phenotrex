@@ -8,6 +8,7 @@ from pica.cli.clf_opt import xgb_options, svm_options
 
 click.option = partial(click.option, show_default=True)
 
+
 @click.group()
 def cccv():
     """
@@ -16,6 +17,7 @@ def cccv():
     Optionally, save returned scores for each grid point.
     """
     pass
+
 
 @cccv.command('xgb')
 @universal_options
@@ -26,6 +28,7 @@ def cccv():
 def xgb(*args, **kwargs):
     """Perform Completeness/Contamination CV on XGB model."""
     generic_cccv('xgb', *args, **kwargs)
+
 
 @cccv.command('svm')
 @universal_options

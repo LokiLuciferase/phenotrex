@@ -22,7 +22,7 @@ cv_scores_trex = {
                                      'balanced_accuracy': (0.9145833333333334, 0.11427990126585398),
                                      'f1'               : (
                                      0.8746031746031747, 0.17762606905565204)}}},
-    }
+}
 
 cccv_scores_trex = {'SVM': {'Sulfate_reducer': {0.0 : {0.0 : {'score_mean': 0.5,
                                                               'score_sd'  : 0.0},

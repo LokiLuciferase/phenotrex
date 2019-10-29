@@ -2,8 +2,7 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-from time import time
-from typing import List, Tuple, Dict
+from typing import Dict
 
 import numpy as np
 

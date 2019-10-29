@@ -89,13 +89,13 @@ class TrainingRecordResampler:
             if self.conta_source_neg.shape[0] == 1:  # guard against very small sample errors after StratifiedKFold
                 source_set_id = 0
             else:
-                source_set_id = self.random_state.randint(0, self.conta_source_neg.shape[0]-1)
+                source_set_id = self.random_state.randint(0, self.conta_source_neg.shape[0] - 1)
             conta_source = list(self.conta_source_neg[source_set_id])
         elif record.trait_sign == 0:
             if self.conta_source_pos.shape[0] == 1:
                 source_set_id = 0
             else:
-                source_set_id = self.random_state.randint(0, self.conta_source_pos.shape[0]-1)
+                source_set_id = self.random_state.randint(0, self.conta_source_pos.shape[0] - 1)
             conta_source = list(self.conta_source_pos[source_set_id])
         else:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")

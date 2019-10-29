@@ -3,6 +3,7 @@ from pica.io.flat import load_training_files
 
 from . import DATA_PATH
 
+
 def test_resampling():
     td, *_ = load_training_files(DATA_PATH/'Sulfate_reducer.genotype',
                                  DATA_PATH/'Sulfate_reducer.phenotype')
