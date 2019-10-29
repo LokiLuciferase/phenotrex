@@ -3,6 +3,7 @@ import click
 from pica.io.flat import write_weights_file
 from pica.io.serialization import load_classifier
 
+
 @click.command()
 @click.option('--classifier', type=click.Path(exists=True),
               required=True, help='Pickled classifier file.')

@@ -4,6 +4,7 @@ import click
 
 click.option = partial(click.option, show_default=True)
 
+
 def xgb_options(f):
     """XGB-specific CLI options."""
     f = click.option('--min_child_weight', type=int, default=1,
@@ -18,6 +19,7 @@ def xgb_options(f):
     f = click.option('--max_depth', type=int, default=4, help='Maximum tree depth.')(f)
     # TODO: add more settable options, or allow arbitrary ones
     return f
+
 
 def svm_options(f):
     """SVM-specific CLI options."""

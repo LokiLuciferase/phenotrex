@@ -37,7 +37,7 @@ setup(
     name='pica',
     entry_points={'console_scripts': [
         'trex = pica.cli.main:main',
-    ],},
+    ], },
     packages=find_namespace_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',

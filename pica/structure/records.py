@@ -11,7 +11,7 @@ from dataclasses import dataclass
 class GenotypeRecord:
     """ TODO add docstring """
     identifier: str
-    features:   List[str]
+    features: List[str]
 
 
 @dataclass

@@ -1,5 +1,4 @@
-from time import time
-from typing import List, Tuple, Dict
+from typing import Dict
 
 import numpy as np
 import xgboost as xgb
@@ -29,7 +28,7 @@ class TrexXGB(TrexClassifier):
         super().__init__(random_state=random_state, verb=verb)
         self.logger = get_logger(__name__, verb=True)
         self.default_search_params = {
-            'n_estimators':[20, 30, 50, 80, 100, 150, 200, 300, 500],
+            'n_estimators': [20, 30, 50, 80, 100, 150, 200, 300, 500],
             'subsample': np.arange(0.2, 1., 0.1).round(2),
             'colsample_bytree': np.arange(0.2, 1., 0.1).round(2),
             'min_child_weight': np.arange(1, 20).astype(int),

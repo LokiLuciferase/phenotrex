@@ -152,8 +152,7 @@ def write_params_file(params_file: str, params: Dict):
 def collate_training_data(genotype_records: List[GenotypeRecord],
                           phenotype_records: List[PhenotypeRecord],
                           group_records: List[GroupRecord],
-                          universal_genotype: bool = False, verb: bool = False) -> List[
-    TrainingRecord]:
+                          universal_genotype: bool = False, verb: bool = False) -> List[TrainingRecord]:
     """
     Returns a list of TrainingRecord from two lists of GenotypeRecord and PhenotypeRecord.
     To be used for training and CV of TrexClassifier.

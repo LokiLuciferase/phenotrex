@@ -9,7 +9,7 @@ def compleconta_plot(cccv_results: List[Dict[float, Dict[float, Dict[str, float]
                      conditions: List[str] = (), each_n: List[int] = None,
                      title: str = "", fontsize: int = 16, figsize=(10, 7),
                      plot_comple: bool = True, plot_conta: bool = True,
-                     colors: List = None, save_path: Union[str, Path] = None,  **kwargs):
+                     colors: List = None, save_path: Union[str, Path] = None, **kwargs):
     """
     Plots Compleconta CV result for one or multiple models.
     For perfect completeness and variable contamination

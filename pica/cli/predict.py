@@ -6,6 +6,7 @@ from pica.io.flat import load_genotype_file, DEFAULT_TRAIT_SIGN_MAPPING
 from pica.io.serialization import load_classifier
 from pica.cli.generic_opt import universal_options
 
+
 @click.command()
 @click.option('--classifier', required=True, help='Path of pickled classifier file.')
 @universal_options

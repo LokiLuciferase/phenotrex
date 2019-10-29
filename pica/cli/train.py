@@ -8,6 +8,7 @@ from pica.cli.clf_opt import xgb_options, svm_options
 
 click.option = partial(click.option, show_default=True)
 
+
 @click.group()
 def train():
     """
@@ -15,6 +16,7 @@ def train():
     Requires a .genotype and a .phenotype file.
     """
     pass
+
 
 @train.command()
 @universal_options
@@ -24,6 +26,7 @@ def train():
 def xgb(*args, **kwargs):
     """Train XGB model."""
     generic_train('xgb', *args, **kwargs)
+
 
 @train.command()
 @universal_options
