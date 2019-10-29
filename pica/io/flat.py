@@ -134,7 +134,7 @@ def write_params_file(params_file: str, params: Dict):
     :param params: A dictionary of training parameters.
     :return: A dictionary of training parameters.
     """
-    class NpEncoder(json.JSONEncoder):
+    class NumpyEncoder(json.JSONEncoder):
         def default(self, obj):
             if isinstance(obj, np.integer):
                 return int(obj)
@@ -143,10 +143,11 @@ def write_params_file(params_file: str, params: Dict):
             elif isinstance(obj, np.ndarray):
                 return obj.tolist()
             else:
-                return super(NpEncoder, self).default(obj)
+                return super(NumpyEncoder, self).default(obj)
 
     with open(params_file, 'w') as fout:
-        json.dump(params, fp=fout, indent=2, cls=NpEncoder)
+        json.dump(params, fp=fout, indent=2, cls=NumpyEncoder)
+        fout.write('\n')
 
 
 def collate_training_data(genotype_records: List[GenotypeRecord],
@@ -276,6 +277,7 @@ def write_cccv_accuracy_file(output_file: str, cccv_results):
             write_list.append(write_item)
     with open(output_file, "w") as outf_handler:
         json.dump(write_list, outf_handler, indent="\t")
+        outf_handler.write('\n')
 
 
 def load_cccv_accuracy_file(cccv_file: str) -> Dict:

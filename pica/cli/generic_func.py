@@ -23,7 +23,7 @@ def _fix_uppercase(kwargs):
 
 def generic_train(type, genotype, phenotype, verb, weights, out,
                   n_features=None, params_file=None, *args, **kwargs):
-    """Generic function for model training."""
+    """Train and save a TrexClassifier model."""
     kwargs = _fix_uppercase(kwargs)
     training_records, *_ = load_training_files(genotype_file=genotype,
                                                phenotype_file=phenotype,
@@ -48,8 +48,8 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
                optimize_out=None, groups=None, rank=None, out=None, n_features=None, params_file=None,
                *args, **kwargs):
     """
-    Generic function for model CV. Optionally, perform parameter search
-    and save found parameters.
+    Estimate model performance by cross-validation.
+    Optionally, perform parameter search and save found parameters.
     """
     kwargs = _fix_uppercase(kwargs)
     training_records, *_ = load_training_files(genotype_file=genotype,
@@ -90,7 +90,10 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
 def generic_cccv(type, genotype, phenotype, folds, replicates, threads, comple_steps, conta_steps,
                  verb, groups=None, rank=None, optimize=False, out=None, n_features=None, params_file=None,
                  *args, **kwargs):
-    """Generic function for model CCCV."""
+    """
+    Perform crossvalidation over a range of simulated completeness/contamination values,
+    and save output.
+    """
     kwargs = _fix_uppercase(kwargs)
     assert groups is None, 'Usage of LOGO in CCCV not currently implemented.'
     assert not optimize, 'Parameter search over CCCV not currently implemented.'

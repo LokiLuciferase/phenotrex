@@ -29,13 +29,13 @@ class TrexXGB(TrexClassifier):
         super().__init__(random_state=random_state, verb=verb)
         self.logger = get_logger(__name__, verb=True)
         self.default_search_params = {
-            'n_estimators':[20, 30, 50, 80, 100, 150, 200, 300, 500],
+            'n_estimators': np.array([20, 30, 50, 80, 100, 200, 300]),
             'subsample': np.arange(0.2, 1., 0.1).round(2),
             'colsample_bytree': np.arange(0.2, 1., 0.1).round(2),
-            'min_child_weight': np.arange(1, 20).astype(int),
-            'gamma': [0, 0.2, 0.5, 1, 5, 10],
-            'max_depth': np.arange(3, 7).astype(int),
-            'scale_pos_weight': [1, 1.5, 2, 3, 5, 8],
+            'min_child_weight': np.arange(1, 20),
+            'gamma': np.array([0, 0.2, 0.5, 1, 5, 10]),
+            'max_depth': np.arange(3, 7),
+            'scale_pos_weight': np.array([1, 1.5, 2, 3, 5, 8]),
             'learning_rate': np.arange(0.01, 0.11, 0.01).round(4),
             'eval_metric': ['error', 'auc', 'aucpr']
         }
