@@ -2,6 +2,7 @@ from time import time
 from typing import List, Tuple, Dict, Callable, Union
 from abc import ABC
 from abc import abstractmethod
+from pprint import pformat
 import gc
 
 import numpy as np
@@ -133,7 +134,7 @@ class TrexClassifier(ABC):
         clf = clone(self.cv_pipeline.named_steps['clf'])
 
         X_trans = vec.fit_transform(X)
-        cv = StratifiedKFold(n_splits=cv, shuffle=True)
+        cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
         rcv = RandomizedSearchCV(estimator=clf,
                                  scoring=scoring,
                                  param_distributions=search_params,
@@ -147,7 +148,7 @@ class TrexClassifier(ABC):
         t2 = time()
         gc.collect()  # essential due to imperfect memory management of XGBoost sklearn interface
 
-        self.logger.info(f'Optimized params: {best_params}')
+        self.logger.info(f'Optimized params:\n{pformat(best_params)}')
         self.logger.info(f'{np.round(t2 - t1)} sec elapsed during parameter search.')
         if return_optimized:
             self.logger.info(f'Returning optimized instance of {self.__class__.__name__}.')

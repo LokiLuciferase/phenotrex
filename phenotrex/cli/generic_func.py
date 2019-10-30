@@ -32,7 +32,7 @@ def generic_train(type, genotype, phenotype, verb, weights, out,
         loaded_params = load_params_file(params_file)
         logger.info(f'Parameters loaded from file:')
         logger.info('\n' + pformat(loaded_params))
-        kwargs = {**kwargs, **loaded_params}  # TODO: should loaded params have precendence?
+        kwargs = {**kwargs, **loaded_params}
     clf = CLF_MAPPER[type](verb=verb, *args, **kwargs)
 
     reduce_features = True if n_features is not None else False
@@ -45,7 +45,8 @@ def generic_train(type, genotype, phenotype, verb, weights, out,
 
 
 def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, optimize=False,
-               optimize_out=None, groups=None, rank=None, out=None, n_features=None, params_file=None,
+               optimize_out=None, optimize_n_iter=None, groups=None, rank=None, out=None,
+               n_features=None, params_file=None,
                *args, **kwargs):
     """
     Estimate model performance by cross-validation.
@@ -68,7 +69,7 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
     if optimize:
         assert optimize_out is not None, 'No savepath for found parameters passed.'
         logger.info(f'Optimizing parameters...')
-        found_params = clf.parameter_search(training_records, n_iter=10)
+        found_params = clf.parameter_search(training_records, n_iter=optimize_n_iter)
         params = {**kwargs, **found_params}
         write_params_file(optimize_out, params)
         logger.info(f'Optimized parameters written to file {optimize_out}.')

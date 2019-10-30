@@ -30,4 +30,5 @@ def get_logger(initname, verb=False):
     if logger.hasHandlers():
         logger.handlers.clear()
     logger.addHandler(ch)
+    logger.propagate = False
     return logger

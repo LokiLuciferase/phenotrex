@@ -23,6 +23,8 @@ def cv():
 def cv_options(f):
     """Options specific for CV (not used in CCCV)."""
     f = click.option('--out', type=click.Path(), help='Output file path for misclassification file.')(f)
+    f = click.option('--optimize_n_iter', type=int, default=10,
+                     help='Number of parameter sets to evaluate.')(f)
     f = click.option('--optimize_out', type=click.Path(), default=Path('./params.json'),
                      help='The file path at which to save optimized parameters.')(f)
     f = click.option('--optimize', is_flag=True,

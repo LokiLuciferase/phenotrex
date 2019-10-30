@@ -32,7 +32,7 @@ class TrexXGB(TrexClassifier):
         self.n_jobs = n_jobs
         self.logger = get_logger(__name__, verb=True)
         self.default_search_params = {
-            'n_estimators'    : np.array([20, 30, 50, 80, 100, 200, 300]),
+            'n_estimators'    : np.array([20, 30, 50, 80, 100, 150]),
             'subsample'       : np.arange(0.2, 1., 0.1).round(2),
             'colsample_bytree': np.arange(0.2, 1., 0.1).round(2),
             'min_child_weight': np.arange(1, 20),
@@ -40,7 +40,7 @@ class TrexXGB(TrexClassifier):
             'max_depth'       : np.arange(3, 7),
             'scale_pos_weight': np.array([1, 1.5, 2, 3, 5, 8]),
             'learning_rate'   : np.arange(0.01, 0.11, 0.01).round(4),
-            'eval_metric'     : ['error', 'auc', 'aucpr']
+            'eval_metric'     : ['auc', 'aucpr']
         }
 
         classifier = xgb.sklearn.XGBClassifier(missing=0, max_depth=max_depth,

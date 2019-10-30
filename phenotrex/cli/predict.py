@@ -20,4 +20,4 @@ def predict(genotype, classifier, **kwargs):
                         DEFAULT_TRAIT_SIGN_MAPPING.items()}
     print("Identifier\tTrait present\tConfidence")
     for record, result, probability in zip(gr, preds, probas):
-        print(f"{record.identifier}\t{translate_output[result]}\t{probability[result]}")
+        print(f"{record.identifier}\t{translate_output[result]}\t{str(round(probability[result], 4))}")
