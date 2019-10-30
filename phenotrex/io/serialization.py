@@ -2,9 +2,11 @@
 # Created by Lukas Lüftinger on 2/5/19.
 #
 import os
+import sys
 
 import joblib
 
+import phenotrex
 from phenotrex.util.logging import get_logger
 
 
@@ -42,6 +44,10 @@ def load_classifier(filename: str, verb=False):
     logger = get_logger(initname=__name__, verb=verb)
     if not os.path.isfile(filename):
         raise RuntimeError(f"Input file does not exist: {filename}")
-    obj = joblib.load(filename)
+    try:
+        obj = joblib.load(filename)
+    except ModuleNotFoundError:  # load old models
+        sys.modules['pica'] = phenotrex
+        obj = joblib.load(filename)
     logger.info("Successfully loaded classifier.")
     return obj

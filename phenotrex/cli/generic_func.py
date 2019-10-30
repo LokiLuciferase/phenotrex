@@ -9,7 +9,7 @@ from phenotrex.util.logging import get_logger
 from phenotrex.ml import TrexSVM, TrexXGB
 
 CLF_MAPPER = {'svm': TrexSVM, 'xgb': TrexXGB}
-logger = get_logger("trex", verb=True)
+logger = get_logger("phenotrex", verb=True)
 
 
 def _fix_uppercase(kwargs):
@@ -81,8 +81,9 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
                                                        n_replicates=replicates, groups=use_groups,
                                                        n_jobs=threads,
                                                        reduce_features=reduce_features,
-                                                       n_features=n_features)
-    logger.info(f"CV score: {score_mean} +/- {score_sd}")
+                                                       n_features=n_features,
+                                                       demote=not verb)
+    logger.info(f"CV score: {round(score_mean, 4)} +/- {round(score_sd, 4)}")
     if out is not None:
         write_misclassifications_file(out, training_records, misclass, use_groups=use_groups)
 

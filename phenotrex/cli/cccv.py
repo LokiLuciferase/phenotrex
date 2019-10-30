@@ -2,7 +2,7 @@ from functools import partial
 
 import click
 
-from phenotrex.cli.generic_opt import universal_options, common_cv_options, common_cccv_options, param_options
+from phenotrex.cli.generic_opt import universal_options, common_cv_options, param_options
 from phenotrex.cli.generic_func import generic_cccv
 from phenotrex.cli.clf_opt import xgb_options, svm_options
 
@@ -20,11 +20,22 @@ def cccv():
     pass
 
 
+def cccv_options(f):
+    """CCCV-specific CLI options."""
+    f = click.option('--out', type=click.Path(), required=True,
+                     help='Output file path for CCCV results.')(f)
+    f = click.option('--conta-steps', type=int, default=20,
+                     help='Number of equidistant contamination levels to resample to.')(f)
+    f = click.option('--comple-steps', type=int, default=20,
+                     help='Number of equidistant completeness levels to resample to.')(f)
+    return f
+
+
 @cccv.command('xgb')
 @universal_options
 @common_cv_options
 @param_options
-@common_cccv_options
+@cccv_options
 @xgb_options
 def xgb(*args, **kwargs):
     """Perform Completeness/Contamination CV on XGB model."""
@@ -35,7 +46,7 @@ def xgb(*args, **kwargs):
 @universal_options
 @common_cv_options
 @param_options
-@common_cccv_options
+@cccv_options
 @svm_options
 def svm(*args, **kwargs):
     """Perform Completeness/Contamination CV on SVM model."""
