@@ -4,7 +4,7 @@ from pica.io.flat import write_weights_file
 from pica.io.serialization import load_classifier
 
 
-@click.command()
+@click.command(short_help='Saving of classifier feature weights')
 @click.option('--classifier', type=click.Path(exists=True),
               required=True, help='Pickled classifier file.')
 @click.option('--out', type=click.Path(), required=True, help='Output file path.')

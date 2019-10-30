@@ -5,7 +5,8 @@ from pica.io.serialization import load_classifier
 from pica.cli.generic_opt import universal_options
 
 
-@click.command()
+@click.command(context_settings=dict(help_option_names=["-h", "--help"]),
+               short_help="Prediction of phenotypes with classifier")
 @click.option('--classifier', required=True, help='Path of pickled classifier file.')
 @universal_options
 def predict(genotype, classifier, **kwargs):

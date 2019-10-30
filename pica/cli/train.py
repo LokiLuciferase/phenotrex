@@ -9,10 +9,11 @@ from pica.cli.clf_opt import xgb_options, svm_options
 click.option = partial(click.option, show_default=True)
 
 
-@click.group()
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]),
+             short_help="Classifier training and serialization")
 def train():
     """
-    Perform training and evaluation functions.
+    Perform training and saving of classifiers.
     Requires a .genotype and a .phenotype file.
     """
     pass

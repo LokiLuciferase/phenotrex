@@ -9,10 +9,10 @@ from pica.util.plotting import compleconta_plot
 click.option = partial(click.option, show_default=True)
 
 
-@click.group()
+@click.group(short_help='Plotting of results')
 def plot():
     """
-    Perform plotting of results. Conditions are named after CCCV input file names.
+    Plot results.
     """
     pass
 

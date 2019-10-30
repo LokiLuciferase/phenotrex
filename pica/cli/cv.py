@@ -10,10 +10,11 @@ from pica.cli.clf_opt import xgb_options, svm_options
 click.option = partial(click.option, show_default=True)
 
 
-@click.group()
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]),
+             short_help='Standard crossvalidation and parameter tuning')
 def cv():
     """
-    Perform nested, stratified crossvalidation. print obtained score.
+    Perform nested, stratified crossvalidation. Print obtained score.
     Optionally, save misclassifications file.
     """
     pass
