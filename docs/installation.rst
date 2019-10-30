@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install PICA2, run this command in your terminal:
+To install pheno-trex, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install pica
+    $ pip install phenotrex
 
-This is the preferred method to install PICA2, as it will always install the most recent stable release.
+This is the preferred method to install pheno-trex, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,7 +26,7 @@ you through the process.
 From sources
 ------------
 
-The sources for PICA2 can be downloaded from the `Github repo`_.
+The sources for pheno-trex can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 

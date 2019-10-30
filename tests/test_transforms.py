@@ -1,5 +1,5 @@
-from pica.transforms.resampling import TrainingRecordResampler
-from pica.io.flat import load_training_files
+from phenotrex.transforms.resampling import TrainingRecordResampler
+from phenotrex.io.flat import load_training_files
 
 from . import DATA_PATH
 

@@ -33,10 +33,10 @@ setup(
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='pica',
-    name='pica',
+    keywords='phenotrex',
+    name='phenotrex',
     entry_points={'console_scripts': [
-        'trex = pica.cli.main:main',
+        'phenotrex = phenotrex.cli.main:main',
     ], },
     packages=find_namespace_packages(),
     setup_requires=setup_requirements,

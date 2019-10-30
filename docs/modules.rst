@@ -1,7 +1,7 @@
-pica
-====
+phenotrex
+=========
 
 .. toctree::
    :maxdepth: 4
 
-   pica
+   phenotrex
