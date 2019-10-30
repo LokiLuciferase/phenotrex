@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from phenotrex.io.flat import load_training_files
 from phenotrex.util.plotting import compleconta_plot
-from phenotrex.ml.clf import TrexXGB
+from phenotrex.ml.clf.xgbm import TrexXGB
 from phenotrex.io.serialization import save_classifier, load_classifier
 
 from .targets import cccv_scores_trex

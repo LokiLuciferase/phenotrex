@@ -1,3 +1,4 @@
+import os
 from typing import Dict
 
 import numpy as np
@@ -26,6 +27,9 @@ class TrexXGB(TrexClassifier):
                  subsample: float = 0.7, colsample_bytree: float = 0.3,
                  n_jobs: int = 1, random_state: int = None, verb=False, *args, **kwargs):
         super().__init__(random_state=random_state, verb=verb)
+        if n_jobs == -1:
+            n_jobs = os.cpu_count()
+        self.n_jobs = n_jobs
         self.logger = get_logger(__name__, verb=True)
         self.default_search_params = {
             'n_estimators'    : np.array([20, 30, 50, 80, 100, 200, 300]),

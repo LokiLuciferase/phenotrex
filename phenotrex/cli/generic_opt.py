@@ -30,7 +30,7 @@ def common_cv_options(f):
     f = click.option('--folds', type=int, default=5, help='Number of folds in CV.')(f)
     f = click.option('--replicates', type=int, default=10, help='Number of replicates for CV.')(f)
     f = click.option('--threads', type=int, default=1, help='Number of threads to use.')(f)
-    f = click.option('--out', type=click.Path(), help='Output file path of misclass. file.')(f)
+    f = click.option('--out', type=click.Path(), help='Output file path.')(f)
     f = click.option('--phenotype', type=click.Path(exists=True),
                      required=True, help='Phenotype file path.')(f)
     return f

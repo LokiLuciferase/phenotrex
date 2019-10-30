@@ -45,6 +45,7 @@ class TrexClassifier(ABC):
         self.verb = verb
         self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
         self.default_search_params = None
+        self.n_jobs = 1
 
     def train(self, records: List[TrainingRecord], reduce_features: bool = False,
               n_features: int = 10000, **kwargs):
@@ -118,6 +119,10 @@ class TrexClassifier(ABC):
                                  with the optimized params instead of a dictionary of params.
         :return: A dictionary containing best found parameters or an optimized class instance.
         """
+        if n_jobs != 1 and self.n_jobs > 1:
+            self.logger.info(f'Will use selected classifier parallelism instead of multithreading.')
+            n_jobs = self.n_jobs
+
         t1 = time()
         self.logger.info(f'Performing randomized parameter search.')
         X, y, tn = get_x_y_tn(records)
@@ -178,6 +183,10 @@ class TrexClassifier(ABC):
         :param kwargs: Unused
         :return: A list of mean score, score SD, and the percentage of misclassifications per sample
         """
+        if n_jobs != 1 and self.n_jobs > 1:
+            self.logger.info(f'Will use selected classifier parallelism instead of multithreading.')
+            n_jobs = self.n_jobs
+
         scoring_func = scoring if hasattr(scoring, '__call__') else self.scoring_function_mapping.get(scoring)
         assert scoring_func is not None, f'invalid or missing scoring function: {scoring}.'
         log_function = self.logger.debug if demote else self.logger.info
@@ -251,6 +260,10 @@ class TrexClassifier(ABC):
         :param n_features: selects the minimum number of features to retain (if feature reduction is used)
         :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
         """
+        if n_jobs != 1 and self.n_jobs > 1:
+            self.logger.info(f'Will use internal classifier parallelism instead of subprocessing.')
+            n_jobs = self.n_jobs
+
         cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
                              comple_steps=comple_steps, conta_steps=conta_steps,
                              n_jobs=n_jobs, n_replicates=n_replicates,
