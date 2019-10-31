@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""Top-level package for PICA."""
+"""Top-level package for phenotrex."""
 
 __author__ = """Lukas Lüftinger"""
 __email__ = 'lukas.lueftinger@outlook.com'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __all__ = ['io', 'ml', 'util']
