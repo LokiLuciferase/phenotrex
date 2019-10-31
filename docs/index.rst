@@ -1,4 +1,4 @@
-Welcome to the PICA2 documentation!
+Welcome to the pheno-trex documentation!
 ===================================
 
 .. toctree::

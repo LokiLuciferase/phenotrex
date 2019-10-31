@@ -1,0 +1,728 @@
+[
+	{
+		"mean_balanced_accuracy": 0.5,
+		"stddev_balanced_accuracy": 0.0,
+		"contamination": 0.0,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.11261904761904762,
+		"stddev_balanced_accuracy": 0.07294171095661872,
+		"contamination": 0.1,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.06595238095238094,
+		"stddev_balanced_accuracy": 0.06855985352040382,
+		"contamination": 0.2,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.06583333333333333,
+		"stddev_balanced_accuracy": 0.08532617157446802,
+		"contamination": 0.3,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.08678571428571429,
+		"stddev_balanced_accuracy": 0.08380850919299263,
+		"contamination": 0.4,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.08107142857142856,
+		"stddev_balanced_accuracy": 0.07774493151593377,
+		"contamination": 0.5,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.05345238095238094,
+		"stddev_balanced_accuracy": 0.04542630023273375,
+		"contamination": 0.6,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.03916666666666666,
+		"stddev_balanced_accuracy": 0.037601713908928254,
+		"contamination": 0.7,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.05428571428571429,
+		"stddev_balanced_accuracy": 0.05558185318634238,
+		"contamination": 0.8,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.1267857142857143,
+		"stddev_balanced_accuracy": 0.11549091707765438,
+		"contamination": 0.9,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.05428571428571428,
+		"stddev_balanced_accuracy": 0.07670067273028908,
+		"contamination": 1.0,
+		"completeness": 0.0
+	},
+	{
+		"mean_balanced_accuracy": 0.9072619047619048,
+		"stddev_balanced_accuracy": 0.056602604845390696,
+		"contamination": 0.0,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.5532142857142858,
+		"stddev_balanced_accuracy": 0.1268142713200326,
+		"contamination": 0.1,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.2152380952380952,
+		"stddev_balanced_accuracy": 0.0850958176759648,
+		"contamination": 0.2,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.11898809523809527,
+		"stddev_balanced_accuracy": 0.041649826528889905,
+		"contamination": 0.3,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.1392857142857143,
+		"stddev_balanced_accuracy": 0.10152657767824487,
+		"contamination": 0.4,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.16702380952380952,
+		"stddev_balanced_accuracy": 0.13262652795865293,
+		"contamination": 0.5,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.03428571428571428,
+		"stddev_balanced_accuracy": 0.030919396344281765,
+		"contamination": 0.6,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.06678571428571428,
+		"stddev_balanced_accuracy": 0.07501360420834698,
+		"contamination": 0.7,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.0744047619047619,
+		"stddev_balanced_accuracy": 0.10750336175727551,
+		"contamination": 0.8,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.07523809523809524,
+		"stddev_balanced_accuracy": 0.07751234266428876,
+		"contamination": 0.9,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.04761904761904762,
+		"stddev_balanced_accuracy": 0.06367434152551155,
+		"contamination": 1.0,
+		"completeness": 0.1
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.823809523809524,
+		"stddev_balanced_accuracy": 0.07197902976300516,
+		"contamination": 0.1,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.46101190476190473,
+		"stddev_balanced_accuracy": 0.1295867647247848,
+		"contamination": 0.2,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.18898809523809526,
+		"stddev_balanced_accuracy": 0.07678709854787691,
+		"contamination": 0.3,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.1319047619047619,
+		"stddev_balanced_accuracy": 0.07804804032542685,
+		"contamination": 0.4,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.1586904761904762,
+		"stddev_balanced_accuracy": 0.07848082799519761,
+		"contamination": 0.5,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.1051190476190476,
+		"stddev_balanced_accuracy": 0.07970467029679114,
+		"contamination": 0.6,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.07928571428571428,
+		"stddev_balanced_accuracy": 0.07028186690979779,
+		"contamination": 0.7,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.06583333333333333,
+		"stddev_balanced_accuracy": 0.06914156170897179,
+		"contamination": 0.8,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.0925,
+		"stddev_balanced_accuracy": 0.057759078170544854,
+		"contamination": 0.9,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.04761904761904762,
+		"stddev_balanced_accuracy": 0.06367434152551155,
+		"contamination": 1.0,
+		"completeness": 0.2
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.886309523809524,
+		"stddev_balanced_accuracy": 0.0695341540738538,
+		"contamination": 0.1,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.7557738095238096,
+		"stddev_balanced_accuracy": 0.07162957828481731,
+		"contamination": 0.2,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.44535714285714284,
+		"stddev_balanced_accuracy": 0.07542152895213977,
+		"contamination": 0.3,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.37267857142857147,
+		"stddev_balanced_accuracy": 0.10065692670365033,
+		"contamination": 0.4,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.29642857142857143,
+		"stddev_balanced_accuracy": 0.1364241044727036,
+		"contamination": 0.5,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.1256547619047619,
+		"stddev_balanced_accuracy": 0.025657731018110943,
+		"contamination": 0.6,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.11636904761904762,
+		"stddev_balanced_accuracy": 0.1254944867838899,
+		"contamination": 0.7,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.08553571428571428,
+		"stddev_balanced_accuracy": 0.07802470319321966,
+		"contamination": 0.8,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.09125000000000001,
+		"stddev_balanced_accuracy": 0.06487702041383973,
+		"contamination": 0.9,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.06857142857142856,
+		"stddev_balanced_accuracy": 0.06477590885002649,
+		"contamination": 1.0,
+		"completeness": 0.3
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.9197619047619049,
+		"stddev_balanced_accuracy": 0.07578612943650034,
+		"contamination": 0.1,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.8488095238095237,
+		"stddev_balanced_accuracy": 0.08236598405165925,
+		"contamination": 0.2,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.6639880952380952,
+		"stddev_balanced_accuracy": 0.07653567632527258,
+		"contamination": 0.3,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.4961309523809524,
+		"stddev_balanced_accuracy": 0.08204488636523796,
+		"contamination": 0.4,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.2542261904761905,
+		"stddev_balanced_accuracy": 0.03495441638033449,
+		"contamination": 0.5,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.2880952380952381,
+		"stddev_balanced_accuracy": 0.05676992642663243,
+		"contamination": 0.6,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.15023809523809523,
+		"stddev_balanced_accuracy": 0.05851356995159947,
+		"contamination": 0.7,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.11857142857142858,
+		"stddev_balanced_accuracy": 0.04699803392423734,
+		"contamination": 0.8,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.09982142857142856,
+		"stddev_balanced_accuracy": 0.060439269757320745,
+		"contamination": 0.9,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.10023809523809522,
+		"stddev_balanced_accuracy": 0.08465081002086282,
+		"contamination": 1.0,
+		"completeness": 0.4
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.9010119047619048,
+		"stddev_balanced_accuracy": 0.05460887001950558,
+		"contamination": 0.1,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.892559523809524,
+		"stddev_balanced_accuracy": 0.07759996478831284,
+		"contamination": 0.2,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.8029761904761905,
+		"stddev_balanced_accuracy": 0.049052819881450195,
+		"contamination": 0.3,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.6429761904761905,
+		"stddev_balanced_accuracy": 0.08876287393452091,
+		"contamination": 0.4,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.4373809523809523,
+		"stddev_balanced_accuracy": 0.0523639041520959,
+		"contamination": 0.5,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.36666666666666664,
+		"stddev_balanced_accuracy": 0.08510260413931242,
+		"contamination": 0.6,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.27964285714285714,
+		"stddev_balanced_accuracy": 0.07869997601327332,
+		"contamination": 0.7,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.21363095238095237,
+		"stddev_balanced_accuracy": 0.12981218990728904,
+		"contamination": 0.8,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.14547619047619048,
+		"stddev_balanced_accuracy": 0.08112603922516379,
+		"contamination": 0.9,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.1519047619047619,
+		"stddev_balanced_accuracy": 0.09642225140958606,
+		"contamination": 1.0,
+		"completeness": 0.5
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.1,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.9010119047619048,
+		"stddev_balanced_accuracy": 0.05796213284151485,
+		"contamination": 0.2,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.8110119047619049,
+		"stddev_balanced_accuracy": 0.050255159593415255,
+		"contamination": 0.3,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.697440476190476,
+		"stddev_balanced_accuracy": 0.07059824935358798,
+		"contamination": 0.4,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.6332738095238095,
+		"stddev_balanced_accuracy": 0.07638980622001253,
+		"contamination": 0.5,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.5539880952380952,
+		"stddev_balanced_accuracy": 0.09430337436822481,
+		"contamination": 0.6,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.371547619047619,
+		"stddev_balanced_accuracy": 0.03517126868040969,
+		"contamination": 0.7,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.3148809523809524,
+		"stddev_balanced_accuracy": 0.05109071120052113,
+		"contamination": 0.8,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.15345238095238095,
+		"stddev_balanced_accuracy": 0.08252018237295779,
+		"contamination": 0.9,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.19226190476190474,
+		"stddev_balanced_accuracy": 0.14954769296667647,
+		"contamination": 1.0,
+		"completeness": 0.6
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.1,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.9076785714285716,
+		"stddev_balanced_accuracy": 0.047975747368862384,
+		"contamination": 0.2,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.8943452380952382,
+		"stddev_balanced_accuracy": 0.05630209857416395,
+		"contamination": 0.3,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.7975595238095239,
+		"stddev_balanced_accuracy": 0.05827998046026592,
+		"contamination": 0.4,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.6617261904761905,
+		"stddev_balanced_accuracy": 0.09586763656989049,
+		"contamination": 0.5,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.5713095238095237,
+		"stddev_balanced_accuracy": 0.07517590859816788,
+		"contamination": 0.6,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.47732142857142856,
+		"stddev_balanced_accuracy": 0.058817355368267,
+		"contamination": 0.7,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.4702380952380953,
+		"stddev_balanced_accuracy": 0.06880190269214186,
+		"contamination": 0.8,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.306547619047619,
+		"stddev_balanced_accuracy": 0.058795544897324,
+		"contamination": 0.9,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.291547619047619,
+		"stddev_balanced_accuracy": 0.13709841376430779,
+		"contamination": 1.0,
+		"completeness": 0.7
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.1,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.9197619047619049,
+		"stddev_balanced_accuracy": 0.07578612943650034,
+		"contamination": 0.2,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.9072619047619048,
+		"stddev_balanced_accuracy": 0.06302348795499663,
+		"contamination": 0.3,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.8414285714285714,
+		"stddev_balanced_accuracy": 0.06645864654565481,
+		"contamination": 0.4,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.7472619047619048,
+		"stddev_balanced_accuracy": 0.048401825151584275,
+		"contamination": 0.5,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.5861904761904762,
+		"stddev_balanced_accuracy": 0.0692619313624333,
+		"contamination": 0.6,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.5700595238095238,
+		"stddev_balanced_accuracy": 0.0982214283117072,
+		"contamination": 0.7,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.4898214285714286,
+		"stddev_balanced_accuracy": 0.059567365016900735,
+		"contamination": 0.8,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.41398809523809527,
+		"stddev_balanced_accuracy": 0.027850528315233825,
+		"contamination": 0.9,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.4047023809523809,
+		"stddev_balanced_accuracy": 0.0868624326135671,
+		"contamination": 1.0,
+		"completeness": 0.8
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.1,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.9326785714285716,
+		"stddev_balanced_accuracy": 0.048315736886018826,
+		"contamination": 0.2,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.9135119047619048,
+		"stddev_balanced_accuracy": 0.06997721932521893,
+		"contamination": 0.3,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.8489285714285714,
+		"stddev_balanced_accuracy": 0.065961566748993,
+		"contamination": 0.4,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.8436309523809525,
+		"stddev_balanced_accuracy": 0.06939046655033072,
+		"contamination": 0.5,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.7185119047619046,
+		"stddev_balanced_accuracy": 0.05860553594616649,
+		"contamination": 0.6,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.6125595238095237,
+		"stddev_balanced_accuracy": 0.1299085017266448,
+		"contamination": 0.7,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.5378571428571429,
+		"stddev_balanced_accuracy": 0.05180124288250559,
+		"contamination": 0.8,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.4788095238095238,
+		"stddev_balanced_accuracy": 0.06879402321703164,
+		"contamination": 0.9,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.45285714285714285,
+		"stddev_balanced_accuracy": 0.03748658112141378,
+		"contamination": 1.0,
+		"completeness": 0.9
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.0,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.9264285714285716,
+		"stddev_balanced_accuracy": 0.06660030710912283,
+		"contamination": 0.1,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.9197619047619049,
+		"stddev_balanced_accuracy": 0.06771120480567323,
+		"contamination": 0.2,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.9068452380952382,
+		"stddev_balanced_accuracy": 0.08047962446885873,
+		"contamination": 0.3,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.8685119047619048,
+		"stddev_balanced_accuracy": 0.06502888334374379,
+		"contamination": 0.4,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.8347619047619048,
+		"stddev_balanced_accuracy": 0.0991035499134223,
+		"contamination": 0.5,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.731845238095238,
+		"stddev_balanced_accuracy": 0.09404535862262446,
+		"contamination": 0.6,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.6543452380952381,
+		"stddev_balanced_accuracy": 0.0916124607819348,
+		"contamination": 0.7,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.595595238095238,
+		"stddev_balanced_accuracy": 0.048039217727907445,
+		"contamination": 0.8,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.5250595238095238,
+		"stddev_balanced_accuracy": 0.07276926305974593,
+		"contamination": 0.9,
+		"completeness": 1.0
+	},
+	{
+		"mean_balanced_accuracy": 0.49214285714285716,
+		"stddev_balanced_accuracy": 0.07693520884838241,
+		"contamination": 1.0,
+		"completeness": 1.0
+	}
+]

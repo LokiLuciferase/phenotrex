@@ -1,7 +1,8 @@
-from pica.transforms.resampling import TrainingRecordResampler
-from pica.io.io import load_training_files
+from phenotrex.transforms.resampling import TrainingRecordResampler
+from phenotrex.io.flat import load_training_files
 
 from . import DATA_PATH
+
 
 def test_resampling():
     td, *_ = load_training_files(DATA_PATH/'Sulfate_reducer.genotype',

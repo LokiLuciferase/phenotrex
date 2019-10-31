@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 # Requirements are required here, while requirements.txt is likely not required.
-requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', 'xgboost']
+requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', 'xgboost', 'click']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -34,14 +34,16 @@ setup(
     long_description=readme + '\n\n' + history,
     long_description_content_type='text/x-rst',
     include_package_data=True,
-    keywords='pica',
-    name='pica',
-    entry_points={'console_scripts': ['pica = pica.run_pica:main'], },
+    keywords='phenotrex',
+    name='phenotrex',
+    entry_points={'console_scripts': [
+        'phenotrex = phenotrex.cli.main:main',
+    ], },
     packages=find_namespace_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/LokiLuciferase/PICA2',
-    version='0.1.0',
+    url='https://github.com/univieCUBE/PICA2',
+    version='0.2.0',
     zip_safe=False,
 )

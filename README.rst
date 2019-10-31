@@ -1,10 +1,10 @@
 
-PICA2
-=====
+pheno-trex
+==========
 
 
-.. image:: https://img.shields.io/pypi/v/pica.svg
-        :target: https://pypi.python.org/pypi/pica
+.. image:: https://img.shields.io/pypi/v/phenotrex.svg
+        :target: https://pypi.python.org/pypi/phenotrex
 
 .. image:: https://travis-ci.com/univieCUBE/PICA2.svg?branch=master
     :target: https://travis-ci.com/univieCUBE/PICA2

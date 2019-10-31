@@ -32,7 +32,7 @@ before_script:
   - flake8 --exit-zero .
 
 script:
-  - pytest --cov=pica
+  - pytest --cov=phenotrex
 
 after_success:
   - codecov
@@ -72,5 +72,5 @@ branches:
 #    secure: PLEASE_REPLACE_ME
 #  on:
 #    tags: true
-#    repo: LokiLuciferase/pica
+#    repo: LokiLuciferase/phenotrex
 #    python: 3.6

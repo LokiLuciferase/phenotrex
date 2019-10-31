@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from tempfile import TemporaryDirectory
-from pica.io.io import load_training_files
-from pica.util.plotting import compleconta_plot
-from pica.ml.classifiers import TrexXGB
-from pica.util.serialization import save_classifier, load_classifier
+from phenotrex.io.flat import load_training_files
+from phenotrex.util.plotting import compleconta_plot
+from phenotrex.ml.clf.xgbm import TrexXGB
+from phenotrex.io.serialization import save_classifier, load_classifier
 
 from .targets import cccv_scores_trex
 from . import DATA_PATH
