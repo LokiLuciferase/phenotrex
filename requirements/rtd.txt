@@ -10,7 +10,6 @@ sphinx-automodapi
 sphinx-pdj-theme
 twine
 nose
-flake8
 pytest
 pytest-runner
 pytest-cov
