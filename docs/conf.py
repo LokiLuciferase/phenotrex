@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'PICA'
+project = u'phenotrex'
 copyright = u"2019, Lukas Lüftinger"
 author = u"Lukas Lüftinger"
 

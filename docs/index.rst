@@ -1,5 +1,5 @@
-Welcome to the pheno-trex documentation!
-===================================
+Welcome to the phenotrex documentation!
+=======================================
 
 .. toctree::
    :maxdepth: 2
