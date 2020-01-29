@@ -2,6 +2,7 @@ include AUTHORS.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
+include phenotrex/bin/*
 
 recursive-include tests *
 recursive-exclude * __pycache__

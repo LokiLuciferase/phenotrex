@@ -1,5 +1,6 @@
 import click
 
+from phenotrex.cli.compute_genotype import compute_genotype
 from phenotrex.cli.train import train
 from phenotrex.cli.cv import cv
 from phenotrex.cli.cccv import cccv
@@ -26,6 +27,7 @@ def cli():
     pass
 
 
+cli.add_command(compute_genotype)
 cli.add_command(train)
 cli.add_command(cv)
 cli.add_command(cccv)
