@@ -1,15 +1,35 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-import numpy as np
 from typing import List, Dict, Tuple
 from collections import Counter
 import json
+
+from Bio import SeqIO
+from Bio.Alphabet import IUPAC, HasStopCodon, _verify_alphabet
+import numpy as np
 
 from phenotrex.util.logging import get_logger
 from phenotrex.structure.records import GenotypeRecord, PhenotypeRecord, GroupRecord, TrainingRecord
 
 DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
+
+
+def load_fasta_file(input_file: str) -> Tuple[str, List]:
+    """
+    Load a fasta file into a list of SeqRecords.
+
+    :param input_file: The path to the input fasta file.
+    :returns: A tuple of the sequence type ('protein' or 'dna'), and the list of SeqRecords.
+    """
+    seqs = list(SeqIO.parse(handle=input_file, format='fasta', alphabet=IUPAC.ambiguous_dna))
+    if not all(_verify_alphabet(x.seq.upper()) for x in seqs):
+        seqs = list(SeqIO.parse(input_file, format='fasta',
+                                alphabet=HasStopCodon(IUPAC.extended_protein)))
+        if not all(_verify_alphabet(x.seq.upper()) for x in seqs):
+            raise ValueError('Invalid input file (neither DNA nor protein FASTA).')
+        return 'protein', seqs
+    return 'dna', seqs
 
 
 def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
@@ -29,6 +49,18 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     if dupcount.most_common()[0][1] > 1:
         raise RuntimeError(f"Duplicate entries found in genotype file: {dupcount}")
     return sorted(genotype_records, key=lambda x: x.identifier)
+
+
+def write_genotype_file(genotypes: List[GenotypeRecord], output_file: str):
+    """
+    Saves a list of GenotypeRecords to a .genotype file.
+
+    :param genotypes: The genotypes to write to a file.
+    :param output_file: The output file path.
+    """
+    with open(output_file, 'w') as genotype_file:
+        for g in genotypes:
+            genotype_file.write('\t'.join([g.identifier, *g.features, '\n']))
 
 
 def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int] = None) -> List[PhenotypeRecord]:
