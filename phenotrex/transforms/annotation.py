@@ -78,7 +78,7 @@ def call_proteins(fna_file: str) -> List[SeqRecord]:
     :returns: a list of SeqRecords suitable for annotation with deepnog.
     """
     with NamedTemporaryFile(mode='w+') as tmp_f:
-        check_call([PRODIGAL_BIN_PATH, '-i', fna_file, '-d', tmp_f.name],
+        check_call([PRODIGAL_BIN_PATH, '-i', fna_file, '-a', tmp_f.name],
                    stderr=DEVNULL, stdout=DEVNULL)
         tmp_f.seek(0)
         return list(parse(tmp_f, 'fasta'))
