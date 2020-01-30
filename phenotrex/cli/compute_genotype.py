@@ -11,8 +11,8 @@ from phenotrex.transforms import fastas_to_grs
               required=True, help='Path of output genotype file.')
 @click.option('--n_threads', type=int, required=False,
               help='Number of threads to use. Default, utilize at most all cores.')
-# @click.option('--verb', is_flag=True)  # TODO: re-enable when deepnog tqdm prompt is transient
-def compute_genotype(input, out, n_threads=None, verb=False):
+@click.option('--verb', is_flag=True)
+def compute_genotype(input, out, n_threads=None, verb=True):
     """
     Given a set of FASTA files, perform protein calling (for DNA FASTA files) and annotation
     of EggNOG5 clusters, and write to a .genotype file.

@@ -22,7 +22,7 @@ def predict(input=tuple(), genotype=None, classifier=None, verb=None):
     """
     if not len(input) and genotype is None:
         raise RuntimeError('Must either supply FASTA file(s) or single genotype file for prediction.')
-    grs_from_fasta = fastas_to_grs(input, n_threads=None)
+    grs_from_fasta = fastas_to_grs(input, n_threads=None, verb=verb)
     grs_from_file = load_genotype_file(genotype) if genotype is not None else []
     gr = grs_from_fasta + grs_from_file
 
