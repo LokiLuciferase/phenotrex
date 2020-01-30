@@ -1,10 +1,8 @@
 import click
 
-from tqdm.auto import tqdm
-
 from phenotrex.io.flat import load_genotype_file, DEFAULT_TRAIT_SIGN_MAPPING
 from phenotrex.io.serialization import load_classifier
-from phenotrex.transforms.annotation import fasta_to_gr
+from phenotrex.transforms.annotation import fastas_to_grs
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]),
@@ -24,9 +22,7 @@ def predict(input=tuple(), genotype=None, classifier=None, verb=None):
     """
     if not len(input) and genotype is None:
         raise RuntimeError('Must either supply FASTA file(s) or single genotype file for prediction.')
-    it = tqdm(input, total=len(input), unit='file', desc='Computing genotypes') \
-        if len(input) > 1 and verb else input
-    grs_from_fasta = [fasta_to_gr(x) for x in it]
+    grs_from_fasta = fastas_to_grs(input, n_threads=None)
     grs_from_file = load_genotype_file(genotype) if genotype is not None else []
     gr = grs_from_fasta + grs_from_file
 

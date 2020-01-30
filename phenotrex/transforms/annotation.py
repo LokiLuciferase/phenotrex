@@ -1,13 +1,17 @@
+import os
 from typing import List
 from pathlib import Path
 from pkg_resources import resource_filename
 from tempfile import NamedTemporaryFile
 from subprocess import check_call, DEVNULL
+from concurrent.futures import ProcessPoolExecutor
 
+import numpy as np
 import torch
 from Bio.SeqIO import SeqRecord, parse
 from deepnog.deepnog import load_nn, predict, set_device, create_df
 from deepnog.dataset import ProteinDataset
+from tqdm.auto import tqdm
 
 from phenotrex.io.flat import load_fasta_file
 from phenotrex.structure.records import GenotypeRecord
@@ -25,6 +29,27 @@ class PreloadedProteinDataset(ProteinDataset):
         except ValueError:
             pass  # >:D
         self.iter = (x for x in protein_list)
+
+
+def fastas_to_grs(fasta_files: List[str], verb: bool = False,
+                 n_threads: int = None) -> List[GenotypeRecord]:
+    """
+    Perform GenotypeRecord calculation for a list of FASTA files. Apply process-based parallelism
+    since gene annotation scales well with cores.
+
+    :param fasta_files: a list of DNA and/or protein FASTA files to be converted into GenotypeRecords.
+    :param verb: Whether to display progress of annotation with tqdm.
+    :param n_threads: Number of threads to run in parallel. Default, use up to all available CPU cores.
+    :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
+    """
+    n_threads = np.min([os.cpu_count(), n_threads]) if n_threads is not None else os.cpu_count()
+    with ProcessPoolExecutor(max_workers=n_threads) as executor:
+        if len(fasta_files) > 1 and verb:
+            annotations = tqdm(executor.map(fasta_to_gr, fasta_files),
+                               total=len(fasta_files), desc='deepnog', unit='file')
+        else:
+            annotations = executor.map(fasta_to_gr, fasta_files)
+    return list(annotations)
 
 
 def fasta_to_gr(fasta_file: str, verb: bool = False) -> GenotypeRecord:
