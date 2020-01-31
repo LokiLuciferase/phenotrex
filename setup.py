@@ -3,9 +3,28 @@
 
 """The setup script."""
 
+import codecs
+from os import path
+import re
 from setuptools import setup, find_namespace_packages
 from pip._internal.req import parse_requirements
 from pip._internal.download import PipSession
+
+
+# Single-sourcing the package version: Read from __init__
+def read(*parts):
+    here = path.abspath(path.dirname(__file__))
+    with codecs.open(path.join(here, *parts), 'r') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 
 with open('README.rst') as readme_file:
@@ -45,6 +64,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/univieCUBE/phenotrex',
-    version='0.4.0',
+    version=find_version("phenotrex", "__init__.py"),  # update there
     zip_safe=False,
 )
