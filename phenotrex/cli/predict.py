@@ -15,7 +15,8 @@ from phenotrex.transforms.annotation import fastas_to_grs
 @click.option('--verb', is_flag=True)
 def predict(input=tuple(), genotype=None, classifier=None, verb=None):
     """
-    Predict phenotype from a set of FASTA files or a single genotype file.
+    Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files
+    or a single genotype file.
     NB: Genotype computation is highly expensive and performed on the fly on FASTA files.
     For increased speed when predicting multiple phenotypes, create a .genotype file to reuse
     with the command `compute-genotype`.

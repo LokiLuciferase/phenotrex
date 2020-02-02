@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """The setup script."""
-
 from setuptools import setup, find_namespace_packages
-from pip._internal.req import parse_requirements
-from pip._internal.download import PipSession
-
+from pkg_resources import parse_requirements
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -14,11 +11,10 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-parsed_requirements = parse_requirements('requirements/prod.txt', session=PipSession())
-parsed_test_requirements = parse_requirements('requirements/test.txt', session=PipSession())
-
-requirements = [str(ir.req) for ir in parsed_requirements]
-test_requirements = [str(tr.req) for tr in parsed_test_requirements]
+with open('requirements/prod.txt') as prod_req:
+    requirements = [str(ir) for ir in parse_requirements(prod_req)]
+with open('requirements/test.txt') as test_req:
+    test_requirements = [str(tr) for tr in parse_requirements(test_req)]
 
 setup(
     author="Lukas Lüftinger",
@@ -43,7 +39,7 @@ setup(
     ], },
     packages=find_namespace_packages(),
     test_suite='tests',
-    tests_require=test_requirements,
+    tests_require= requirements + test_requirements,
     url='https://github.com/univieCUBE/phenotrex',
     version='0.4.0',
     zip_safe=False,

@@ -47,9 +47,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'phenotrex'
-copyright = u"2019, Lukas Lüftinger"
-author = u"Lukas Lüftinger"
+project = 'phenotrex'
+copyright = "2019, Lukas Lüftinger"
+author = "Lukas Lüftinger"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -104,7 +104,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'picadoc'
+htmlhelp_basename = 'phenotrexdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------
@@ -132,8 +132,8 @@ latex_elements = {
 # [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'phenotrex.tex',
-     u'PICA Documentation',
-     u'Lukas Lüftinger', 'manual'),
+     'phenotrex Documentation',
+     'Lukas Lüftinger', 'manual'),
 ]
 
 
@@ -143,7 +143,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'phenotrex',
-     u'PICA Documentation',
+     'phenotrex Documentation',
      [author], 1)
 ]
 
@@ -155,7 +155,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'phenotrex',
-     u'PICA Documentation',
+     'phenotrex Documentation',
      author,
      'phenotrex',
      'One line description of project.',

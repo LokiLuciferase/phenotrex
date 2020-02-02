@@ -10,11 +10,12 @@ from phenotrex.transforms import fastas_to_grs
 @click.option('--out', type=click.Path(exists=False),
               required=True, help='Path of output genotype file.')
 @click.option('--n_threads', type=int, required=False,
-              help='Number of threads to use. Default, utilize at most all cores.')
+              help='Number of parallel threads (default is the number available cores)')
 @click.option('--verb', is_flag=True)
 def compute_genotype(input, out, n_threads=None, verb=True):
     """
-    Given a set of FASTA files, perform protein calling (for DNA FASTA files) and annotation
-    of EggNOG5 clusters, and write to a .genotype file.
+    Create a genotype file suitable for learning and inference with `phenotrex`.
+    Given a set of (possibly gzipped) DNA or protein FASTA files,
+    perform annotation of EggNOG5 clusters, and write to a .genotype file.
     """
     write_genotype_file(genotypes=fastas_to_grs(input, verb=verb, n_threads=n_threads), output_file=out)
