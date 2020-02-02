@@ -4,6 +4,7 @@
 from typing import List, Dict, Tuple
 from collections import Counter
 import json
+import gzip
 
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC, HasStopCodon, _verify_alphabet
@@ -15,6 +16,15 @@ from phenotrex.structure.records import GenotypeRecord, PhenotypeRecord, GroupRe
 DEFAULT_TRAIT_SIGN_MAPPING = {"YES": 1, "NO": 0}
 
 
+def _is_gzipped(f: str) -> bool:
+    try:
+        f = gzip.open(f)
+        f.read(1)
+        return True
+    except OSError:
+        return False
+
+
 def load_fasta_file(input_file: str) -> Tuple[str, List]:
     """
     Load a fasta file into a list of SeqRecords.
@@ -22,11 +32,17 @@ def load_fasta_file(input_file: str) -> Tuple[str, List]:
     :param input_file: The path to the input fasta file.
     :returns: A tuple of the sequence type ('protein' or 'dna'), and the list of SeqRecords.
     """
-    seqs = list(SeqIO.parse(handle=input_file, format='fasta', alphabet=IUPAC.ambiguous_dna))
-    if not all(_verify_alphabet(x.seq.upper()) for x in seqs):
-        seqs = list(SeqIO.parse(input_file, format='fasta',
-                                alphabet=HasStopCodon(IUPAC.extended_protein)))
-        if not all(_verify_alphabet(x.seq.upper()) for x in seqs):
+    if _is_gzipped(input_file):
+        handle = gzip.open(input_file, 'rt')
+    else:
+        handle = open(input_file, 'r')
+    seqs = [x.upper() for x in SeqIO.parse(handle=handle, format='fasta',
+                                           alphabet=IUPAC.ambiguous_dna)]
+    if not all(_verify_alphabet(x.seq) for x in seqs):
+        handle.seek(0)
+        seqs = [x.upper() for x in SeqIO.parse(handle=handle, format='fasta',
+                                               alphabet=HasStopCodon(IUPAC.extended_protein))]
+        if not all(_verify_alphabet(x.seq) for x in seqs):
             raise ValueError('Invalid input file (neither DNA nor protein FASTA).')
         return 'protein', seqs
     return 'dna', seqs

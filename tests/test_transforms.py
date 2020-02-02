@@ -8,8 +8,8 @@ from phenotrex.structure.records import GenotypeRecord
 from . import DATA_PATH
 
 predict_files = [
-    DATA_PATH/'GCA_000692775_1_trunc2.fna',
-    DATA_PATH/'GCA_000692775_1_trunc2.faa',
+    DATA_PATH/'GCA_000692775_1_trunc2.fna.gz',
+    DATA_PATH/'GCA_000692775_1_trunc2.faa.gz',
 ]
 
 

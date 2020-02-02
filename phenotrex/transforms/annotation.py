@@ -19,7 +19,7 @@ from phenotrex.structure.records import GenotypeRecord
 PRODIGAL_BIN_PATH = resource_filename('phenotrex', 'bin/prodigal')
 DEEPNOG_WEIGHTS_PATH = resource_filename('deepnog', 'parameters/eggNOG5/2/deepencoding.pth')
 DEEPNOG_ARCH = 'deepencoding'
-
+EGGNOGDB_VERS = '5.0'
 
 class PreloadedProteinDataset(ProteinDataset):
     """Hack ProteinDataset to load from list directly."""
@@ -42,7 +42,7 @@ def fastas_to_grs(fasta_files: List[str], verb: bool = False,
     :param n_threads: Number of threads to run in parallel. Default, use up to all available CPU cores.
     :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
     """
-    n_threads = np.min([os.cpu_count(), n_threads]) if n_threads is not None else os.cpu_count()
+    n_threads = min(os.cpu_count(), n_threads) if n_threads is not None else os.cpu_count()
     with ProcessPoolExecutor(max_workers=n_threads) as executor:
         if len(fasta_files) > 1 and verb:
             annotations = tqdm(executor.map(fasta_to_gr, fasta_files),
@@ -62,7 +62,7 @@ def fasta_to_gr(fasta_file: str, verb: bool = False) -> GenotypeRecord:
     :param verb: Whether to display progress of annotation with tqdm.
     :returns: A single GenotypeRecord representing the sample.
     """
-    fname = Path(str(fasta_file)).stem
+    fname = Path(str(fasta_file)).name
     seqtype, seqs = load_fasta_file(fasta_file)
     if seqtype == 'protein':
         return annotate_with_deepnog(fname, seqs, verb)
