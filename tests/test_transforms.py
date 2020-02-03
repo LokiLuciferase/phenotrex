@@ -1,11 +1,11 @@
 import pytest
 
 from phenotrex.transforms.resampling import TrainingRecordResampler
-from phenotrex.transforms.annotation import fasta_to_gr
 from phenotrex.io.flat import load_training_files
 from phenotrex.structure.records import GenotypeRecord
 
-from . import DATA_PATH
+from . import fastas_to_grs, FROM_FASTA, DATA_PATH
+
 
 predict_files = [
     DATA_PATH/'GCA_000692775_1_trunc2.fna.gz',
@@ -13,17 +13,25 @@ predict_files = [
 ]
 
 
-def test_resampling():
-    td, *_ = load_training_files(DATA_PATH/'Sulfate_reducer.genotype',
-                                 DATA_PATH/'Sulfate_reducer.phenotype')
+trait_names = [
+    "Sulfate_reducer",
+    # "Aerobe",
+    # "sporulation",
+]
 
+
+@pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)
+def test_resampling(trait_name):
+    td, *_ = load_training_files(DATA_PATH/f'{trait_name}.genotype',
+                                 DATA_PATH/f'{trait_name}.phenotype')
     trr = TrainingRecordResampler(random_state=2, verb=True)
     trr.fit(td)
     trr.get_resampled(td[0], comple=.5, conta=.5)
 
 
+@pytest.mark.skipif(not FROM_FASTA, reason='Missing optional dependencies')
 @pytest.mark.parametrize('infile', predict_files, ids=['fna', 'faa'])
 def test_compute_genotype(infile):
-    gr = fasta_to_gr(infile, verb=False)
-    assert isinstance(gr, GenotypeRecord)
-    assert len(gr.features) > 0
+    gr = fastas_to_grs([infile, ], verb=False)
+    assert all(isinstance(x, GenotypeRecord) for x in gr)
+    assert all(len(x.features) > 0 for x in gr)

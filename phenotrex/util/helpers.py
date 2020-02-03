@@ -31,3 +31,7 @@ def get_groups(records: List[TrainingRecord]) -> np.ndarray:
     """
     group_ids = np.array([x.group_id for x in records])
     return group_ids
+
+
+def fail_missing_dependency(*args, **kwargs):
+    raise ImportError('FASTA file annotation is not supported - optional dependencies missing.')

@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 from subprocess import check_call, DEVNULL
 from concurrent.futures import ProcessPoolExecutor
 
-import numpy as np
 import torch
 from Bio.SeqIO import SeqRecord, parse
 from deepnog.deepnog import load_nn, predict, set_device, create_df
@@ -15,6 +14,7 @@ from tqdm.auto import tqdm
 
 from phenotrex.io.flat import load_fasta_file
 from phenotrex.structure.records import GenotypeRecord
+
 
 PRODIGAL_BIN_PATH = resource_filename('phenotrex', 'bin/prodigal')
 DEEPNOG_WEIGHTS_PATH = resource_filename('deepnog', 'parameters/eggNOG5/2/deepencoding.pth')

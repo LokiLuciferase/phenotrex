@@ -1,0 +1,3 @@
+deepnog>=1.0.1
+torch>=1.2
+ete3

@@ -35,6 +35,8 @@ with open('requirements/prod.txt') as prod_req:
     requirements = [str(ir) for ir in parse_requirements(prod_req)]
 with open('requirements/test.txt') as test_req:
     test_requirements = [str(tr) for tr in parse_requirements(test_req)]
+with open('requirements/extras.txt') as extra_req:
+    extra_requirements = [str(tr) for tr in parse_requirements(extra_req)]
 
 setup(
     author="Lukas Lüftinger",
@@ -60,6 +62,9 @@ setup(
     packages=find_namespace_packages(),
     test_suite='tests',
     tests_require= requirements + test_requirements,
+    extras_require = {
+        'fasta': extra_requirements
+    },
     url='https://github.com/univieCUBE/phenotrex',
     version=find_version("phenotrex", "__init__.py"),  # update there
     zip_safe=False,
