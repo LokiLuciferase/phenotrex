@@ -19,8 +19,8 @@ phenotrex
    :target: https://ci.appveyor.com/project/VarIr/phenotrex
    :alt: AppVeyor CI
 
-.. image:: https://readthedocs.org/projects/pica2-test/badge/?version=latest
-   :target: https://pica2_test.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/phenotrex/badge/?version=latest
+   :target: https://phenotrex.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
 
