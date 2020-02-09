@@ -5,6 +5,7 @@ try:
 except ModuleNotFoundError:
     from phenotrex.util.helpers import fail_missing_dependency as fastas_to_grs
 
+
 def predict(fasta_files=tuple(), genotype=None, classifier=None, verb=False):
     """
     Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files

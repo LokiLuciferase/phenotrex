@@ -9,6 +9,7 @@ import re
 from setuptools import setup, find_namespace_packages
 from pkg_resources import parse_requirements
 
+
 # Single-sourcing the package version: Read from __init__
 def read(*parts):
     here = path.abspath(path.dirname(__file__))
@@ -61,8 +62,8 @@ setup(
     ], },
     packages=find_namespace_packages(),
     test_suite='tests',
-    tests_require= requirements + test_requirements,
-    extras_require = {
+    tests_require=requirements + test_requirements,
+    extras_require={
         'fasta': extra_requirements
     },
     url='https://github.com/univieCUBE/phenotrex',

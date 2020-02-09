@@ -49,6 +49,7 @@ predict_files = [
     (DATA_PATH/'GCA_000692775_1_trunc2.fna.gz', DATA_PATH/'GCA_000692775_1_trunc2.faa.gz')
 ]
 
+
 class TestTrexClassifier:
 
     @staticmethod

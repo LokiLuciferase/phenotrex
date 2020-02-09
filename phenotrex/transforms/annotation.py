@@ -21,6 +21,7 @@ DEEPNOG_WEIGHTS_PATH = resource_filename('deepnog', 'parameters/eggNOG5/2/deepen
 DEEPNOG_ARCH = 'deepencoding'
 EGGNOGDB_VERS = '5.0'
 
+
 class PreloadedProteinDataset(ProteinDataset):
     """Hack ProteinDataset to load from list directly."""
     def __init__(self, protein_list: List[SeqRecord]):
@@ -32,7 +33,7 @@ class PreloadedProteinDataset(ProteinDataset):
 
 
 def fastas_to_grs(fasta_files: List[str], verb: bool = False,
-                 n_threads: int = None) -> List[GenotypeRecord]:
+                  n_threads: int = None) -> List[GenotypeRecord]:
     """
     Perform GenotypeRecord calculation for a list of FASTA files. Apply process-based parallelism
     since gene annotation scales well with cores.

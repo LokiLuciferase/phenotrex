@@ -34,4 +34,5 @@ def get_groups(records: List[TrainingRecord]) -> np.ndarray:
 
 
 def fail_missing_dependency(*args, **kwargs):
-    raise ImportError('FASTA file annotation is not supported - optional dependencies missing.')
+    raise ImportError('FASTA file annotation requires the optional dependency deepnog. '
+                      'Install with pip.')
