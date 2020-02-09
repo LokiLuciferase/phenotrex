@@ -3,7 +3,28 @@
 
 """The setup script."""
 
+import codecs
+from os import path
+import re
 from setuptools import setup, find_namespace_packages
+from pkg_resources import parse_requirements
+
+
+# Single-sourcing the package version: Read from __init__
+def read(*parts):
+    here = path.abspath(path.dirname(__file__))
+    with codecs.open(path.join(here, *parts), 'r') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -11,12 +32,12 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-# Requirements are required here, while requirements.txt is likely not required.
-requirements = ['numpy', 'scipy', 'matplotlib', 'scikit-learn', 'xgboost', 'click']
-
-setup_requirements = ['pytest-runner', ]
-
-test_requirements = ['pytest', ]
+with open('requirements/prod.txt') as prod_req:
+    requirements = [str(ir) for ir in parse_requirements(prod_req)]
+with open('requirements/test.txt') as test_req:
+    test_requirements = [str(tr) for tr in parse_requirements(test_req)]
+with open('requirements/extras.txt') as extra_req:
+    extra_requirements = [str(tr) for tr in parse_requirements(extra_req)]
 
 setup(
     author="Lukas Lüftinger",
@@ -40,10 +61,12 @@ setup(
         'phenotrex = phenotrex.cli.main:main',
     ], },
     packages=find_namespace_packages(),
-    setup_requires=setup_requirements,
     test_suite='tests',
-    tests_require=test_requirements,
-    url='https://github.com/univieCUBE/PICA2',
-    version='0.3.0',
+    tests_require=requirements + test_requirements,
+    extras_require={
+        'fasta': extra_requirements
+    },
+    url='https://github.com/univieCUBE/phenotrex',
+    version=find_version("phenotrex", "__init__.py"),  # update there
     zip_safe=False,
 )

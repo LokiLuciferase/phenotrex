@@ -47,6 +47,7 @@ clean-pyc: ## remove Python file artifacts
 clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
 	rm -f .coverage
+	rm -f .coverage*
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
@@ -86,3 +87,7 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+full-install: clean
+	pip install -r requirements/dev.txt
+	pip install .

@@ -20,6 +20,14 @@ phenotrex.cli.clf\_opt module
    :undoc-members:
    :show-inheritance:
 
+phenotrex.cli.compute\_genotype module
+--------------------------------------
+
+.. automodule:: phenotrex.cli.compute_genotype
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 phenotrex.cli.cv module
 -----------------------
 
