@@ -48,11 +48,13 @@ class TrexClassifier(ABC):
         self.default_search_params = None
         self.n_jobs = 1
 
-    def _get_raw_features(self, records: List[Union[TrainingRecord, GenotypeRecord]]) -> np.ndarray:
+    def _get_raw_features(self, records: List[GenotypeRecord]) -> np.ndarray:
         """
         Apply the trained vectorizer in the TrexClassifier and return a numpy array suitable for
         inputting into a classifier or SHAP explainer.
         """
+        if self.trait_name is None:
+            raise RuntimeError('TrexClassifier not fitted.')
         vec = self.pipeline.named_steps['vec']
         X = vec.transform([" ".join(x.features) for x in records])
         return X
@@ -108,9 +110,7 @@ class TrexClassifier(ABC):
         """
         pass
 
-    def get_shap(self, records: List[Union[TrainingRecord, GenotypeRecord]]) -> Tuple[np.ndarray,
-                                                                                      np.ndarray,
-                                                                                      float]:
+    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
         """
         Compute SHAP (SHapley Additive exPlanations) values for the given input data with the fitted
         TrexClassifier.

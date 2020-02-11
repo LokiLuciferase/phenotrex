@@ -2,7 +2,7 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-from typing import Dict, Union, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import shap
@@ -122,9 +122,7 @@ class TrexSVM(TrexClassifier):
         #  if we rely on feature selection in near future
         return sorted_weights
 
-    def get_shap(self, records: List[Union[TrainingRecord, GenotypeRecord]]) -> Tuple[np.ndarray,
-                                                                                      np.ndarray,
-                                                                                      float]:
+    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
         if self.shap_explainer is None:
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
             return False, False

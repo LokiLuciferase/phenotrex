@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import xgboost as xgb
@@ -8,7 +8,7 @@ from sklearn.base import clone
 
 from phenotrex.ml.trex_classifier import TrexClassifier
 from phenotrex.util.logging import get_logger
-from phenotrex.structure.records import GenotypeRecord, TrainingRecord
+from phenotrex.structure.records import GenotypeRecord
 
 
 class TrexXGB(TrexClassifier):
@@ -72,9 +72,7 @@ class TrexXGB(TrexClassifier):
                           zip(names, weights)}
         return sorted_weights
 
-    def get_shap(self, records: List[Union[TrainingRecord, GenotypeRecord]]) -> Tuple[np.ndarray,
-                                                                                      np.ndarray,
-                                                                                      float]:
+    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
         clf = self.pipeline.named_steps['clf']
         raw_feats = self._get_raw_features(records)
         shap_values = clf.get_booster().predict(
