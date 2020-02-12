@@ -49,6 +49,12 @@ predict_files = [
     (DATA_PATH/'GCA_000692775_1_trunc2.fna.gz', DATA_PATH/'GCA_000692775_1_trunc2.faa.gz')
 ]
 
+ngram_ranges = [
+    (1, 1),
+    (1, 2),
+    (1, 3)
+]
+
 
 class TestTrexClassifier:
 
@@ -106,6 +112,15 @@ class TestTrexClassifier:
         if classifier.identifier in cv_scores_trex:
             score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring]
             np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
+
+    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
+    @pytest.mark.parametrize("ngram_range", ngram_ranges, ids=[str(x) for x in ngram_ranges])
+    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
+    def test_ngram_range(self, trait_name, ngram_range, classifier):
+        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        clf = classifier(ngram_range=ngram_range, verb=True, random_state=RANDOM_STATE)
+        score_pred = clf.crossvalidate(records=training_records, cv=3, scoring='balanced_accuracy')
+        print(score_pred)
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)

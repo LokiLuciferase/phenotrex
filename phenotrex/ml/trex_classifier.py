@@ -35,7 +35,8 @@ class TrexClassifier(ABC):
     def get_instance(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
-    def __init__(self, random_state: int = None, verb: bool = False):
+    def __init__(self, ngram_range: Tuple[int, int] = (1, 1),
+                 random_state: int = None, verb: bool = False):
         self.trait_name = None
         self.cccv_result = None
         self.pipeline = None
@@ -44,7 +45,7 @@ class TrexClassifier(ABC):
         self.random_state = np.random.RandomState(random_state)
         self.random_state_init = random_state
         self.verb = verb
-        self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
+        self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool, ngram_range=ngram_range)
         self.default_search_params = None
         self.n_jobs = 1
 

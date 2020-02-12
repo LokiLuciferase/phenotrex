@@ -26,8 +26,10 @@ class TrexXGB(TrexClassifier):
     def __init__(self, max_depth: int = 4, learning_rate: float = 0.05,
                  n_estimators: int = 30, gamma: float = 0., min_child_weight: int = 1,
                  subsample: float = 0.7, colsample_bytree: float = 0.3,
-                 n_jobs: int = 1, random_state: int = None, verb=False, *args, **kwargs):
-        super().__init__(random_state=random_state, verb=verb)
+                 ngram_range: Tuple[int, int] = (1, 1),
+                 n_jobs: int = 1, random_state: int = None, verb=False,
+                 *args, **kwargs):
+        super().__init__(ngram_range=ngram_range, random_state=random_state, verb=verb)
         if n_jobs == -1:
             n_jobs = os.cpu_count()
         self.n_jobs = n_jobs

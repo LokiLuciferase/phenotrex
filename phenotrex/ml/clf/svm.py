@@ -29,9 +29,10 @@ class TrexSVM(TrexClassifier):
     identifier = 'SVM'
 
     def __init__(self, C: float = 5., penalty: str = "l2", tol: float = 1.,
+                 ngram_range: Tuple[int, int] = (1, 1),
                  random_state: int = None, verb=False,
                  *args, **kwargs):
-        super().__init__(random_state=random_state, verb=verb)
+        super().__init__(ngram_range=ngram_range, random_state=random_state, verb=verb)
         self.C = C
         self.penalty = penalty
         self.tol = tol
