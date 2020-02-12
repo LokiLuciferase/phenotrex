@@ -126,7 +126,7 @@ class TrexSVM(TrexClassifier):
         if self.shap_explainer is None:
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
             return False, False
-        raw_feats = self._get_raw_features(records)
+        raw_feats = self._get_raw_features(records).astype(int)  # numpy error if using bools
         shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=100)
         shap_bias = self.shap_explainer.expected_value[0]
         return raw_feats, shap_values, shap_bias

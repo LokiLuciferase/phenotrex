@@ -156,6 +156,18 @@ class TestTrexClassifier:
         print(len(fweights))
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
+    def test_get_shap_values(self, trait_name):
+        """
+        Get shap values associated with the training data.
+        """
+        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        clf = TrexXGB(verb=True, random_state=RANDOM_STATE)  # svm is too slow
+        clf.train(training_records)
+        raw_features, shaps, bias = clf.get_shap(training_records)
+        print(shaps.shape)
+        print(bias)
+
+    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_compress_vocabulary(self, trait_name, classifier):
         """
