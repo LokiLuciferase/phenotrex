@@ -8,6 +8,13 @@ import click
               required=False, help='Input genotype file.')
 @click.option('--classifier', required=True, type=click.Path(exists=True),
               help='Path of pickled classifier file.')
+@click.option('--out_explain_per_sample', type=click.Path(dir_okay=False),
+              help='Path to file to which to write SHAP explanations for each predicted samples. Optional.')
+@click.option('--out_explain_summary', type=click.Path(dir_okay=False),
+              help='Path to file to which to write SHAP explanations summarizer over all samples. Optional.')
+@click.option('--n_max_explained_features', type=int, default=None,
+              help='Limit output number of features in SHAP explanation files. '
+                   'Default: show explanations for all model features.')
 @click.option('--verb', is_flag=True)
 def predict(*args, **kwargs):
     """
