@@ -1,7 +1,5 @@
 import click
 
-from phenotrex.ml.prediction import predict as _predict
-
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]),
                short_help="Prediction of phenotypes with classifier")
@@ -19,4 +17,5 @@ def predict(*args, **kwargs):
     For increased speed when predicting multiple phenotypes, create a .genotype file to reuse
     with the command `compute-genotype`.
     """
+    from phenotrex.ml.prediction import predict as _predict
     _predict(*args, **kwargs)

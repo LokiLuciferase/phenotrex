@@ -3,8 +3,6 @@ from functools import partial
 
 import click
 
-from phenotrex.io.flat import load_cccv_accuracy_file
-from phenotrex.util.plotting import compleconta_plot
 
 click.option = partial(click.option, show_default=True)
 
@@ -25,6 +23,9 @@ def plot():
 @click.option('--title', type=str, default='', help='Plot title.')
 def cccv(inputs, out, title):
     """Plot CCCV result(s)."""
+    from phenotrex.io.flat import load_cccv_accuracy_file
+    from phenotrex.util.plotting import compleconta_plot
+
     conditions = [Path(str(x)).stem for x in inputs]
     cccv_results = [load_cccv_accuracy_file(x) for x in inputs]
     compleconta_plot(cccv_results=cccv_results, conditions=conditions, title=title, save_path=out)
