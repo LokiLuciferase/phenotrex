@@ -145,7 +145,6 @@ class ShapHandler:
         i = self._get_sample_index_with_name(sample_name)
 
         sample_feats, sample_svs = counts[i, ...], shaps[i, ...]
-        sample_svs = [sample_svs, ]
         shap.force_plot(base_value=self._shap_base_value, shap_values=sample_svs, features=sample_feats,
                         feature_names=self._used_feature_names, matplotlib=True, show=False, **kwargs)
 
