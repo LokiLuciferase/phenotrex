@@ -22,7 +22,9 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
     For increased speed when predicting multiple phenotypes, create a .genotype file to reuse
     with the command `compute-genotype`.
 
-    NB: Computing SHAP explanations on SVM models is highly costly.
+    NB: As opposed to XGB models where they are trivially available, computing SHAP explanations
+    on SVM models entails training a model-agnostic KernelExplainer which is highly costly (dozens
+    to hundreds of seconds per sample if using a somewhat reasonable value for `shap_n_samples`).
 
     :param fasta_files: An iterable of fasta file paths
     :param genotype: A genotype file path

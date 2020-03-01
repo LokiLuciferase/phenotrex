@@ -85,6 +85,11 @@ class TrexClassifier(ABC):
 
         self.trait_name = tn
 
+        extra_explainer_arg = kwargs.pop('train_explainer', None)
+        if extra_explainer_arg is not None:
+            self.logger.warning(f'{self.__class__.__name__} provides SHAP explanations without '
+                                f'training an Explainer. Argument '
+                                f'"train_explainer"={extra_explainer_arg} ignored.')
         self.pipeline.fit(X=X, y=y, **kwargs)
         self.logger.info("Classifier training completed.")
         return self
