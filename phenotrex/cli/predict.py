@@ -9,9 +9,9 @@ import click
 @click.option('--classifier', required=True, type=click.Path(exists=True),
               help='Path of pickled classifier file.')
 @click.option('--out_explain_per_sample', type=click.Path(dir_okay=False),
-              help='Path to file to which to write SHAP explanations for each predicted samples. Optional.')
+              help='Write SHAP explanations for each predicted sample to file (optional).')
 @click.option('--out_explain_summary', type=click.Path(dir_okay=False),
-              help='Path to file to which to write SHAP explanations summarizer over all samples. Optional.')
+              help='Write SHAP explanations summarized over all samples. (Optional).')
 @click.option('--n_max_explained_features', type=int, default=None,
               help='Limit output number of features in SHAP explanation files. '
                    'Default: show explanations for all model features.')

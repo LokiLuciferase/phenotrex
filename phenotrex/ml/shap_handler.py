@@ -10,10 +10,6 @@ from phenotrex.ml.trex_classifier import TrexClassifier
 
 
 class ShapHandler:
-    """
-    This class handles feature arrays and shap values of predictions made with phenotrex,
-    and enables plotting of shap values and summaries.
-    """
     @classmethod
     def from_clf(cls, clf: TrexClassifier):
         fn, fn_idx = zip(*clf.pipeline.named_steps["vec"].get_feature_names())
@@ -22,9 +18,16 @@ class ShapHandler:
         used_idxs = np.where(np.isin(fn, used_fn))[0]
         return cls(fn, used_idxs)
 
-    def __init__(self, fn: np.ndarray, used_idxs: np.ndarray):
+    def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray):
+        """
+        This class handles feature arrays and shap values of predictions made with phenotrex,
+        and enables plotting of shap values and summaries.
+
+        :param feature_names: All feature names in the model feature space.
+        :param used_idxs: Indices into the fn array of features actually utilized by the model.
+        """
         self._used_idxs = used_idxs
-        self._used_feature_names = fn[used_idxs]
+        self._used_feature_names = feature_names[used_idxs]
 
         self._sample_names = None
         self._used_features = None
@@ -87,6 +90,10 @@ class ShapHandler:
     def _get_feature_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Concatenates and returns all currently saved features, shaps and sample names.
+
+        :returns: A tuple of saved used features (the actual values),
+                 the saved shap values corresponding to the features,
+                 and the sample names from which features and shap values were derived.
         """
         try:
             X_agg = self._used_features.astype(float)
@@ -131,23 +138,16 @@ class ShapHandler:
         Create force plot of the sample associated with the given sample name.
 
         :param sample_name:
-        :param out_file_path:
         :param kwargs: additional keyword arguments passed on to `shap.force_plot()`
         :return:
         """
         counts, shaps, sample_names = self._get_feature_data()
         i = self._get_sample_index_with_name(sample_name)
 
-        sf, ss = counts[i, ...], shaps[i, ...]
-        if ss.ndim == 2:
-            ss = list(ss)
-        else:
-            ss = [ss, ]
-        class_names = self._class_names
-        for c, s in zip(class_names, ss):
-            shap.force_plot(base_value=self._shap_base_value, shap_values=s, features=sf,
-                            feature_names=self._used_feature_names, matplotlib=True, show=False,
-                            **kwargs)
+        sample_feats, sample_svs = counts[i, ...], shaps[i, ...]
+        sample_svs = [sample_svs, ]
+        shap.force_plot(base_value=self._shap_base_value, shap_values=sample_svs, features=sample_feats,
+                        feature_names=self._used_feature_names, matplotlib=True, show=False, **kwargs)
 
     def plot_shap_summary(self, title=None, n_max_features: int = 20,
                           plot_individual_classes: bool = False,
@@ -157,6 +157,7 @@ class ShapHandler:
 
         :param title:
         :param n_max_features:
+        :param plot_individual_classes:
         :param kwargs: additional keyword arguments passed on to `shap.summary_plot()`
         :return:
         """
