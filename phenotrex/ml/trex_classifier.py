@@ -5,6 +5,7 @@ from abc import abstractmethod
 from pprint import pformat
 import gc
 
+from scipy.sparse import csr_matrix
 import numpy as np
 
 from sklearn.base import clone
@@ -48,7 +49,7 @@ class TrexClassifier(ABC):
         self.default_search_params = None
         self.n_jobs = 1
 
-    def _get_raw_features(self, records: List[GenotypeRecord]) -> np.ndarray:
+    def _get_raw_features(self, records: List[GenotypeRecord]) -> csr_matrix:
         """
         Apply the trained vectorizer in the TrexClassifier and return a numpy array suitable for
         inputting into a classifier or SHAP explainer.
@@ -110,12 +111,15 @@ class TrexClassifier(ABC):
         """
         pass
 
-    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
+    def get_shap(self, records: List[GenotypeRecord],
+                 nsamples=None) -> Tuple[np.ndarray, np.ndarray, float]:
         """
         Compute SHAP (SHapley Additive exPlanations) values for the given input data with the fitted
         TrexClassifier.
 
         :param records: A list of TrainingRecords or GenotypeRecords.
+        :param nsamples: the nsamples parameter to be passed to the Explainer. Only used if the model
+                         in question relies on a KernelExplainer (e.g. TrexSVM).
         :returns: transformed feature array, computed shap values and expected value.
         """
         pass

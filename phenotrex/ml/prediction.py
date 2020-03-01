@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 
 def predict(fasta_files=tuple(), genotype=None, classifier=None,
             out_explain_per_sample=None, out_explain_summary=None,
-            n_max_explained_features=None, verb=False):
+            shap_n_samples=None, n_max_explained_features=None, verb=False):
     """
     Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files
     or a single genotype file. Optionally, compute SHAP explanations individually and/or summarily
@@ -27,12 +27,16 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
     :param fasta_files: An iterable of fasta file paths
     :param genotype: A genotype file path
     :param classifier: A pickled classifier file path
-    :param out_explain_per_sample: A path at which to save the most influential features by SHAP for each
-                                   predicted sample. Optional.
+    :param out_explain_per_sample: Where o save the most influential features by SHAP for each
+                                   predicted sample.
+    :param out_explain_summary: Where to save the SHAP summary of the predictions.
+    :param shap_n_samples: The nsamples parameter -
+                               only used by models which utilize a `shap.KernelExplainer`.
+    :param n_max_explained_features: How many of the most influential features by SHAP to consider.
     :param verb: Whether to show progress of fasta file annotation.
     """
     if not len(fasta_files) and genotype is None:
-        raise RuntimeError('Must either supply FASTA file(s) or single genotype file for prediction.')
+        raise RuntimeError('Must supply FASTA file(s) and/or single genotype file for prediction.')
     if len(fasta_files):
         grs_from_fasta = fastas_to_grs(fasta_files, n_threads=None, verb=verb)
     else:
@@ -42,17 +46,9 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
     gr = grs_from_fasta + grs_from_file
 
     model = load_classifier(filename=classifier, verb=verb)
-    preds, probas = model.predict(X=gr)
-    translate_output = {trait_id: trait_sign for trait_sign, trait_id in
-                        DEFAULT_TRAIT_SIGN_MAPPING.items()}
-    print(f"# Trait: {model.trait_name}")
-    print("Identifier\tTrait present\tConfidence")
-    for record, result, probability in zip(gr, preds, probas):
-        print(f"{record.identifier}\t{translate_output[result]}\t{str(round(probability[result], 4))}")
-
     if out_explain_per_sample is not None or out_explain_summary is not None:
         sh = ShapHandler.from_clf(model)
-        fs, sv, bv = model.get_shap(gr)
+        fs, sv, bv = model.get_shap(gr, nsamples=shap_n_samples)
         sh.add_feature_data(sample_names=[x.identifier for x in gr],
                             features=fs, shaps=sv, base_value=bv)
         if out_explain_per_sample is not None:
@@ -63,3 +59,11 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
         if out_explain_summary is not None:
             sum_df = sh.get_shap_summary(n_max_explained_features)
             sum_df.to_csv(out_explain_summary, sep='\t', index=False)
+
+    preds, probas = model.predict(X=gr)
+    translate_output = {trait_id: trait_sign for trait_sign, trait_id in
+                        DEFAULT_TRAIT_SIGN_MAPPING.items()}
+    print(f"# Trait: {model.trait_name}")
+    print("Identifier\tTrait present\tConfidence")
+    for record, result, probability in zip(gr, preds, probas):
+        print(f"{record.identifier}\t{translate_output[result]}\t{str(round(probability[result], 4))}")

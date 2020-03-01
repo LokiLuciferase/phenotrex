@@ -2,7 +2,7 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import shap
@@ -14,6 +14,9 @@ from sklearn.calibration import CalibratedClassifierCV
 from phenotrex.ml.trex_classifier import TrexClassifier
 from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.util.logging import get_logger
+
+KMEANS_N_CLUSTERS = 10
+SHAP_NSAMPLE_DEFAULT = 100  # considerably less than suggested by 'auto', but may be intractable else
 
 
 class TrexSVM(TrexClassifier):
@@ -66,9 +69,13 @@ class TrexSVM(TrexClassifier):
         super().train(records=records, *args, **kwargs)
         clf = self.pipeline.named_steps['clf']
         if train_explainer:
+            # must use k-means to summarize, else intractable at inference time with KernelExplainer
+            self.logger.info('Training SHAP KernelExplainer.')
+            self.logger.info(f'Running KMeans with k={KMEANS_N_CLUSTERS} on background data...')
+            data = shap.kmeans(self._get_raw_features(records).toarray(), k=KMEANS_N_CLUSTERS)
             self.shap_explainer = shap.KernelExplainer(
                 clf.predict_proba,
-                self._get_raw_features(records),
+                data,
                 link="logit"
             )
         return self
@@ -122,11 +129,16 @@ class TrexSVM(TrexClassifier):
         #  if we rely on feature selection in near future
         return sorted_weights
 
-    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
+    def get_shap(self, records: List[GenotypeRecord],
+                 nsamples=None) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
         if self.shap_explainer is None:
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
-            return False, False
+            return None
+        if nsamples is None:
+            nsamples=SHAP_NSAMPLE_DEFAULT
+        self.logger.info(f'Computing SHAP values for input using nsamples={nsamples}.'
+                         f' This may take a long time.')
         raw_feats = self._get_raw_features(records).astype(int)  # numpy error if using bools
-        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=100)[0]
+        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=nsamples)[0]
         shap_bias = self.shap_explainer.expected_value[0]
         return raw_feats, shap_values, shap_bias

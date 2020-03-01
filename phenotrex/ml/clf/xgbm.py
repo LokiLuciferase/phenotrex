@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List, Tuple
 
+from scipy.sparse import csr_matrix
 import numpy as np
 import xgboost as xgb
 from sklearn.pipeline import Pipeline
@@ -72,7 +73,8 @@ class TrexXGB(TrexClassifier):
                           zip(names, weights)}
         return sorted_weights
 
-    def get_shap(self, records: List[GenotypeRecord]) -> Tuple[np.ndarray, np.ndarray, float]:
+    def get_shap(self, records: List[GenotypeRecord],
+                 nsamples=None) -> Tuple[csr_matrix, np.ndarray, float]:
         clf = self.pipeline.named_steps['clf']
         raw_feats = self._get_raw_features(records)
         shap_values = clf.get_booster().predict(

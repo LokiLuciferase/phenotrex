@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Tuple, Union, List
 
 import pandas as pd
@@ -196,6 +195,7 @@ class ShapHandler:
 
         :param sample_name:
         :param n_max_features:
+        :param nsamples:
         :return: a dataframe of the n_max_features most influential features,
                  their value in the sample, and the associated
         SHAP value(s).

@@ -15,6 +15,9 @@ import click
 @click.option('--n_max_explained_features', type=int, default=None,
               help='Limit output number of features in SHAP explanation files. '
                    'Default: show explanations for all model features.')
+@click.option('--shap_n_samples', type=int, default=None,
+              help='The nsamples parameter of SHAP. Only used by models '
+                   'which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
 def predict(*args, **kwargs):
     """

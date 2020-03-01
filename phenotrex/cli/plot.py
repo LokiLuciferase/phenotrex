@@ -19,7 +19,7 @@ def plot():
 @click.option('--inputs', type=click.Path(exists=True), required=True, nargs=0,
               help='CCCV output file(s) to plot.')
 @click.argument('inputs', nargs=-1)
-@click.option('--out', type=click.Path(), help='Output file path. If not given, `plt.show()` result.')
+@click.option('--out', type=click.Path(), help='Output file path. If not given, `.show()` result.')
 @click.option('--title', type=str, default='', help='Plot title.')
 def cccv(inputs, out, title):
     """Plot CCCV result(s)."""
@@ -39,13 +39,18 @@ def cccv(inputs, out, title):
               help='Path of pickled classifier file.')
 @click.option('--out_prefix', required=True, type=str,
               help='The prefix to generated SHAP force plots.')
+@click.option('--n_samples', type=int, default=None,
+              help='The nsamples parameter of SHAP. '
+                   'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
-def shap_force(fasta_files, genotype, classifier, out_prefix, verb):
+def shap_force(fasta_files, genotype, classifier, out_prefix, n_samples, verb):
     """
     Generate SHAP force plots for each sample (passed either as FASTA files or as genotype file).
     All plots will be saved at the path `{out_prefix}_{sample_identifier}_force_plot.png`.
     All non-existent directories in the output prefix path will be created as needed.
     """
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     from tqdm.auto import tqdm
     try:
@@ -68,7 +73,7 @@ def shap_force(fasta_files, genotype, classifier, out_prefix, verb):
 
     model = load_classifier(filename=classifier, verb=verb)
     sh = ShapHandler.from_clf(model)
-    fs, sv, bv = model.get_shap(gr)
+    fs, sv, bv = model.get_shap(gr, nsamples=n_samples)
     sh.add_feature_data(sample_names=[x.identifier for x in gr],
                         features=fs, shaps=sv, base_value=bv)
     for record in tqdm(gr, total=len(gr), unit='sample', desc='Generating force plots'):
