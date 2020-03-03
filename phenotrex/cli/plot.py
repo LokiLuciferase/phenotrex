@@ -76,9 +76,9 @@ def shap_force(fasta_files, genotype, classifier, out_prefix, n_samples, verb):
     fs, sv, bv = model.get_shap(gr, nsamples=n_samples)
     sh.add_feature_data(sample_names=[x.identifier for x in gr],
                         features=fs, shaps=sv, base_value=bv)
-    for record in tqdm(gr, total=len(gr), unit='sample', desc='Generating force plots'):
+    for record in tqdm(gr, unit='samples', desc='Generating force plots'):
         sh.plot_shap_force(record.identifier)
-        out_path = Path('_'.join([out_prefix, f'{record.identifier}_force_plot.png']))
+        out_path = Path(f'{out_prefix}_{record.identifier}_force_plot.png')
         out_path.parent.mkdir(exist_ok=True)
         plt.savefig(out_path)
         plt.close(plt.gcf())

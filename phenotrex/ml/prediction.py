@@ -29,11 +29,11 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
     :param fasta_files: An iterable of fasta file paths
     :param genotype: A genotype file path
     :param classifier: A pickled classifier file path
-    :param out_explain_per_sample: Where o save the most influential features by SHAP for each
+    :param out_explain_per_sample: Where to save the most influential features by SHAP for each
                                    predicted sample.
     :param out_explain_summary: Where to save the SHAP summary of the predictions.
     :param shap_n_samples: The nsamples parameter -
-                               only used by models which utilize a `shap.KernelExplainer`.
+                           only used by models which incorporate a `shap.KernelExplainer`.
     :param n_max_explained_features: How many of the most influential features by SHAP to consider.
     :param verb: Whether to show progress of fasta file annotation.
     """

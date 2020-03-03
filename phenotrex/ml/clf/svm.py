@@ -76,7 +76,7 @@ class TrexSVM(TrexClassifier):
             self.shap_explainer = shap.KernelExplainer(
                 clf.predict_proba,
                 data,
-                link="logit"
+                link="logit",
             )
         return self
 

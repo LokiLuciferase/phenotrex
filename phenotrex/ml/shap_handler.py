@@ -9,6 +9,13 @@ from phenotrex.ml.trex_classifier import TrexClassifier
 
 
 class ShapHandler:
+    """
+    This class handles feature arrays and shap values of predictions made with phenotrex,
+    and enables plotting of shap values and summaries.
+
+    :param feature_names: All feature names in the model feature space.
+    :param used_idxs: Indices into the feature_names array of features actually utilized by the model.
+    """
     @classmethod
     def from_clf(cls, clf: TrexClassifier):
         fn, fn_idx = zip(*clf.pipeline.named_steps["vec"].get_feature_names())
@@ -18,13 +25,6 @@ class ShapHandler:
         return cls(fn, used_idxs)
 
     def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray):
-        """
-        This class handles feature arrays and shap values of predictions made with phenotrex,
-        and enables plotting of shap values and summaries.
-
-        :param feature_names: All feature names in the model feature space.
-        :param used_idxs: Indices into the fn array of features actually utilized by the model.
-        """
         self._used_idxs = used_idxs
         self._used_feature_names = feature_names[used_idxs]
 
@@ -39,7 +39,7 @@ class ShapHandler:
         """
         Add a new set of feature information to the ShapHandler.
 
-        :param sample_names: an array of sample names; should globally unique.
+        :param sample_names: an array of sample names; should be globally unique.
         :param features: a feature array of shape (n_sample_names, n_features_in_featurespace).
                          features will be pared down to those used by the model.
         :param shaps: a shap array of shape (n_sample_names, n_features_in_featurespace +1).
@@ -88,11 +88,11 @@ class ShapHandler:
 
     def _get_feature_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Concatenates and returns all currently saved features, shaps and sample names.
+        Concatenate and return all currently saved features, shaps and sample names.
 
         :returns: A tuple of saved used features (the actual values),
-                 the saved shap values corresponding to the features,
-                 and the sample names from which features and shap values were derived.
+                  the saved shap values corresponding to the features,
+                  and the sample names from which features and shap values were derived.
         """
         try:
             X_agg = self._used_features.astype(float)
@@ -172,7 +172,8 @@ class ShapHandler:
                         features=X_agg,
                         class_names=[f'not {n}', n],
                         feature_names=self._used_feature_names,
-                        max_display=n_max_features, show=False,
+                        max_display=n_max_features,
+                        show=False,
                         **kwargs)
                     plt.title(f'SHAP Summary for Class {n}')
                     plt.show()
