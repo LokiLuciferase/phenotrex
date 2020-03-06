@@ -1,15 +1,16 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
-
-"""Data structures containing Genotype and Phenotype information."""
 
 
 @dataclass
 class GenotypeRecord:
-    """ TODO add docstring """
+    """
+    Structure containing the genomic features to which learning is applied, for each sample
+    referenced by `identifier`.
+    """
     identifier: str
     features: List[str]
 
@@ -19,7 +20,10 @@ class GenotypeRecord:
 
 @dataclass
 class PhenotypeRecord:
-    """ TODO add docstring """
+    """
+    Structure containing ground truth class values (0 for trait absent, 1 for trait present) for the
+    trait `trait_name` in sample `identifier`.
+    """
     identifier: str
     trait_name: str
     trait_sign: int
@@ -30,10 +34,12 @@ class PhenotypeRecord:
 
 @dataclass
 class GroupRecord:
-    """ TODO add docstring """
+    """
+    Structure containing grouping information for each sample for Leave-one-group-out CV.
+    """
     identifier: str
-    group_name: str
-    group_id: int
+    group_name: Optional[str]
+    group_id: Optional[int]
 
     def __repr__(self):
         return f"{self.identifier} group({self.group_name})={self.group_id}"
@@ -41,9 +47,10 @@ class GroupRecord:
 
 @dataclass
 class TrainingRecord(GenotypeRecord, PhenotypeRecord, GroupRecord):
-    """ TODO add docstring """
-    pass
-
+    """
+    Structure which collates information from Genotype-, Phenotype- and GroupRecords, creating
+    a single observation suitable as machine learning input for each sample.
+    """
     def __repr__(self):
         gr_repr = GenotypeRecord.__repr__(self).split(' ')[1]
         pr_repr = PhenotypeRecord.__repr__(self).split(' ')[1]

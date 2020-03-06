@@ -10,7 +10,7 @@ except ModuleNotFoundError:
     from phenotrex.util.helpers import fail_missing_dependency as fastas_to_grs
 
 
-def predict(fasta_files=tuple(), genotype=None, classifier=None,
+def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
             out_explain_per_sample=None, out_explain_summary=None,
             shap_n_samples=None, n_max_explained_features=None, verb=False):
     """
@@ -68,4 +68,8 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
     print(f"# Trait: {model.trait_name}")
     print("Identifier\tTrait present\tConfidence")
     for record, result, probability in zip(gr, preds, probas):
-        print(f"{record.identifier}\t{translate_output[result]}\t{str(round(probability[result], 4))}")
+        if probability[result] < min_proba:
+            result_disp = "N/A"
+        else:
+            result_disp = translate_output[result]
+        print(f"{record.identifier}\t{result_disp}\t{str(round(probability[result], 4))}")

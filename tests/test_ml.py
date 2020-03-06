@@ -1,5 +1,3 @@
-from tempfile import TemporaryDirectory
-from pathlib import Path
 import sys
 import json
 
@@ -11,17 +9,16 @@ mpl.use('Agg')
 from tests.targets import (first_genotype_accession, first_phenotype_accession, cv_scores_trex,
                            num_of_features_compressed, num_of_features_uncompressed)
 from phenotrex.io.flat import load_training_files
-from phenotrex.io.serialization import load_classifier
-from phenotrex.ml.shap_handler import ShapHandler
 from phenotrex.ml import TrexSVM, TrexXGB
 from phenotrex.util.helpers import get_x_y_tn
 from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary
 from phenotrex.ml.prediction import predict
 
-
 from . import DATA_PATH, FROM_FASTA
 
+
 RANDOM_STATE = 2
+
 
 trait_names = [
     "Sulfate_reducer",
@@ -99,8 +96,8 @@ class TestTrexClassifier:
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_crossvalidate(self, trait_name, cv, scoring, classifier):
         """
-        Test default crossvalidation of PICASVM class. Using several different traits, cv folds, and scoring methods.
-        Compares with dictionary cv_scores.
+        Test default crossvalidation of PICASVM class. Using several different traits, cv folds,
+        and scoring methods. Compares with dictionary cv_scores.
         :param trait_name:
         :param cv:
         :param scoring:
@@ -248,7 +245,6 @@ class TestTrexClassifier:
         for x in non_zero:
             if len(x) == 0:
                 one_is_zero = True
-
         assert not one_is_zero
 
     @pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)
@@ -257,7 +253,6 @@ class TestTrexClassifier:
         model_path = DATA_PATH/f'{trait_name}_{classifier_type.lower()}.pkl'
         genotype_file = DATA_PATH/f'{trait_name}.genotype'
         print(predict(classifier=model_path, genotype=genotype_file))
-
 
     @pytest.mark.skipif(not FROM_FASTA, reason='Missing optional dependencies')
     @pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)
