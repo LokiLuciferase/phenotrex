@@ -5,10 +5,14 @@ import pytest
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from tests.targets import (first_genotype_accession, first_phenotype_accession, cv_scores_trex,
                            num_of_features_compressed, num_of_features_uncompressed)
-from phenotrex.io.flat import load_training_files
+from phenotrex.io.flat import (load_training_files,
+                               write_weights_file, write_params_file, write_misclassifications_file)
+from phenotrex.io.serialization import save_classifier
 from phenotrex.ml import TrexSVM, TrexXGB
 from phenotrex.util.helpers import get_x_y_tn
 from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary
@@ -88,7 +92,15 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        _ = clf.train(records=training_records, train_explainer=use_shaps)
+        clf.train(records=training_records, train_explainer=use_shaps)
+        with TemporaryDirectory() as tmpdir:
+            clf_path = Path(tmpdir)/'classifier.pkl'
+            weights_path = Path(tmpdir)/'weights.rank'
+            save_classifier(clf,  clf_path)
+            weights = clf.get_feature_weights()
+            write_weights_file(weights_file=weights_path, weights=weights)
+            assert clf_path.is_file()
+            assert weights_path.is_file()
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("cv", cv_folds, ids=[str(x) for x in cv_folds])
@@ -97,7 +109,9 @@ class TestTrexClassifier:
     def test_crossvalidate(self, trait_name, cv, scoring, classifier):
         """
         Test default crossvalidation of TrexClassifier class.
-        Using several different traits, cv folds, and scoring methods. Compares with dictionary cv_scores.
+        Using several different traits, cv folds, and scoring methods.
+        Compares with dictionary cv_scores.
+
         :param trait_name:
         :param cv:
         :param scoring:
@@ -110,6 +124,10 @@ class TestTrexClassifier:
         if classifier.identifier in cv_scores_trex:
             score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring]
             np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
+        with TemporaryDirectory() as tmpdir:
+            misclass_path = Path(tmpdir)/'misclassifications.tsv'
+            write_misclassifications_file(misclass_path, training_records,
+                                          score_pred, use_groups=False)
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
@@ -123,8 +141,12 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=True)
-        assert type(clf_opt) == type(clf)
+        clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=False)
+        assert isinstance(clf_opt, dict)
+        with TemporaryDirectory() as tmpdir:
+            param_path = Path(tmpdir)/'params.json'
+            write_params_file(param_path, clf_opt)
+            assert param_path.is_file()
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)

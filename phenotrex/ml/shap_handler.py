@@ -213,6 +213,7 @@ class ShapHandler:
             shap_vals = [shap_agg_s[i, :n_max_features].round(5), ]
         sample_names = [sample_name] * len(fns)
         df_arrs = [sample_names, fns, feature_vals, *shap_vals]
+        df_arrs = [np.array(x) for x in df_arrs]
         df_labels = ['sample', 'feature', 'feature_value',
                      *[f'SHAP value ({x})' for x in self._class_names]][:len(df_arrs)]
         df = pd.DataFrame(df_arrs, index=df_labels).T
