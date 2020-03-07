@@ -126,7 +126,6 @@ class TestTrexClassifier:
         clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=True)
         assert type(clf_opt) == type(clf)
 
-    @pytest.mark.skipif(sys.platform != "linux", reason="Stallman was right")
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_compleconta_cv(self, trait_name, classifier):

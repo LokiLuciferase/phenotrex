@@ -13,7 +13,7 @@ from deepnog.inference import load_nn, predict
 from deepnog.io import create_df, get_weights_path
 from deepnog.utils import set_device
 from deepnog.dataset import ProteinDataset, ProteinIterator
-from Bio.SeqIO import SeqRecord, parse
+from Bio.SeqIO import SeqRecord, parse, write
 from tqdm.auto import tqdm
 
 from phenotrex.io.flat import load_fasta_file
@@ -92,21 +92,27 @@ def fasta_to_gr(fasta_file: str, verb: bool = False) -> GenotypeRecord:
     if seqtype == 'protein':
         return annotate_with_deepnog(fname, seqs, verb=verb)
     else:
-        return annotate_with_deepnog(fname, call_proteins(fasta_file), verb=verb)
+        return annotate_with_deepnog(fname, call_proteins(seqs), verb=verb)
 
 
-def call_proteins(fna_file: str) -> List[SeqRecord]:
+def call_proteins(seqs: List[SeqRecord]) -> List[SeqRecord]:
     """
     Perform protein calling with prodigal.
 
-    :param fna_file: A nucleotide fasta file.
-    :returns: a list of SeqRecords suitable for annotation with deepnog.
+    :param seqs: A list of DNA fasta SeqRecords.
+    :returns: a list of protein fasta SeqRecords suitable for annotation with deepnog.
     """
-    with NamedTemporaryFile(mode='w+') as tmp_f:
-        check_call([PRODIGAL_BIN_PATH, '-i', fna_file, '-a', tmp_f.name],
-                   stderr=DEVNULL, stdout=DEVNULL)
-        tmp_f.seek(0)
-        return list(parse(tmp_f, 'fasta'))
+    fna_file = NamedTemporaryFile(mode='w', delete=False)
+    faa_file = NamedTemporaryFile(mode='r', delete=False)
+    write(seqs, fna_file, format='fasta')
+    fna_file.close()
+    check_call([PRODIGAL_BIN_PATH, '-i', fna_file.name, '-a', faa_file.name],
+               stderr=DEVNULL, stdout=DEVNULL)
+    parsed = list(parse(faa_file, 'fasta'))
+    faa_file.close()
+    os.unlink(fna_file.name)
+    os.unlink(faa_file.name)  # cannot re-use .name of open NamedTemporaryFile under Win32
+    return parsed
 
 
 def annotate_with_deepnog(identifier: str, protein_list: List[SeqRecord],
