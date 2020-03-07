@@ -186,7 +186,7 @@ class ShapHandler:
                           max_display=n_max_features,
                           class_names=class_names,
                           title=f'SHAP Summary',
-                          show=True,
+                          show=False,
                           **kwargs)
 
     def get_shap_force(self, sample_name: str, n_max_features: int = 20) -> pd.DataFrame:

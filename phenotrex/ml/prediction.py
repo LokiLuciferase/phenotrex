@@ -49,8 +49,11 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None,
 
     model = load_classifier(filename=classifier, verb=verb)
     if out_explain_per_sample is not None or out_explain_summary is not None:
+        try:
+            fs, sv, bv = model.get_shap(gr, nsamples=shap_n_samples)
+        except TypeError:
+            raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
         sh = ShapHandler.from_clf(model)
-        fs, sv, bv = model.get_shap(gr, nsamples=shap_n_samples)
         sh.add_feature_data(sample_names=[x.identifier for x in gr],
                             features=fs, shaps=sv, base_value=bv)
         if out_explain_per_sample is not None:
