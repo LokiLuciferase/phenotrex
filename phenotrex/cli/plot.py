@@ -31,7 +31,7 @@ def cccv(inputs, out, title):
     compleconta_plot(cccv_results=cccv_results, conditions=conditions, title=title, save_path=out)
 
 
-@plot.command('shap-summary')
+@plot.command('shap-summary', short_help='Plot summary of SHAP feature contributions.')
 @click.argument('fasta_files', type=click.Path(exists=True), nargs=-1)
 @click.option('--genotype', type=click.Path(exists=True),
               required=False, help='Input genotype file.')
@@ -54,10 +54,11 @@ def shap_summary(out, n_max_features, title, **kwargs):
 
     sh, gr = generic_compute_shaps(**kwargs)
     sh.plot_shap_summary(title=title, n_max_features=n_max_features)
+    plt.tight_layout()
     plt.savefig(out)
 
 
-@plot.command('shap-force')
+@plot.command('shap-force', short_help='Plot SHAP feature contributions per sample.')
 @click.argument('fasta_files', type=click.Path(exists=True), nargs=-1)
 @click.option('--genotype', type=click.Path(exists=True),
               required=False, help='Input genotype file.')
