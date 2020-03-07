@@ -8,8 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class GenotypeRecord:
     """
-    Structure containing the genomic features to which learning is applied, for each sample
-    referenced by `identifier`.
+    enomic features of a sample referenced by `identifier`.
     """
     identifier: str
     features: List[str]
@@ -21,8 +20,10 @@ class GenotypeRecord:
 @dataclass
 class PhenotypeRecord:
     """
-    Structure containing ground truth class values (0 for trait absent, 1 for trait present) for the
-    trait `trait_name` in sample `identifier`.
+    Ground truth labels of sample `identifier`,
+    indicating presence/absence of trait `trait_name`:
+      - 0 if trait is absent
+      - 1 if trait is present
     """
     identifier: str
     trait_name: str
@@ -35,7 +36,11 @@ class PhenotypeRecord:
 @dataclass
 class GroupRecord:
     """
-    Structure containing grouping information for each sample for Leave-one-group-out CV.
+    Group label of sample `identifier`.
+    Notes
+    -----
+    Useful for leave-one-group-out cross-validation (LOGO-CV),
+    for example, to take taxonomy into account.
     """
     identifier: str
     group_name: Optional[str]
@@ -48,11 +53,14 @@ class GroupRecord:
 @dataclass
 class TrainingRecord(GenotypeRecord, PhenotypeRecord, GroupRecord):
     """
-    Structure which collates information from Genotype-, Phenotype- and GroupRecords, creating
-    a single observation suitable as machine learning input for each sample.
+    Sample containing Genotype-, Phenotype- and GroupRecords,
+    suitable as machine learning input for a single observation.
     """
     def __repr__(self):
         gr_repr = GenotypeRecord.__repr__(self).split(' ')[1]
         pr_repr = PhenotypeRecord.__repr__(self).split(' ')[1]
-        gro_repr = GroupRecord.__repr__(self).split(' ')[1]
+        if self.group_name is not None and self.group_id is not None:
+            gro_repr = GroupRecord.__repr__(self).split(' ')[1]
+        else:
+            gro_repr = ''
         return f"id={self.identifier} {' '.join([gr_repr, pr_repr, gro_repr])}"

@@ -32,7 +32,7 @@ DEEPNOG_VALID_TAX_LEVELS = {
 class PreloadedProteinIterator(ProteinIterator):
     """Hack ProteinDataset to load from list directly."""
     def __init__(self, protein_list: List[SeqRecord], aa_vocab, format):
-        self.iterator = (x for x in protein_list)
+        self.iterator = protein_list
         self.vocab = aa_vocab
         self.format = format
         self.start = 0
@@ -62,7 +62,7 @@ def fastas_to_grs(fasta_files: List[str], verb: bool = False,
 
     :param fasta_files: a list of DNA and/or protein FASTA files to be converted into GenotypeRecords.
     :param verb: Whether to display progress of annotation with tqdm.
-    :param n_threads: Number of threads to run in parallel. Default, use all available CPU cores.
+    :param n_threads: Number of parallel threads. Default, use all available CPU cores.
     :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
     """
     n_threads = min(os.cpu_count(), n_threads) if n_threads is not None else os.cpu_count()

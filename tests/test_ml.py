@@ -96,8 +96,8 @@ class TestTrexClassifier:
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
     def test_crossvalidate(self, trait_name, cv, scoring, classifier):
         """
-        Test default crossvalidation of PICASVM class. Using several different traits, cv folds,
-        and scoring methods. Compares with dictionary cv_scores.
+        Test default crossvalidation of TrexClassifier class.
+        Using several different traits, cv folds, and scoring methods. Compares with dictionary cv_scores.
         :param trait_name:
         :param cv:
         :param scoring:
