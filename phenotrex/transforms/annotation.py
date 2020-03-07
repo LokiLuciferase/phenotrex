@@ -1,4 +1,5 @@
 import os
+import sys
 from collections import namedtuple
 from typing import List
 from pathlib import Path
@@ -18,7 +19,8 @@ from tqdm.auto import tqdm
 from phenotrex.io.flat import load_fasta_file
 from phenotrex.structure.records import GenotypeRecord
 
-PRODIGAL_BIN_PATH = resource_filename('phenotrex', 'bin/prodigal')
+PRODIGAL_BIN_SUFFIX = {'win32': 'windows.exe', 'darwin': 'osx.10.9.5'}.get(sys.platform, 'linux')
+PRODIGAL_BIN_PREFIX = resource_filename('phenotrex', f'bin/prodigal.{PRODIGAL_BIN_SUFFIX}')
 DEEPNOG_ARCH = 'deepencoding'
 DEEPNOG_VALID_DBS = {
     'eggNOG5',
