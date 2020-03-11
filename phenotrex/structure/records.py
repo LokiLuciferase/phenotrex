@@ -8,7 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class GenotypeRecord:
     """
-    enomic features of a sample referenced by `identifier`.
+    Genomic features of a sample referenced by `identifier`.
     """
     identifier: str
     features: List[str]

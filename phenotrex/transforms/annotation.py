@@ -102,14 +102,15 @@ def call_proteins(seqs: List[SeqRecord]) -> List[SeqRecord]:
     :param seqs: A list of DNA fasta SeqRecords.
     :returns: a list of protein fasta SeqRecords suitable for annotation with deepnog.
     """
-    fna_file = NamedTemporaryFile(mode='w', delete=False)
-    faa_file = NamedTemporaryFile(mode='r', delete=False)
-    write(seqs, fna_file, format='fasta')
-    fna_file.close()
-    check_call([PRODIGAL_BIN_PATH, '-i', fna_file.name, '-a', faa_file.name],
-               stderr=DEVNULL, stdout=DEVNULL)
-    parsed = list(parse(faa_file, 'fasta'))
-    faa_file.close()
+    with NamedTemporaryFile(mode='w', delete=False) as fna_file:
+        write(seqs, fna_file, format='fasta')
+    with NamedTemporaryFile(mode='r', delete=False) as faa_file:
+        check_call([
+            PRODIGAL_BIN_PATH,
+            '-i', fna_file.name,
+            '-a', faa_file.name
+        ], stderr=DEVNULL, stdout=DEVNULL)
+        parsed = list(parse(faa_file, 'fasta'))
     os.unlink(fna_file.name)
     os.unlink(faa_file.name)  # cannot re-use .name of open NamedTemporaryFile under Win32
     return parsed
