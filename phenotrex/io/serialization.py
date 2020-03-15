@@ -51,5 +51,5 @@ def load_classifier(filename: str, verb=False):
         obj = joblib.load(filename)
     if not hasattr(obj, 'feature_type'):
         obj.feature_type = 'legacy'
-    logger.info("Successfully loaded classifier.")
+    logger.info(f"Successfully loaded classifier (feature_type={obj.feature_type}).")
     return obj

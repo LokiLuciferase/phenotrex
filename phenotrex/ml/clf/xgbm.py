@@ -75,6 +75,7 @@ class TrexXGB(TrexClassifier):
 
     def get_shap(self, records: List[GenotypeRecord],
                  nsamples=None) -> Tuple[csr_matrix, np.ndarray, float]:
+        self._check_mismatched_feature_type(records)
         clf = self.pipeline.named_steps['clf']
         raw_feats = self._get_raw_features(records)
         shap_values = clf.get_booster().predict(

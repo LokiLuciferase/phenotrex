@@ -123,14 +123,18 @@ class TrexSVM(TrexClassifier):
         weights = {feature: mean_weights[i] for feature, i in names}
 
         # sort by absolute value
-        sorted_weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
-                                                                          reverse=True)}
+        sorted_weights = {
+            feature: weights[feature] for feature in sorted(
+                weights, key=lambda key: abs(weights[key]), reverse=True
+            )}
         # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
         #  if we rely on feature selection in near future
         return sorted_weights
 
-    def get_shap(self, records: List[GenotypeRecord],
-                 nsamples=None) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
+    def get_shap(
+        self, records: List[GenotypeRecord], nsamples=None
+    ) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
+        self._check_mismatched_feature_type(records)
         if self.shap_explainer is None:
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
             return None

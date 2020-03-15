@@ -1,18 +1,20 @@
-import sys
 import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
-from tests.targets import (first_genotype_accession, first_phenotype_accession, first_groups_accession,
-                           cv_scores_trex, num_of_features_compressed, num_of_features_uncompressed)
-from phenotrex.io.flat import (load_training_files,
-                               write_weights_file, write_params_file, write_misclassifications_file)
-from phenotrex.io.serialization import save_classifier
+from tests.targets import (
+    first_genotype_accession, first_phenotype_accession, first_groups_accession,
+    cv_scores_trex, num_of_features_compressed, num_of_features_uncompressed
+)
+from phenotrex.io.flat import (
+    load_training_files, write_weights_file, write_params_file, write_misclassifications_file
+)
+from phenotrex.io.serialization import save_classifier, load_classifier
 from phenotrex.ml import TrexSVM, TrexXGB
 from phenotrex.util.helpers import get_x_y_tn_ft
 from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary
@@ -117,7 +119,6 @@ class TestTrexClassifier:
 
         :param trait_name:
         :param cv:
-        :param scoring:
         :param classifier:
         :param use_groups:
         :return:
@@ -287,5 +288,10 @@ class TestTrexClassifier:
     @pytest.mark.parametrize('fasta_files', predict_files, ids=['fna', 'faa', 'fna+faa'])
     @pytest.mark.parametrize('classifier_type', classifier_ids, ids=classifier_ids)
     def test_predict_from_fasta(self, trait_name, classifier_type, fasta_files):
-        model_path = DATA_PATH/f'{trait_name}_{classifier_type.lower()}.pkl'
-        print(predict(fasta_files=fasta_files, classifier=model_path))
+        model_path = DATA_PATH / f'{trait_name}_{classifier_type.lower()}.pkl'
+        with TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)/'model.pkl'
+            clf = load_classifier(model_path)
+            clf.feature_type = 'eggNOG5-tax-2'
+            save_classifier(clf, tmp_path)
+            print(predict(fasta_files=fasta_files, classifier=tmp_path))

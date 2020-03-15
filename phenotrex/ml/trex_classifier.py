@@ -50,6 +50,15 @@ class TrexClassifier(ABC):
         self.default_search_params = None
         self.n_jobs = 1
 
+    def _check_mismatched_feature_type(self, gr: List[GenotypeRecord]):
+        if not all(x.feature_type == self.feature_type for x in gr):
+            mismatched = {x.feature_type for x in gr if x.feature_type != self.feature_type}
+            raise RuntimeError(
+                f"Mismatched feature_types found among records: "
+                f"Classifier feature_type is '{self.feature_type}', "
+                f"mismatched feature_types: {mismatched}"
+            )
+
     def _get_raw_features(self, records: List[GenotypeRecord]) -> csr_matrix:
         """
         Apply the trained vectorizer in the TrexClassifier and return a numpy array suitable for
@@ -102,11 +111,7 @@ class TrexClassifier(ABC):
         :param X: A List of GenotypeRecord for each of which to predict the trait sign
         :return: a Tuple of predictions and probabilities of each class for each GenotypeRecord in X.
         """
-        if not all(x.feature_type == self.feature_type for x in X):
-            mismatched = {x.feature_type for x in X if x != self.feature_type}
-            raise RuntimeError(
-                f"Mismatched feature types found among supplied records: {mismatched}"
-            )
+        self._check_mismatched_feature_type(X)
         features: List[str] = [" ".join(x.features) for x in X]
         preds = self.pipeline.predict(X=features)
         probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling

@@ -268,6 +268,7 @@ def collate_training_data(
             identifier=pr_dict[x].identifier,
             trait_name=pr_dict[x].trait_name,
             trait_sign=pr_dict[x].trait_sign,
+            feature_type=gr_dict[x].feature_type,
             features=gr_dict[x].features,
             group_name=gp_dict[x].group_name,
             group_id=gp_dict[x].group_id
