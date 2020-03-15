@@ -59,11 +59,28 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     :return: List[GenotypeRecord] of records in the genotype file
     """
     with open(input_file) as genotype_file:
+        metadata = dict()
+        genotype_lines = []
         genotype_records = []
         for line in genotype_file:
+            if line.startswith('#'):
+                k, v = line[1:].strip().split(':')
+                metadata[k] = v
+            else:
+                genotype_lines.append(line)
+
+        if 'feature_type' not in metadata:
+            raise RuntimeError('Invalid Genotype file passed: no feature_type information.')
+
+        for line in genotype_lines:
             identifier, *features = line.strip().split("\t")
-            genotype_records.append(GenotypeRecord(identifier=identifier,
-                                                   features=features))
+            genotype_records.append(
+                GenotypeRecord(
+                    identifier=identifier,
+                    feature_type=metadata['feature_type'],
+                    features=features
+                ))
+
     dupcount = Counter([x.identifier for x in genotype_records])
     if dupcount.most_common()[0][1] > 1:
         raise RuntimeError(f"Duplicate entries found in genotype file: {dupcount}")
@@ -77,7 +94,13 @@ def write_genotype_file(genotypes: List[GenotypeRecord], output_file: str):
     :param genotypes: The genotypes to write to a file.
     :param output_file: The output file path.
     """
+    feature_types = list(set(x.feature_type for x in genotypes))
+    if len(feature_types) > 1:
+        raise RuntimeError(
+            'Cannot write GenotypeRecords with different feature_types to the same genotype file.'
+        )
     with open(output_file, 'w') as genotype_file:
+        genotype_file.write(f'#feature_type:{feature_types[0]}\n')
         for g in genotypes:
             genotype_file.write('\t'.join([g.identifier, *g.features, '\n']))
 

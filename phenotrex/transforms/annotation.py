@@ -22,14 +22,10 @@ from phenotrex.structure.records import GenotypeRecord
 PRODIGAL_BIN_SUFFIX = {'win32': 'windows.exe', 'darwin': 'osx.10.9.5'}.get(sys.platform, 'linux')
 PRODIGAL_BIN_PATH = resource_filename('phenotrex', f'bin/prodigal.{PRODIGAL_BIN_SUFFIX}')
 DEEPNOG_ARCH = 'deepencoding'
-DEEPNOG_VALID_DBS = {
-    'eggNOG5',
+DEEPNOG_VALID_CONFIG = {
+    ('eggNOG5', 1),
+    ('eggNOG5', 2),
 }
-DEEPNOG_VALID_TAX_LEVELS = {
-    1,
-    2,
-}
-
 
 class PreloadedProteinIterator(ProteinIterator):
     """Hack ProteinDataset to load from list directly."""
@@ -116,9 +112,13 @@ def call_proteins(seqs: List[SeqRecord]) -> List[SeqRecord]:
     return parsed
 
 
-def annotate_with_deepnog(identifier: str, protein_list: List[SeqRecord],
-                          database: str = 'eggNOG5', tax_level: int = 2,
-                          verb: bool = True) -> GenotypeRecord:
+def annotate_with_deepnog(
+    identifier: str,
+    protein_list: List[SeqRecord],
+    database: str = 'eggNOG5',
+    tax_level: int = 2,
+    verb: bool = True
+) -> GenotypeRecord:
     """
     Perform calling of EggNOG5 clusters on a list of SeqRecords belonging to a sample, using deepnog.
 
@@ -129,6 +129,9 @@ def annotate_with_deepnog(identifier: str, protein_list: List[SeqRecord],
     :param verb: Whether to print verbose progress messages.
     :returns: a GenotypeRecord suitable for use with phenotrex.
     """
+    if not (database, tax_level) in DEEPNOG_VALID_CONFIG:
+        raise RuntimeError(f'Unknown database and/or tax level: {database}/{tax_level}')
+
     device = set_device('auto')
     torch.set_num_threads(1)
     weights_path = get_weights_path(
@@ -138,14 +141,12 @@ def annotate_with_deepnog(identifier: str, protein_list: List[SeqRecord],
     model = load_nn(DEEPNOG_ARCH, model_dict, device)
     class_labels = model_dict['classes']
     dataset = PreloadedProteinDataset(protein_list)
-    preds, confs, ids, indices = predict(model, dataset, device,
-                                         batch_size=1,
-                                         num_workers=1,
-                                         verbose=3 if verb else 0)
-    threshold = None
-    if hasattr(model, 'threshold'):
-        threshold = model.threshold
-    df = create_df(class_labels, preds, confs, ids, indices,
-                   threshold=threshold, verbose=0)
+    preds, confs, ids, indices = predict(
+        model, dataset, device, batch_size=1, num_workers=1, verbose=3 if verb else 0
+    )
+    threshold = float(model.threshold) if hasattr(model, 'threshold') else None
+    df = create_df(class_labels, preds, confs, ids, indices,threshold=threshold, verbose=0)
+
     cogs = [x for x in df.prediction.unique() if x]
-    return GenotypeRecord(identifier=identifier, features=cogs)
+    feature_type_str = f'{database}-tax-{tax_level}'
+    return GenotypeRecord(identifier=identifier, feature_type=feature_type_str, features=cogs)
