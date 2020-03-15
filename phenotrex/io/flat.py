@@ -64,7 +64,7 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
         genotype_records = []
         for line in genotype_file:
             if line.startswith('#'):
-                k, v = line[1:].strip().split(':')
+                k, v = line[1:].strip().split(':', maxsplit=1)
                 metadata[k] = v
             else:
                 genotype_lines.append(line)
