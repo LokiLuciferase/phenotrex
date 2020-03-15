@@ -12,7 +12,8 @@ from tests.targets import (
     cv_scores_trex, num_of_features_compressed, num_of_features_uncompressed
 )
 from phenotrex.io.flat import (
-    load_training_files, write_weights_file, write_params_file, write_misclassifications_file
+    load_training_files, write_weights_file, write_params_file, write_misclassifications_file,
+    write_cccv_accuracy_file, write_genotype_file
 )
 from phenotrex.io.serialization import save_classifier, load_classifier
 from phenotrex.ml import TrexSVM, TrexXGB
@@ -66,7 +67,8 @@ class TestTrexClassifier:
         return json.loads(json.dumps(d), parse_float=lambda x: round(float(x), decimal))
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    def test_load_training_files(self, trait_name):
+    @pytest.mark.parametrize("do_write", [True, ])
+    def test_load_data(self, trait_name, do_write):
         """
         Test training data loading. Check/catch invalid file formats.
         :param trait_name:
@@ -79,10 +81,16 @@ class TestTrexClassifier:
             genotype_file=full_path_genotype,
             phenotype_file=full_path_phenotype,
             groups_file=full_path_groups,
-            verb=True)
+            verb=True
+        )
         assert genotype[0].identifier == first_genotype_accession[trait_name]
         assert phenotype[0].identifier == first_phenotype_accession[trait_name]
         assert group[0].identifier == first_groups_accession[trait_name]
+        if do_write:
+            with TemporaryDirectory() as tmpdir:
+                gt_out = Path(tmpdir)/'gt.genotype'
+                write_genotype_file(genotype, gt_out)
+                assert gt_out.is_file()
         return training_records, genotype, phenotype, group
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
@@ -95,7 +103,7 @@ class TestTrexClassifier:
         :param classifier:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf.train(records=training_records, train_explainer=use_shaps)
         with TemporaryDirectory() as tmpdir:
@@ -123,7 +131,7 @@ class TestTrexClassifier:
         :param use_groups:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         score_pred = clf.crossvalidate(records=training_records,
                                        cv=cv, scoring=scoring_methods[0],
@@ -147,7 +155,7 @@ class TestTrexClassifier:
         :param classifier:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=False)
         assert isinstance(clf_opt, dict)
@@ -165,11 +173,15 @@ class TestTrexClassifier:
         :param classifier:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         cccv_scores = clf.crossvalidate_cc(records=training_records, cv=5, comple_steps=3,
                                            conta_steps=3)
         assert isinstance(cccv_scores, dict)
+        with TemporaryDirectory() as tmpdir:
+            fp = Path(tmpdir)/'cccv.json'
+            write_cccv_accuracy_file(fp, cccv_results=cccv_scores)
+            assert fp.is_file()
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
@@ -181,7 +193,7 @@ class TestTrexClassifier:
         :param classifier:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf.train(training_records)
         fweights = clf.get_feature_weights()
@@ -194,7 +206,7 @@ class TestTrexClassifier:
         """
         Get shap values associated with the training data.
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf.train(training_records)
         # nsamples only used by TrexSVM; reduced number of samples due to TrexSVM
@@ -212,7 +224,7 @@ class TestTrexClassifier:
         :param classifier:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         compress_vocabulary(records=training_records, pipeline=clf.cv_pipeline)
         vec = clf.cv_pipeline.named_steps["vec"]
@@ -246,7 +258,7 @@ class TestTrexClassifier:
         :param trait_name:
         :return:
         """
-        training_records, genotype, phenotype, group = self.test_load_training_files(trait_name)
+        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         svm = TrexSVM(verb=True, random_state=RANDOM_STATE)
         recursive_feature_elimination(records=training_records,
                                       pipeline=svm.cv_pipeline,
@@ -291,7 +303,16 @@ class TestTrexClassifier:
         model_path = DATA_PATH / f'{trait_name}_{classifier_type.lower()}.pkl'
         with TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)/'model.pkl'
+            summary_path = Path(tmpdir)/'summary.tsv' if classifier_type == 'XGB' else None
+            per_sample_path = Path(tmpdir)/'per_sample.tsv' if classifier_type == 'XGB' else None
             clf = load_classifier(model_path)
             clf.feature_type = 'eggNOG5-tax-2'
             save_classifier(clf, tmp_path)
-            print(predict(fasta_files=fasta_files, classifier=tmp_path))
+            pred = predict(
+                fasta_files=fasta_files, classifier=tmp_path,
+                out_explain_summary=summary_path,
+                out_explain_per_sample=per_sample_path
+            )
+            assert summary_path is None or summary_path.is_file()
+            assert per_sample_path is None or per_sample_path.is_file()
+            print(pred)

@@ -27,7 +27,6 @@ class ShapHandler:
     def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray):
         self._used_idxs = used_idxs
         self._used_feature_names = feature_names[used_idxs]
-
         self._sample_names = None
         self._used_features = None
         self._used_shaps = None
