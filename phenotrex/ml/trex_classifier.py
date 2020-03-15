@@ -16,7 +16,7 @@ from sklearn.feature_selection import RFECV
 from phenotrex.ml.vectorizer import CustomVectorizer
 from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.ml.cccv import CompleContaCV
-from phenotrex.util.helpers import get_x_y_tn, get_groups
+from phenotrex.util.helpers import get_x_y_tn_ft, get_groups
 from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary, \
     DEFAULT_STEP_SIZE, \
     DEFAULT_SCORING_FUNCTION
@@ -38,6 +38,7 @@ class TrexClassifier(ABC):
 
     def __init__(self, random_state: int = None, verb: bool = False):
         self.trait_name = None
+        self.feature_type = None
         self.cccv_result = None
         self.pipeline = None
         self.cv_pipeline = None
@@ -72,11 +73,10 @@ class TrexClassifier(ABC):
         :returns: Whether the Pipeline has been fitted on the records.
         """
         self.logger.info("Begin training classifier.")
-        X, y, tn = get_x_y_tn(records)
-        if self.trait_name is not None:
+        X, y, tn, ft = get_x_y_tn_ft(records)
+        if self.trait_name is not None or self.feature_type is not None:
             self.logger.warning("Pipeline is already fitted. Refusing to fit again.")
             return False
-
         if reduce_features:
             self.logger.info("using recursive feature elimination as feature selection strategy")
             # use non-calibrated classifier
@@ -84,6 +84,7 @@ class TrexClassifier(ABC):
             compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
+        self.feature_type = ft
 
         extra_explainer_arg = kwargs.pop('train_explainer', None)
         if extra_explainer_arg is not None:
@@ -101,10 +102,14 @@ class TrexClassifier(ABC):
         :param X: A List of GenotypeRecord for each of which to predict the trait sign
         :return: a Tuple of predictions and probabilities of each class for each GenotypeRecord in X.
         """
+        if not all(x.feature_type == self.feature_type for x in X):
+            mismatched = {x.feature_type for x in X if x != self.feature_type}
+            raise RuntimeError(
+                f"Mismatched feature types found among supplied records: {mismatched}"
+            )
         features: List[str] = [" ".join(x.features) for x in X]
         preds = self.pipeline.predict(X=features)
-        probas = self.pipeline.predict_proba(
-            X=features)  # class probabilities via Platt scaling
+        probas = self.pipeline.predict_proba(X=features)  # class probabilities via Platt scaling
         return preds, probas
 
     @abstractmethod
@@ -155,7 +160,7 @@ class TrexClassifier(ABC):
 
         t1 = time()
         self.logger.info(f'Performing randomized parameter search.')
-        X, y, tn = get_x_y_tn(records)
+        X, y, tn, ft = get_x_y_tn_ft(records)
         if search_params is None:
             search_params = self.default_search_params
 
@@ -221,7 +226,7 @@ class TrexClassifier(ABC):
         assert scoring_func is not None, f'invalid or missing scoring function: {scoring}.'
         log_function = self.logger.debug if demote else self.logger.info
         t1 = time()
-        X, y, tn = get_x_y_tn(records)
+        X, y, tn, ft = get_x_y_tn_ft(records)
 
         # unfortunately RFECV does not work with pipelines (need to use the vectorizer separately)
         self.cv_pipeline.fit(X, y)

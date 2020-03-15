@@ -49,5 +49,7 @@ def load_classifier(filename: str, verb=False):
     except ModuleNotFoundError:  # load old models
         sys.modules['pica'] = phenotrex
         obj = joblib.load(filename)
+    if not hasattr(obj, 'feature_type'):
+        obj.feature_type = 'legacy'
     logger.info("Successfully loaded classifier.")
     return obj

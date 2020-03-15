@@ -28,9 +28,9 @@ def generic_train(type, genotype, phenotype, verb, weights, out,
     Train and save a TrexClassifier model.
     """
     kwargs = _fix_uppercase(kwargs)
-    training_records, *_ = load_training_files(genotype_file=genotype,
-                                               phenotype_file=phenotype,
-                                               verb=verb)
+    training_records, *_ = load_training_files(
+        genotype_file=genotype, phenotype_file=phenotype, verb=verb
+    )
     if params_file is not None:
         loaded_params = load_params_file(params_file)
         logger.info(f'Parameters loaded from file:')
@@ -56,11 +56,13 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
     Optionally, perform parameter search and save found parameters.
     """
     kwargs = _fix_uppercase(kwargs)
-    training_records, *_ = load_training_files(genotype_file=genotype,
-                                               phenotype_file=phenotype,
-                                               groups_file=groups,
-                                               selected_rank=rank,
-                                               verb=verb)
+    training_records, *_ = load_training_files(
+        genotype_file=genotype,
+        phenotype_file=phenotype,
+        groups_file=groups,
+        selected_rank=rank,
+        verb=verb
+    )
     if params_file is not None:
         loaded_params = load_params_file(params_file)
         logger.info(f'Parameters loaded from file:')
@@ -103,9 +105,9 @@ def generic_cccv(type, genotype, phenotype, folds, replicates, threads, comple_s
     kwargs = _fix_uppercase(kwargs)
     assert groups is None, 'Usage of LOGO in CCCV not currently implemented.'
     assert not optimize, 'Parameter search over CCCV not currently implemented.'
-    training_records, *_ = load_training_files(genotype_file=genotype,
-                                               phenotype_file=phenotype,
-                                               verb=verb)
+    training_records, *_ = load_training_files(
+        genotype_file=genotype, phenotype_file=phenotype, verb=verb
+    )
     if params_file is not None:
         loaded_params = load_params_file(params_file)
         logger.info(f'Parameters loaded from file:')

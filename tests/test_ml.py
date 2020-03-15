@@ -14,7 +14,7 @@ from phenotrex.io.flat import (load_training_files,
                                write_weights_file, write_params_file, write_misclassifications_file)
 from phenotrex.io.serialization import save_classifier
 from phenotrex.ml import TrexSVM, TrexXGB
-from phenotrex.util.helpers import get_x_y_tn
+from phenotrex.util.helpers import get_x_y_tn_ft
 from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary
 from phenotrex.ml.prediction import predict
 
@@ -223,7 +223,7 @@ class TestTrexClassifier:
         # check if length of vocabulary is matching
         assert len(vec.vocabulary_) == num_of_features_uncompressed[trait_name]
 
-        X, y, tn = get_x_y_tn(training_records)
+        X, y, tn, ft = get_x_y_tn_ft(training_records)
         X_trans = vec.transform(X)
 
         # check if number of unique features is matching
@@ -261,7 +261,7 @@ class TestTrexClassifier:
         # check if length of vocabulary is matching
         assert len(vec.vocabulary_) >= n_features
 
-        X, y, tn = get_x_y_tn(training_records)
+        X, y, tn, ft = get_x_y_tn_ft(training_records)
         X_trans = vec.transform(X)
 
         # check if number of unique features is matching
