@@ -14,10 +14,10 @@ jobs:
       python: '3.8'
     # See https://blog.travis-ci.com/2019-08-07-extensive-python-testing-on-travis-ci
     # for macos config peculiarities.
-    - name: Python 3.7 on MacOS X (xcode 10.3)
+    - name: Python 3.7 on MacOS X (xcode 10.2)
       os: osx
       language: shell
-      osx_image: xcode10.3
+      osx_image: xcode10.2
       python: '3.7'
     - name: Python 3.8 on MacOS X (xcode 11.3)
       os: osx
