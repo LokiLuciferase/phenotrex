@@ -209,8 +209,8 @@ class TestTrexClassifier:
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
         clf.train(training_records)
-        # nsamples only used by TrexSVM; reduced number of samples due to TrexSVM
-        raw_features, shaps, bias = clf.get_shap(training_records[:5], nsamples=50)
+        # n_samples only used by TrexSVM; reduced number of samples due to TrexSVM
+        raw_features, shaps, bias = clf.get_shap(training_records[:5], n_samples=50)
         print(shaps.shape)
         print(bias)
 

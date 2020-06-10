@@ -32,7 +32,7 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
     :param out_explain_per_sample: Where to save the most influential features by SHAP for each
                                    predicted sample.
     :param out_explain_summary: Where to save the SHAP summary of the predictions.
-    :param shap_n_samples: The nsamples parameter -
+    :param shap_n_samples: The n_samples parameter -
                            only used by models which incorporate a `shap.KernelExplainer`.
     :param n_max_explained_features: How many of the most influential features by SHAP to consider.
     :param verb: Whether to show progress of fasta file annotation.
@@ -50,7 +50,7 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
     model = load_classifier(filename=classifier, verb=verb)
     if out_explain_per_sample is not None or out_explain_summary is not None:
         try:
-            fs, sv, bv = model.get_shap(gr, nsamples=shap_n_samples)
+            fs, sv, bv = model.get_shap(gr, n_samples=shap_n_samples)
         except TypeError:
             raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
         sh = ShapHandler.from_clf(model)

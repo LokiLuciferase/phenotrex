@@ -143,7 +143,7 @@ def generic_compute_shaps(fasta_files, genotype, classifier, n_samples, verb):
     model = load_classifier(filename=classifier, verb=verb)
     sh = ShapHandler.from_clf(model)
     try:
-        fs, sv, bv = model.get_shap(gr, nsamples=n_samples)
+        fs, sv, bv = model.get_shap(gr, n_samples=n_samples)
     except TypeError:
         raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
     sh.add_feature_data(sample_names=[x.identifier for x in gr],

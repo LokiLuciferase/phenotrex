@@ -63,7 +63,7 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
         genotype_lines = []
         genotype_records = []
         for line in genotype_file:
-            if line.startswith('#'):
+            if line.strip().startswith('#'):
                 k, v = line[1:].strip().split(':', maxsplit=1)
                 metadata[k] = v
             else:
@@ -192,7 +192,7 @@ def write_genotype_file(genotypes: List[GenotypeRecord], output_file: str):
     """
     feature_types = list(set(x.feature_type for x in genotypes))
     if len(feature_types) > 1:
-        raise RuntimeError(
+        raise ValueError(
             'Cannot write GenotypeRecords with different feature_types to the same genotype file.'
         )
     with open(output_file, 'w') as genotype_file:
@@ -260,7 +260,7 @@ def collate_training_data(
         )
     if len(traits) > 1:
         raise RuntimeError(
-            "More than one traits have been found in phenotype records. "
+            "More than one trait has been found in phenotype records. "
             "Cannot collate to TrainingRecords."
         )
     ret = [

@@ -69,9 +69,6 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
     :param random_state: random state for deterministic results
     :return: number of features used
     """
-
-    # TODO: enable logging (optional)
-
     t1 = time()
 
     X, y, tn, ft = get_x_y_tn_ft(records)

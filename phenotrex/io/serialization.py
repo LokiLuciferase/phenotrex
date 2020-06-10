@@ -51,5 +51,10 @@ def load_classifier(filename: str, verb=False):
         obj = joblib.load(filename)
     if not hasattr(obj, 'feature_type'):
         obj.feature_type = 'legacy'
+        logger.warning(
+            'The loaded classifier does not advertise the feature_type it was trained on. Consider'
+            're-training it with a .genotype file containing the requisite metadata to ensure '
+            'feature types of the model and the data it is applied to are aligned.'
+        )
     logger.info(f"Successfully loaded classifier (feature_type={obj.feature_type}).")
     return obj

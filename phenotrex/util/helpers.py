@@ -14,7 +14,7 @@ def get_x_y_tn_ft(records: List[TrainingRecord]) -> Tuple[np.ndarray, np.ndarray
     Also infer trait name from first TrainingRecord.
 
     :param records: a List[TrainingRecord]
-    :return: separate lists of features and targets, and the trait name
+    :return: separate lists of features and targets, the trait name and the feature type
     """
     trait_name = records[0].trait_name
     feature_type = records[0].feature_type
