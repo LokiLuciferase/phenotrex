@@ -28,8 +28,7 @@ phenotrex
    :alt: Documentation Status
 
 
-Microbial Phenotype Prediction, re-implemented with Python 3.7 and scikit-learn
+End-to-end Microbial Phenotypic Trait Prediction.
 
 * Supported platforms: Linux, MacOS, Windows
-* Free software: MIT license
-
+* Free software: GPLv3 license

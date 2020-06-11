@@ -123,22 +123,26 @@ class TrexSVM(TrexClassifier):
         weights = {feature: mean_weights[i] for feature, i in names}
 
         # sort by absolute value
-        sorted_weights = {feature: weights[feature] for feature in sorted(weights, key=lambda key: abs(weights[key]),
-                                                                          reverse=True)}
+        sorted_weights = {
+            feature: weights[feature] for feature in sorted(
+                weights, key=lambda key: abs(weights[key]), reverse=True
+            )}
         # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
         #  if we rely on feature selection in near future
         return sorted_weights
 
-    def get_shap(self, records: List[GenotypeRecord],
-                 nsamples=None) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
+    def get_shap(
+        self, records: List[GenotypeRecord], n_samples=None
+    ) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
+        self._check_mismatched_feature_type(records)
         if self.shap_explainer is None:
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
             return None
-        if nsamples is None:
-            nsamples=SHAP_NSAMPLE_DEFAULT
-        self.logger.info(f'Computing SHAP values for input using nsamples={nsamples}.'
+        if n_samples is None:
+            n_samples=SHAP_NSAMPLE_DEFAULT
+        self.logger.info(f'Computing SHAP values for input using n_samples={n_samples}.'
                          f' This may take a long time.')
         raw_feats = self._get_raw_features(records).astype(int)  # numpy error if using bools
-        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=nsamples)[0]
+        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=n_samples)[0]
         shap_bias = self.shap_explainer.expected_value[0]
         return raw_feats, shap_values, shap_bias

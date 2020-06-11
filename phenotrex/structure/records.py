@@ -11,6 +11,7 @@ class GenotypeRecord:
     Genomic features of a sample referenced by `identifier`.
     """
     identifier: str
+    feature_type: str
     features: List[str]
 
     def __repr__(self):

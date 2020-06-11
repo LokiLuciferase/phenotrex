@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from phenotrex.structure.records import TrainingRecord
 from phenotrex.util.logging import get_logger
-from phenotrex.util.helpers import get_x_y_tn
+from phenotrex.util.helpers import get_x_y_tn_ft
 
 import numpy as np
 
@@ -25,7 +25,7 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     :param pipeline: the targeted pipeline where the vocabulary should be modified
     :return: nothing, sets the vocabulary for CountVectorizer step
     """
-    X, y, tn = get_x_y_tn(records)  # we actually only need X
+    X, y, tn, ft = get_x_y_tn_ft(records)  # we actually only need X
     vec = pipeline.named_steps["vec"]
     if not vec.vocabulary:
         vec.fit(X)
@@ -69,12 +69,9 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
     :param random_state: random state for deterministic results
     :return: number of features used
     """
-
-    # TODO: enable logging (optional)
-
     t1 = time()
 
-    X, y, tn = get_x_y_tn(records)
+    X, y, tn, ft = get_x_y_tn_ft(records)
     vec = pipeline.named_steps["vec"]
     estimator = pipeline.named_steps["clf"]
 

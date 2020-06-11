@@ -48,7 +48,7 @@ class TestShapHandler:
         model_path = DATA_PATH / f'{trait_name}_{classifier_type.lower()}.pkl'
         clf = load_classifier(model_path, verb=True)
         sh = ShapHandler.from_clf(clf)
-        fs, sv, bv = clf.get_shap(tr, nsamples=50)
+        fs, sv, bv = clf.get_shap(tr, n_samples=50)
         return tr, sh, fs, sv, bv
 
     @pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)

@@ -59,35 +59,42 @@ def load_genotype_file(input_file: str) -> List[GenotypeRecord]:
     :return: List[GenotypeRecord] of records in the genotype file
     """
     with open(input_file) as genotype_file:
+        metadata = dict()
+        genotype_lines = []
         genotype_records = []
         for line in genotype_file:
+            if line.strip().startswith('#'):
+                k, v = line[1:].strip().split(':', maxsplit=1)
+                metadata[k] = v
+            else:
+                genotype_lines.append(line)
+
+        metadata = {**{'feature_type': 'legacy'}, **metadata}
+
+        for line in genotype_lines:
             identifier, *features = line.strip().split("\t")
-            genotype_records.append(GenotypeRecord(identifier=identifier,
-                                                   features=features))
+            genotype_records.append(
+                GenotypeRecord(
+                    identifier=identifier,
+                    feature_type=metadata['feature_type'],
+                    features=features
+                ))
+
     dupcount = Counter([x.identifier for x in genotype_records])
     if dupcount.most_common()[0][1] > 1:
         raise RuntimeError(f"Duplicate entries found in genotype file: {dupcount}")
     return sorted(genotype_records, key=lambda x: x.identifier)
 
 
-def write_genotype_file(genotypes: List[GenotypeRecord], output_file: str):
-    """
-    Saves a list of GenotypeRecords to a .genotype file.
-
-    :param genotypes: The genotypes to write to a file.
-    :param output_file: The output file path.
-    """
-    with open(output_file, 'w') as genotype_file:
-        for g in genotypes:
-            genotype_file.write('\t'.join([g.identifier, *g.features, '\n']))
-
-
-def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int] = None) -> List[PhenotypeRecord]:
+def load_phenotype_file(
+    input_file: str, sign_mapping: Dict[str, int] = None
+) -> List[PhenotypeRecord]:
     """
     Loads a phenotype .tsv file and returns a list of PhenotypeRecord for each entry.
 
     :param input_file: The path to the input phenotype file.
-    :param sign_mapping: an optional Dict to change mappings of trait sign. Default: {"YES": 1, "NO": 0}
+    :param sign_mapping: an optional Dict to change mappings of trait sign.
+                         Default: {"YES": 1, "NO": 0}
     :return: List[PhenotypeRecord] of records in the phenotype file
     """
     with open(input_file) as phenotype_file:
@@ -111,7 +118,6 @@ def load_phenotype_file(input_file: str, sign_mapping: Dict[str, int] = None) ->
                                          trait_name=trait_name,
                                          trait_sign=y) for x, y in zip(identifiers, trait_signs)]
     ret = sorted(phenotype_records, key=lambda x: x.identifier)
-
     return ret
 
 
@@ -129,7 +135,6 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
                         i.e., each unique entry of the ID will be a new group
     :return: a list of GroupRecords
     """
-
     with open(input_file) as groups_file:
         identifiers = []
         group_ids = []
@@ -145,8 +150,9 @@ def load_groups_file(input_file: str, selected_rank: str = None) -> List[GroupRe
     if selected_rank:
         try:
             from phenotrex.util.taxonomy import get_taxonomic_group_mapping
-            group_name_mapping, group_id_mapping = get_taxonomic_group_mapping(group_ids=group_ids,
-                                                                               selected_rank=selected_rank)
+            group_name_mapping, group_id_mapping = get_taxonomic_group_mapping(
+                group_ids=group_ids, selected_rank=selected_rank
+            )
             group_records = [GroupRecord(identifier=x, group_id=group_id_mapping[y],
                                          group_name=group_name_mapping[y])
                              for x, y in zip(identifiers, group_ids)]
@@ -177,6 +183,24 @@ def load_params_file(params_file: str) -> Dict:
         return json.load(fin)
 
 
+def write_genotype_file(genotypes: List[GenotypeRecord], output_file: str):
+    """
+    Saves a list of GenotypeRecords to a .genotype file.
+
+    :param genotypes: The genotypes to write to a file.
+    :param output_file: The output file path.
+    """
+    feature_types = list(set(x.feature_type for x in genotypes))
+    if len(feature_types) > 1:
+        raise ValueError(
+            'Cannot write GenotypeRecords with different feature_types to the same genotype file.'
+        )
+    with open(output_file, 'w') as genotype_file:
+        genotype_file.write(f'#feature_type:{feature_types[0]}\n')
+        for g in genotypes:
+            genotype_file.write('\t'.join([g.identifier, *g.features, '\n']))
+
+
 def write_params_file(params_file: str, params: Dict):
     """
     Write a JSON file of training parameters.
@@ -201,10 +225,12 @@ def write_params_file(params_file: str, params: Dict):
         fout.write('\n')
 
 
-def collate_training_data(genotype_records: List[GenotypeRecord],
-                          phenotype_records: List[PhenotypeRecord],
-                          group_records: List[GroupRecord],
-                          universal_genotype: bool = False, verb: bool = False) -> List[TrainingRecord]:
+def collate_training_data(
+    genotype_records: List[GenotypeRecord],
+    phenotype_records: List[PhenotypeRecord],
+    group_records: List[GroupRecord],
+    verb: bool = False
+) -> List[TrainingRecord]:
     """
     Returns a list of TrainingRecord from two lists of GenotypeRecord and PhenotypeRecord.
     To be used for training and CV of TrexClassifier.
@@ -214,65 +240,63 @@ def collate_training_data(genotype_records: List[GenotypeRecord],
     :param genotype_records: List[GenotypeRecord]
     :param phenotype_records: List[PhenotypeRecord]
     :param group_records: List[GroupRecord] optional, if leave one group out is the split strategy
-    :param universal_genotype: Whether to use an universal genotype file.
     :param verb: toggle verbosity.
-    :return: List[TrainingRecord]
+    :return: A list of TrainingRecords.
     """
     logger = get_logger(__name__, verb=verb)
     gr_dict = {x.identifier: x for x in genotype_records}
     pr_dict = {x.identifier: x for x in phenotype_records}
     gp_dict = {x.identifier: x for x in group_records}
     traits = set(x.trait_name for x in phenotype_records)
-    if universal_genotype:
-        if not set(gr_dict.keys()).issuperset(set(pr_dict.keys())):
-            raise RuntimeError(
-                "Not all identifiers of phenotype records were found in the universal genotype."
-                "Cannot collate to TrainingRecords.")
-    else:
-        different_identifiers = set(gr_dict.keys()).symmetric_difference(set(pr_dict.keys()))
-        if different_identifiers:
-            logger.error(f"Identifiers not present in all record types: {different_identifiers}")
-            raise RuntimeError("Different identifiers found among genotype and phenotype records. "
-                               "Cannot collate to TrainingRecords.")
-        if group_records:
-            if len(gp_dict) != len(pr_dict):
-                raise RuntimeError("Group and phenotype/genotype records are of unequal length."
-                                   "Cannot collate to TrainingRecords.")
-            if set(gp_dict.keys()) != set(pr_dict.keys()):
-                raise RuntimeError(
-                    "Different identifiers found among groups and phenotype/genotype records. "
-                    "Cannot collate to TrainingRecords.")
-
+    if not set(gr_dict.keys()).issuperset(set(pr_dict.keys())):
+        raise RuntimeError(
+            "Not all identifiers of phenotype records were found in the phenotype file. "
+            "Cannot collate to TrainingRecords."
+        )
+    if not set(gp_dict.keys()).issuperset(set(pr_dict.keys())):
+        raise RuntimeError(
+            "Not all identifiers of phenotype records were found in the groups file. "
+            "Cannot collate to TrainingRecords."
+        )
     if len(traits) > 1:
-        raise RuntimeError("More than one traits have been found in phenotype records. "
-                           "Cannot collate to TrainingRecords.")
-
-    ret = [TrainingRecord(identifier=pr_dict[x].identifier,
-                          trait_name=pr_dict[x].trait_name,
-                          trait_sign=pr_dict[x].trait_sign,
-                          features=gr_dict[x].features,
-                          group_name=gp_dict[x].group_name,
-                          group_id=gp_dict[x].group_id) for x in pr_dict.keys()]
+        raise RuntimeError(
+            "More than one trait has been found in phenotype records. "
+            "Cannot collate to TrainingRecords."
+        )
+    ret = [
+        TrainingRecord(
+            identifier=pr_dict[x].identifier,
+            trait_name=pr_dict[x].trait_name,
+            trait_sign=pr_dict[x].trait_sign,
+            feature_type=gr_dict[x].feature_type,
+            features=gr_dict[x].features,
+            group_name=gp_dict[x].group_name,
+            group_id=gp_dict[x].group_id
+        ) for x in pr_dict.keys()
+    ]
     logger.info(f"Collated genotype and phenotype records into {len(ret)} TrainingRecord.")
     return ret
 
 
-def load_training_files(genotype_file: str, phenotype_file: str, groups_file: str = None,
-                        selected_rank: str = None,
-                        universal_genotype: bool = False, verb=False) -> Tuple[List[TrainingRecord],
-                                                                               List[GenotypeRecord],
-                                                                               List[PhenotypeRecord],
-                                                                               List[GroupRecord]]:
+def load_training_files(
+    genotype_file: str,
+    phenotype_file: str,
+    groups_file: str = None,
+    selected_rank: str = None,
+    verb=False
+) -> Tuple[
+    List[TrainingRecord], List[GenotypeRecord], List[PhenotypeRecord], List[GroupRecord]
+]:
     """
-    Convenience function to load phenotype and genotype file together, and return a list of TrainingRecord.
+    Convenience function to load phenotype, genotype and optionally groups file together,
+    and return a list of TrainingRecord.
 
     :param genotype_file: The path to the input genotype file.
     :param phenotype_file: The path to the input phenotype file.
-    :param groups_file: The path to the input groups file.
+    :param groups_file: The path to the input groups file. Optional.
     :param selected_rank: The selected standard rank to use for taxonomic grouping
-    :param universal_genotype: Whether to use an universal genotype file.
     :param verb: toggle verbosity.
-    :return: Tuple[List[TrainingRecord], List[GenotypeRecord], List[PhenotypeRecord]]
+    :return: The collated TrainingRecords as well as single genotype, phenotype and group records
     """
     logger = get_logger(__name__, verb=verb)
     gr = load_genotype_file(genotype_file)
@@ -280,12 +304,14 @@ def load_training_files(genotype_file: str, phenotype_file: str, groups_file: st
     if groups_file:
         gp = load_groups_file(groups_file, selected_rank=selected_rank)
     else:
-        # if not set, each sample gets its own group (not used currently)
-        gp = [GroupRecord(identifier=x.identifier, group_name=x.identifier, group_id=y)
-              for y, x in enumerate(pr)]
-    logger.info("Genotype and Phenotype records successfully loaded from file.")
-    return collate_training_data(gr, pr, gp, universal_genotype=universal_genotype,
-                                 verb=verb), gr, pr, gp
+        # if not given, each sample gets its own group (not used currently)
+        gp = [
+            GroupRecord(identifier=x.identifier, group_name=x.identifier, group_id=y)
+            for y, x in enumerate(pr)
+        ]
+    tr = collate_training_data(gr, pr, gp, verb=verb)
+    logger.info("Records successfully loaded from file.")
+    return tr, gr, pr, gp
 
 
 def write_weights_file(weights_file: str, weights: Dict):
@@ -296,9 +322,7 @@ def write_weights_file(weights_file: str, weights: Dict):
     :param weights: sorted dictionary storing weights with feature names as indices
     :return: nothing
     """
-
     header = ["Rank", "Feature_name", "Weight"]
-
     with open(weights_file, "w") as output_file:
         output_file.write("%s\n" % "\t".join(header))
         for rank, (name, weight) in enumerate(weights.items()):
@@ -311,11 +335,9 @@ def write_cccv_accuracy_file(output_file: str, cccv_results):
 
     :param output_file: file
     :param cccv_results:
-    :return: nothing
+    :return:
     """
-
     write_list = []
-
     for completeness, data in cccv_results.items():
         for contamination, nested_data in data.items():
             write_item = {
@@ -350,9 +372,9 @@ def load_cccv_accuracy_file(cccv_file: str) -> Dict:
     return cccv_results
 
 
-def write_misclassifications_file(output_file: str, records: List[TrainingRecord],
-                                  misclassifications,
-                                  use_groups: bool = False):
+def write_misclassifications_file(
+    output_file: str, records: List[TrainingRecord], misclassifications, use_groups: bool = False
+):
     """
     Function to write the misclassifications file.
 
