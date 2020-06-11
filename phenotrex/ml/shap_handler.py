@@ -151,6 +151,7 @@ class ShapHandler:
             feature_names=feature_names_s[:n_max_features],
             matplotlib=True,
             show=False,
+            text_rotation=45,
             **kwargs
         )
 
