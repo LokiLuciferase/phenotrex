@@ -130,23 +130,25 @@ class ShapHandler:
         return (X_agg[:, feature_sort_inds], shap_agg[..., feature_sort_inds],
                 self._used_feature_names[feature_sort_inds])
 
-    def plot_shap_force(self, sample_name: str, **kwargs):
+    def plot_shap_force(self, sample_name: str, n_max_features: int = 20, **kwargs):
         """
         Create force plot of the sample associated with the given sample name.
 
         :param sample_name:
+        :param n_max_features:
         :param kwargs: additional keyword arguments passed on to `shap.force_plot()`
         :return:
         """
-        counts, shaps, sample_names = self._get_feature_data()
         i = self._get_sample_index_with_name(sample_name)
+        X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data(sort_by_idx=i)
+        if n_max_features is None:
+            n_max_features = len(feature_names_s)
 
-        sample_feats, sample_svs = counts[i, ...], shaps[i, ...]
         shap.force_plot(
             base_value=self._shap_base_value,
-            shap_values=sample_svs,
-            features=sample_feats,
-            feature_names=self._used_feature_names,
+            shap_values=shap_agg_s[i, :n_max_features],
+            features=X_agg_s[i, :n_max_features],
+            feature_names=feature_names_s[:n_max_features],
             matplotlib=True,
             show=False,
             **kwargs
@@ -207,10 +209,12 @@ class ShapHandler:
         """
         i = self._get_sample_index_with_name(sample_name)
         X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data(sort_by_idx=i)
-        fns = feature_names_s[:n_max_features]
-        feature_vals = X_agg_s[i, :n_max_features]
+
         if n_max_features is None:
             n_max_features = len(feature_names_s)
+
+        fns = feature_names_s[:n_max_features]
+        feature_vals = X_agg_s[i, :n_max_features]
 
         if shap_agg_s.ndim == 3:
             shap_agg_s = np.swapaxes(shap_agg_s, 0, 1)
@@ -220,8 +224,12 @@ class ShapHandler:
         sample_names = [sample_name] * len(fns)
         df_arrs = [sample_names, fns, feature_vals, *shap_vals]
         df_arrs = [np.array(x) for x in df_arrs]
-        df_labels = ['sample', 'feature', 'feature_value',
-                     *[f'SHAP value ({x})' for x in self._class_names]][:len(df_arrs)]
+        df_labels = [
+            'sample',
+            'feature',
+            'feature_value',
+            *[f'SHAP value ({x})' for x in self._class_names]
+        ][:len(df_arrs)]
         df = pd.DataFrame(df_arrs, index=df_labels).T
         df.index.name = 'rank'
         return df.reset_index(drop=False)

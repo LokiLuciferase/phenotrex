@@ -66,15 +66,17 @@ def shap_summary(out, n_max_features, title, **kwargs):
               help='Path of pickled classifier file.')
 @click.option('--out_prefix', required=True, type=str,
               help='The prefix to generated SHAP force plots.')
+@click.option('--n_max_features', type=int, default=20,
+              help='The number of top most important features (by absolute SHAP value) to plot.')
 @click.option('--n_samples', type=str, default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
-def shap_force(out_prefix, **kwargs):
+def shap_force(out_prefix, n_max_features, **kwargs):
     """
     Generate SHAP force plots for each sample (passed either as FASTA files or as genotype file).
     All plots will be saved at the path `{out_prefix}_{sample_identifier}_force_plot.png`.
-    All non-existent directories in the output prefix path will be created as needed.
+    All non-existent directories in the out_prefix path will be created as needed.
     """
     import matplotlib as mpl
     mpl.use('Agg')
@@ -84,7 +86,7 @@ def shap_force(out_prefix, **kwargs):
 
     sh, gr = generic_compute_shaps(**kwargs)
     for record in tqdm(gr, unit='samples', desc='Generating force plots'):
-        sh.plot_shap_force(record.identifier)
+        sh.plot_shap_force(record.identifier, n_max_features=n_max_features)
         out_path = Path(f'{out_prefix}_{record.identifier}_force_plot.png')
         out_path.parent.mkdir(exist_ok=True)
         plt.savefig(out_path)
