@@ -37,8 +37,10 @@ def cccv(inputs, out, title):
               required=False, help='Input genotype file.')
 @click.option('--classifier', required=True, type=click.Path(exists=True),
               help='Path of pickled classifier file.')
-@click.option('--out', required=True, type=click.Path(dir_okay=False),
-              help='The file to save the generated summary plot at.')
+@click.option('--out_plot', required=True, type=click.Path(dir_okay=False),
+              help='The file to save the generated plot at.')
+@click.option('--out_summary', default=None, type=click.Path(dir_okay=False),
+              help='The file to save the generated summary at.')
 @click.option('--n_max_features', type=int, default=20,
               help='The number of top most important features (by absolute SHAP value) to plot.')
 @click.option('--n_samples', type=str, default='auto',
@@ -46,7 +48,7 @@ def cccv(inputs, out, title):
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--title', type=str, default='', help='Plot title.')
 @click.option('--verb', is_flag=True)
-def shap_summary(out, n_max_features, title, **kwargs):
+def shap_summary(out_plot, out_summary, n_max_features, title, **kwargs):
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
@@ -55,7 +57,10 @@ def shap_summary(out, n_max_features, title, **kwargs):
     sh, gr = generic_compute_shaps(**kwargs)
     sh.plot_shap_summary(title=title, n_max_features=n_max_features)
     plt.tight_layout()
-    plt.savefig(out)
+    plt.savefig(out_plot)
+    if out_summary is not None:
+        df = sh.get_shap_summary(n_max_features=n_max_features)
+        df.to_csv(out_summary, sep='\t')
 
 
 @plot.command('shap-force', short_help='Plot SHAP feature contributions per sample.')
@@ -66,13 +71,15 @@ def shap_summary(out, n_max_features, title, **kwargs):
               help='Path of pickled classifier file.')
 @click.option('--out_prefix', required=True, type=str,
               help='The prefix to generated SHAP force plots.')
+@click.option('--out_summary', default=None, type=click.Path(dir_okay=False),
+              help='The path to save the generated summary at.')
 @click.option('--n_max_features', type=int, default=20,
               help='The number of top most important features (by absolute SHAP value) to plot.')
 @click.option('--n_samples', type=str, default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
-def shap_force(out_prefix, n_max_features, **kwargs):
+def shap_force(out_prefix, out_summary, n_max_features, **kwargs):
     """
     Generate SHAP force plots for each sample (passed either as FASTA files or as genotype file).
     All plots will be saved at the path `{out_prefix}_{sample_identifier}_force_plot.png`.
@@ -81,13 +88,21 @@ def shap_force(out_prefix, n_max_features, **kwargs):
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
+    import pandas as pd
     from tqdm.auto import tqdm
     from .generic_func import generic_compute_shaps
 
     sh, gr = generic_compute_shaps(**kwargs)
+
+    summaries = []
     for record in tqdm(gr, unit='samples', desc='Generating force plots'):
         sh.plot_shap_force(record.identifier, n_max_features=n_max_features)
         out_path = Path(f'{out_prefix}_{record.identifier}_force_plot.png')
         out_path.parent.mkdir(exist_ok=True)
         plt.savefig(out_path)
         plt.close(plt.gcf())
+        if out_summary is not None:
+            summaries.append(sh.get_shap_force(record.identifier, n_max_features=n_max_features))
+
+    if out_summary is not None:
+        pd.concat(summaries, axis=0).to_csv(out_summary, sep='\t')
