@@ -32,7 +32,7 @@ class ShapHandler:
         self._used_features = None
         self._used_shaps = None
         self._shap_base_value = None
-        self._class_names = ['binary']
+        self._class_names = ['YES']
 
     def add_feature_data(
         self,
@@ -245,8 +245,8 @@ class ShapHandler:
         df_labels = [
             'sample',
             'feature',
-            'feature_value',
-            *[f'SHAP value ({x})' for x in self._class_names]
+            'feature presence',
+            *[f'SHAP value (class={x})' for x in self._class_names]
         ][:len(df_arrs)]
         df = pd.DataFrame(df_arrs, index=df_labels).T
         df.index.name = 'rank'
