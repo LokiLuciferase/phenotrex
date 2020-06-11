@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -7,10 +8,7 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 
-from tests.targets import (
-    first_genotype_accession, first_phenotype_accession, first_groups_accession,
-    cv_scores_trex, num_of_features_compressed, num_of_features_uncompressed
-)
+from tests.targets import cv_scores_trex
 from phenotrex.io.flat import (
     load_training_files, write_weights_file, write_params_file, write_misclassifications_file,
     write_cccv_accuracy_file, write_genotype_file
@@ -21,16 +19,14 @@ from phenotrex.util.helpers import get_x_y_tn_ft
 from phenotrex.ml.feature_select import recursive_feature_elimination
 from phenotrex.ml.prediction import predict
 
-from . import DATA_PATH, FROM_FASTA
+from . import MODELS_PATH, FLAT_PATH, GENOMIC_PATH, FROM_FASTA
 
 
 RANDOM_STATE = 2
 
 
 trait_names = [
-    "Sulfate_reducer",
-    # "Aerobe",
-    # "sporulation",
+    "T3SS_trunc",
 ]
 
 classifiers = [
@@ -49,19 +45,16 @@ cv_folds = [
 
 scoring_methods = [
     "balanced_accuracy",
-    "f1",
-    # "accuracy",
 ]
 
 predict_files = [
-    (DATA_PATH/'GCA_000692775_1_trunc2.fna.gz', ),
-    (DATA_PATH/'GCA_000692775_1_trunc2.faa.gz', ),
-    (DATA_PATH/'GCA_000692775_1_trunc2.fna.gz', DATA_PATH/'GCA_000692775_1_trunc2.faa.gz')
+    (GENOMIC_PATH/'GCA_000692775_1_trunc2.fna.gz', ),
+    (GENOMIC_PATH/'GCA_000692775_1_trunc2.faa.gz', ),
+    (GENOMIC_PATH/'GCA_000692775_1_trunc2.fna.gz', GENOMIC_PATH/'GCA_000692775_1_trunc2.faa.gz')
 ]
 
 
 class TestTrexClassifier:
-
     @staticmethod
     def _round_nested_dict(d, decimal=1):
         return json.loads(json.dumps(d), parse_float=lambda x: round(float(x), decimal))
@@ -74,18 +67,15 @@ class TestTrexClassifier:
         :param trait_name:
         :return:
         """
-        full_path_genotype = DATA_PATH / f"{trait_name}.genotype"
-        full_path_phenotype = DATA_PATH / f"{trait_name}.phenotype"
-        full_path_groups = DATA_PATH / f"{trait_name}.taxids"
+        full_path_genotype = FLAT_PATH/trait_name/f"{trait_name}.genotype"
+        full_path_phenotype = FLAT_PATH/trait_name/f"{trait_name}.phenotype"
+        full_path_groups = FLAT_PATH/trait_name/f"{trait_name}.taxids"
         training_records, genotype, phenotype, group = load_training_files(
             genotype_file=full_path_genotype,
             phenotype_file=full_path_phenotype,
             groups_file=full_path_groups,
             verb=True
         )
-        assert genotype[0].identifier == first_genotype_accession[trait_name]
-        assert phenotype[0].identifier == first_phenotype_accession[trait_name]
-        assert group[0].identifier == first_groups_accession[trait_name]
         if do_write:
             with TemporaryDirectory() as tmpdir:
                 gt_out = Path(tmpdir)/'gt.genotype'
@@ -133,16 +123,21 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        score_pred = clf.crossvalidate(records=training_records,
-                                       cv=cv, scoring=scoring_methods[0],
-                                       groups=use_groups)[:2]
+        score_pred = clf.crossvalidate(
+            records=training_records,
+            cv=cv,
+            scoring=scoring_methods[0],
+            groups=use_groups,
+            n_jobs=min(4, os.cpu_count())
+        )[:2]
         if classifier.identifier in cv_scores_trex and not use_groups:
             score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring_methods[0]]
             np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
         with TemporaryDirectory() as tmpdir:
             misclass_path = Path(tmpdir)/'misclassifications.tsv'
-            write_misclassifications_file(misclass_path, training_records,
-                                          score_pred, use_groups=use_groups)
+            write_misclassifications_file(
+                misclass_path, training_records, score_pred, use_groups=use_groups
+            )
             assert misclass_path.is_file()
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
@@ -157,7 +152,12 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        clf_opt = clf.parameter_search(records=training_records, n_iter=5, return_optimized=False)
+        clf_opt = clf.parameter_search(
+            records=training_records,
+            n_iter=3,
+            return_optimized=False,
+            n_jobs=min(4, os.cpu_count())
+        )
         assert isinstance(clf_opt, dict)
         with TemporaryDirectory() as tmpdir:
             param_path = Path(tmpdir)/'params.json'
@@ -175,8 +175,13 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        cccv_scores = clf.crossvalidate_cc(records=training_records, cv=5, comple_steps=3,
-                                           conta_steps=3)
+        cccv_scores = clf.crossvalidate_cc(
+            records=training_records,
+            cv=5,
+            comple_steps=3,
+            conta_steps=3,
+            n_jobs=min(4, os.cpu_count())
+        )
         assert isinstance(cccv_scores, dict)
         with TemporaryDirectory() as tmpdir:
             fp = Path(tmpdir)/'cccv.json'
@@ -224,11 +229,12 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         svm = TrexSVM(verb=True, random_state=RANDOM_STATE)
-        recursive_feature_elimination(records=training_records,
-                                      pipeline=svm.cv_pipeline,
-                                      step=0.01,
-                                      n_features=n_features,
-                                      )
+        recursive_feature_elimination(
+            records=training_records,
+            pipeline=svm.cv_pipeline,
+            step=0.01,
+            n_features=n_features,
+        )
         vec = svm.cv_pipeline.named_steps["vec"]
         vec._validate_vocabulary()
 
@@ -255,8 +261,8 @@ class TestTrexClassifier:
     @pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)
     @pytest.mark.parametrize('classifier_type', classifier_ids, ids=classifier_ids)
     def test_predict_from_genotype(self, trait_name, classifier_type):
-        model_path = DATA_PATH/f'{trait_name}_{classifier_type.lower()}.pkl'
-        genotype_file = DATA_PATH/f'{trait_name}.genotype'
+        model_path = MODELS_PATH/trait_name/f'{trait_name}.{classifier_type.lower()}.pkl'
+        genotype_file = FLAT_PATH/trait_name/f'{trait_name}.genotype'
         print(predict(classifier=model_path, genotype=genotype_file))
 
     @pytest.mark.skipif(not FROM_FASTA, reason='Missing optional dependencies')
@@ -264,13 +270,12 @@ class TestTrexClassifier:
     @pytest.mark.parametrize('fasta_files', predict_files, ids=['fna', 'faa', 'fna+faa'])
     @pytest.mark.parametrize('classifier_type', classifier_ids, ids=classifier_ids)
     def test_predict_from_fasta(self, trait_name, classifier_type, fasta_files):
-        model_path = DATA_PATH / f'{trait_name}_{classifier_type.lower()}.pkl'
+        model_path = MODELS_PATH/trait_name/f'{trait_name}.{classifier_type.lower()}.pkl'
         with TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)/'model.pkl'
             summary_path = Path(tmpdir)/'summary.tsv' if classifier_type == 'XGB' else None
             per_sample_path = Path(tmpdir)/'per_sample.tsv' if classifier_type == 'XGB' else None
             clf = load_classifier(model_path)
-            clf.feature_type = 'eggNOG5-tax-2'
             save_classifier(clf, tmp_path)
             pred = predict(
                 fasta_files=fasta_files, classifier=tmp_path,

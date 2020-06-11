@@ -7,28 +7,28 @@ from phenotrex.transforms.annotation import call_proteins, load_fasta_file
 from phenotrex.io.flat import load_training_files
 from phenotrex.structure.records import GenotypeRecord
 
-from . import fastas_to_grs, FROM_FASTA, DATA_PATH
+from . import fastas_to_grs, FROM_FASTA, FLAT_PATH, GENOMIC_PATH
 
 
 predict_files = [
-    DATA_PATH/'GCA_000692775_1_trunc2.fna.gz',
-    DATA_PATH/'GCA_000692775_1_trunc2.fna',
-    DATA_PATH/'GCA_000692775_1_trunc2.faa.gz',
-    DATA_PATH/'GCA_000692775_1_trunc2.faa'
+    GENOMIC_PATH/'GCA_000692775_1_trunc2.fna.gz',
+    GENOMIC_PATH/'GCA_000692775_1_trunc2.fna',
+    GENOMIC_PATH/'GCA_000692775_1_trunc2.faa.gz',
+    GENOMIC_PATH/'GCA_000692775_1_trunc2.faa'
 ]
 
 
 trait_names = [
-    "Sulfate_reducer",
-    # "Aerobe",
-    # "sporulation",
+    "T3SS_trunc",
 ]
 
 
 @pytest.mark.parametrize('trait_name', trait_names, ids=trait_names)
 def test_resampling(trait_name):
-    td, *_ = load_training_files(DATA_PATH/f'{trait_name}.genotype',
-                                 DATA_PATH/f'{trait_name}.phenotype')
+    td, *_ = load_training_files(
+        FLAT_PATH/trait_name/f'{trait_name}.genotype',
+        FLAT_PATH/trait_name/f'{trait_name}.phenotype'
+    )
     trr = TrainingRecordResampler(random_state=2, verb=True)
     trr.fit(td)
     trr.get_resampled(td[0], comple=.5, conta=.5)
