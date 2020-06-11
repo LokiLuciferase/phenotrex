@@ -14,7 +14,8 @@ class ShapHandler:
     and enables plotting of shap values and summaries.
 
     :param feature_names: All feature names in the model feature space.
-    :param used_idxs: Indices into the feature_names array of features actually utilized by the model.
+    :param used_idxs: Indices into the feature_names array of features
+                      actually utilized by the model.
     """
     @classmethod
     def from_clf(cls, clf: TrexClassifier):
@@ -33,8 +34,13 @@ class ShapHandler:
         self._shap_base_value = None
         self._class_names = ['binary']
 
-    def add_feature_data(self, sample_names: np.ndarray, features: np.ndarray, shaps: np.ndarray,
-                         base_value: float = None):
+    def add_feature_data(
+        self,
+        sample_names: np.ndarray,
+        features: np.ndarray,
+        shaps: np.ndarray,
+        base_value: float = None
+    ):
         """
         Add a new set of feature information to the ShapHandler.
 
@@ -42,7 +48,8 @@ class ShapHandler:
         :param features: a feature array of shape (n_sample_names, n_features_in_featurespace).
                          features will be pared down to those used by the model.
         :param shaps: a shap array of shape (n_sample_names, n_features_in_featurespace +1).
-                      shaps will be pared down to those produced by the model, mirroring the features.
+                      shaps will be pared down to those produced by the model,
+                      mirroring the features.
         :param base_value: If the base value has been split off the shaps before hand, pass it here.
         :return: None
         """
@@ -101,7 +108,9 @@ class ShapHandler:
         sample_names = self._sample_names
         return X_agg, shap_agg, sample_names
 
-    def _get_sorted_by_shap_data(self, sort_by_idx=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _get_sorted_by_shap_data(
+        self, sort_by_idx=None
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Sort features by absolute magnitude of shap values,
         and return sorted features, shap values and feature names.
@@ -122,7 +131,8 @@ class ShapHandler:
             feature_axis = shap_agg.ndim - 1
             nonfeature_axes = list(range(feature_axis))
             absshap = np.apply_along_axis(np.abs, feature_axis, shap_agg)
-            if sort_by_idx is None:  # sort features by absolute change in shap over all classes and samples
+            if sort_by_idx is None:
+                # sort features by absolute change in shap over all classes and samples
                 sort_criterion = np.apply_over_axes(np.sum, absshap, nonfeature_axes)
             else:  # sort features by absolute change in shap over all classes for given sample idx
                 sort_criterion = np.sum(absshap[sort_by_idx, ...], axis=0)
@@ -155,9 +165,13 @@ class ShapHandler:
             **kwargs
         )
 
-    def plot_shap_summary(self, title=None, n_max_features: int = 20,
-                          plot_individual_classes: bool = False,
-                          **kwargs):
+    def plot_shap_summary(
+        self,
+        title=None,
+        n_max_features: int = 20,
+        plot_individual_classes: bool = False,
+        **kwargs
+    ):
         """
         Create summary plot of shap values over all predicted samples.
 
@@ -182,20 +196,23 @@ class ShapHandler:
                         feature_names=self._used_feature_names,
                         max_display=n_max_features,
                         show=False,
-                        **kwargs)
+                        **kwargs
+                    )
                     plt.title(f'SHAP Summary for Class {n}')
                     plt.show()
 
         if title is not None:
             plt.title(title)
-        shap.summary_plot(shap_values=shap_agg,
-                          features=X_agg,
-                          feature_names=self._used_feature_names,
-                          max_display=n_max_features,
-                          class_names=class_names,
-                          title=f'SHAP Summary',
-                          show=False,
-                          **kwargs)
+        shap.summary_plot(
+            shap_values=shap_agg,
+            features=X_agg,
+            feature_names=self._used_feature_names,
+            max_display=n_max_features,
+            class_names=class_names,
+            title=f'SHAP Summary',
+            show=False,
+            **kwargs
+        )
 
     def get_shap_force(self, sample_name: str, n_max_features: int = 20) -> pd.DataFrame:
         """

@@ -17,8 +17,7 @@ from phenotrex.ml.vectorizer import CustomVectorizer
 from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.ml.cccv import CompleContaCV
 from phenotrex.util.helpers import get_x_y_tn_ft, get_groups
-from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary, \
-    DEFAULT_STEP_SIZE, \
+from phenotrex.ml.feature_select import recursive_feature_elimination, DEFAULT_STEP_SIZE, \
     DEFAULT_SCORING_FUNCTION
 
 
@@ -101,9 +100,11 @@ class TrexClassifier(ABC):
 
         extra_explainer_arg = kwargs.pop('train_explainer', None)
         if extra_explainer_arg is not None:
-            self.logger.warning(f'{self.__class__.__name__} provides SHAP explanations without '
-                                f'training an Explainer. Argument '
-                                f'"train_explainer"={extra_explainer_arg} ignored.')
+            self.logger.warning(
+                f'{self.__class__.__name__} provides SHAP explanations without '
+                f'training an Explainer. Argument '
+                f'"train_explainer"={extra_explainer_arg} ignored.'
+            )
         self.pipeline.fit(X=X, y=y, **kwargs)
         self.logger.info("Classifier training completed.")
         return self
@@ -145,16 +146,21 @@ class TrexClassifier(ABC):
         """
         pass
 
-    def parameter_search(self, records: List[TrainingRecord],
-                         search_params: Dict[str, List] = None,
-                         cv: int = 5, scoring: str = DEFAULT_SCORING_FUNCTION,
-                         n_jobs: int = -1, n_iter: int = 10,
-                         return_optimized: bool = False):
+    def parameter_search(
+        self,
+        records: List[TrainingRecord],
+        search_params: Dict[str, List] = None,
+        cv: int = 5,
+        scoring: str = DEFAULT_SCORING_FUNCTION,
+        n_jobs: int = -1,
+        n_iter: int = 10,
+        return_optimized: bool = False
+    ):
         """
         Perform stratified, randomized parameter search. If desired, return a new class instance
         with optimized training parameters.
 
-        :param records: List[TrainingRecords] to perform crossvalidation on.
+        :param records: training records to perform crossvalidation on.
         :param search_params: A dictionary of iterables of possible model training parameters.
                               If None, use default search parameters for the given classifier.
         :param scoring: Scoring function of crossvalidation. Default: Balanced Accuracy.
@@ -180,13 +186,15 @@ class TrexClassifier(ABC):
 
         X_trans = vec.fit_transform(X)
         cv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
-        rcv = RandomizedSearchCV(estimator=clf,
-                                 scoring=scoring,
-                                 param_distributions=search_params,
-                                 n_jobs=n_jobs,
-                                 n_iter=n_iter,
-                                 cv=cv, iid=False,
-                                 verbose=1 if self.verb else 0)
+        rcv = RandomizedSearchCV(
+            estimator=clf,
+            scoring=scoring,
+            param_distributions=search_params,
+            n_jobs=n_jobs,
+            n_iter=n_iter,
+            cv=cv, iid=False,
+            verbose=1 if self.verb else 0
+        )
 
         rcv.fit(X_trans, y=y)
         best_params = rcv.best_params_
@@ -202,18 +210,24 @@ class TrexClassifier(ABC):
                                      verb=self.verb)
         return best_params
 
-    def crossvalidate(self, records: List[TrainingRecord], cv: int = 5,
-                      scoring: Union[str, Callable] = DEFAULT_SCORING_FUNCTION,
-                      n_jobs=-1,
-                      n_replicates: int = 10, groups: bool = False,
-                      # TODO: add more complex scoring/reporting, e.g. AUC
-                      reduce_features: bool = False,
-                      n_features: int = 10000,
-                      demote=False, **kwargs) -> Tuple[float, float, np.ndarray]:
+    # TODO: add more complex scoring/reporting, e.g. AUC
+    def crossvalidate(
+        self,
+        records: List[TrainingRecord],
+        cv: int = 5,
+        scoring: Union[str, Callable] = DEFAULT_SCORING_FUNCTION,
+        n_jobs=-1,
+        n_replicates: int = 10,
+        groups: bool = False,
+        reduce_features: bool = False,
+        n_features: int = 10000,
+        demote=False,
+        **kwargs
+    ) -> Tuple[float, float, np.ndarray]:
         """
         Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
 
-        :param records: List[TrainingRecords] to perform crossvalidation on.
+        :param records: training records to perform crossvalidation on.
         :param scoring: String identifying scoring function of crossvalidation, or Callable.
                         If a callable is passed, it must take two parameters `y_true` and `y_pred`
                         (iterables of true and predicted class labels, respectively) and return a
@@ -233,7 +247,10 @@ class TrexClassifier(ABC):
             self.logger.info(f'Will use selected classifier parallelism instead of multithreading.')
             n_jobs = self.n_jobs
 
-        scoring_func = scoring if hasattr(scoring, '__call__') else self.scoring_function_mapping.get(scoring)
+        if hasattr(scoring, '__call__'):
+            scoring_func = scoring
+        else:
+            scoring_func = self.scoring_function_mapping.get(scoring)
         assert scoring_func is not None, f'invalid or missing scoring function: {scoring}.'
         log_function = self.logger.debug if demote else self.logger.info
         t1 = time()
@@ -258,19 +275,26 @@ class TrexClassifier(ABC):
             n_replicates = 1
         else:
             log_function("Begin cross-validation on training data.")
-            splitting_strategy = StratifiedKFold(n_splits=cv, shuffle=True,
-                                                 random_state=self.random_state)
+            splitting_strategy = StratifiedKFold(
+                n_splits=cv, shuffle=True, random_state=self.random_state
+            )
             group_ids = None
 
         for i in range(n_replicates):
-            inner_cv = StratifiedKFold(n_splits=cv, shuffle=True,
-                                       random_state=self.random_state)
+            inner_cv = StratifiedKFold(
+                n_splits=cv, shuffle=True, random_state=self.random_state
+            )
             outer_cv = splitting_strategy
             for tr, ts in outer_cv.split(X_trans, y, groups=group_ids):
                 if reduce_features:
-                    est = RFECV(estimator=clf, cv=inner_cv, n_jobs=n_jobs,
-                                step=DEFAULT_STEP_SIZE, min_features_to_select=n_features,
-                                scoring=DEFAULT_SCORING_FUNCTION)
+                    est = RFECV(
+                        estimator=clf,
+                        cv=inner_cv,
+                        n_jobs=n_jobs,
+                        step=DEFAULT_STEP_SIZE,
+                        min_features_to_select=n_features,
+                        scoring=DEFAULT_SCORING_FUNCTION
+                    )
                 else:
                     est = clf
                 est.fit(X_trans[tr], y[tr])
@@ -289,32 +313,48 @@ class TrexClassifier(ABC):
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return score_mean, score_sd, misclassifications
 
-    def crossvalidate_cc(self, records: List[TrainingRecord], cv: int = 5,
-                         comple_steps: int = 20, conta_steps: int = 20,
-                         n_jobs: int = -1, n_replicates: int = 10,
-                         reduce_features: bool = False, n_features: int = 10000):
+    def crossvalidate_cc(
+        self,
+        records: List[TrainingRecord],
+        cv: int = 5,
+        comple_steps: int = 20,
+        conta_steps: int = 20,
+        n_jobs: int = -1,
+        n_replicates: int = 10,
+        reduce_features: bool = False,
+        n_features: int = 10000
+    ) -> Dict[str, Dict[str, float]]:
         """
-        Instantiates a CompleContaCV object, and calls its run_cccv method with records. Returns its result.
+        Instantiates a CompleContaCV object, and calls its run_cccv method with records.
+        Returns its result.
 
-        :param records: List[TrainingRecord] on which completeness_contamination_CV is to be performed
+        :param records: TrainingRecords on which completeness_contamination_CV is to be performed
         :param cv: number of folds in StratifiedKFold split
         :param comple_steps: number of equidistant completeness levels
         :param conta_steps: number of equidistant contamination levels
         :param n_jobs: number of parallel jobs (-1 for n_cpus)
         :param n_replicates: Number of times the crossvalidation is repeated
         :param reduce_features: toggles feature reduction using recursive feature elimination
-        :param n_features: selects the minimum number of features to retain (if feature reduction is used)
-        :return: A dictionary with mean balanced accuracies for each combination: dict[comple][conta]=mba
+        :param n_features: selects the minimum number of features to retain
+                           (if feature reduction is used)
+        :return: A dictionary with mean balanced accuracies for each comple/conta combination
         """
         if n_jobs != 1 and self.n_jobs > 1:
             self.logger.info(f'Will use internal classifier parallelism instead of subprocessing.')
             n_jobs = self.n_jobs
 
-        cccv = CompleContaCV(pipeline=self.cv_pipeline, cv=cv,
-                             comple_steps=comple_steps, conta_steps=conta_steps,
-                             n_jobs=n_jobs, n_replicates=n_replicates,
-                             random_state=self.random_state, verb=self.verb,
-                             reduce_features=reduce_features, n_features=n_features)
+        cccv = CompleContaCV(
+            pipeline=self.cv_pipeline,
+            cv=cv,
+            comple_steps=comple_steps,
+            conta_steps=conta_steps,
+            n_jobs=n_jobs,
+            n_replicates=n_replicates,
+            random_state=self.random_state,
+            verb=self.verb,
+            reduce_features=reduce_features,
+            n_features=n_features
+        )
         score_dict = cccv.run(records=records)
         self.cccv_result = score_dict
         return score_dict

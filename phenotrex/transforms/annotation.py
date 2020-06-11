@@ -19,6 +19,7 @@ from tqdm.auto import tqdm
 from phenotrex.io.flat import load_fasta_file
 from phenotrex.structure.records import GenotypeRecord
 
+
 PRODIGAL_BIN_SUFFIX = {'win32': 'windows.exe', 'darwin': 'osx.10.9.5'}.get(sys.platform, 'linux')
 PRODIGAL_BIN_PATH = resource_filename('phenotrex', f'bin/prodigal.{PRODIGAL_BIN_SUFFIX}')
 DEEPNOG_ARCH = 'deepencoding'
@@ -27,17 +28,19 @@ DEEPNOG_VALID_CONFIG = {
     ('eggNOG5', 2),
 }
 
+
 class PreloadedProteinIterator(ProteinIterator):
     """Hack ProteinDataset to load from list directly."""
-    def __init__(self, protein_list: List[SeqRecord], aa_vocab, format):
+    def __init__(
+        self, protein_list: List[SeqRecord], aa_vocab, format
+    ):
         self.iterator = (x for x in protein_list)
         self.vocab = aa_vocab
         self.format = format
         self.start = 0
         self.pos = None
         self.step = 0
-        self.sequence = namedtuple('sequence',
-                                   ['index', 'id', 'string', 'encoded'])
+        self.sequence = namedtuple('sequence', ['index', 'id', 'string', 'encoded'])
 
 
 class PreloadedProteinDataset(ProteinDataset):
@@ -47,18 +50,21 @@ class PreloadedProteinDataset(ProteinDataset):
         self.protein_list = protein_list
 
     def __iter__(self):
-        return PreloadedProteinIterator(protein_list=self.protein_list,
-                                        aa_vocab=self.vocab,
-                                        format=self.f_format)
+        return PreloadedProteinIterator(
+            protein_list=self.protein_list, aa_vocab=self.vocab, format=self.f_format
+        )
 
 
-def fastas_to_grs(fasta_files: List[str], verb: bool = False,
-                  n_threads: int = None) -> List[GenotypeRecord]:
+def fastas_to_grs(
+    fasta_files: List[str], verb: bool = False,
+    n_threads: int = None
+) -> List[GenotypeRecord]:
     """
     Perform GenotypeRecord calculation for a list of FASTA files. Apply process-based parallelism
     since gene annotation scales well with cores.
 
-    :param fasta_files: a list of DNA and/or protein FASTA files to be converted into GenotypeRecords.
+    :param fasta_files: a list of DNA and/or protein FASTA files to be converted into
+                        GenotypeRecords.
     :param verb: Whether to display progress of annotation with tqdm.
     :param n_threads: Number of parallel threads. Default, use all available CPU cores.
     :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
@@ -66,8 +72,12 @@ def fastas_to_grs(fasta_files: List[str], verb: bool = False,
     n_threads = min(os.cpu_count(), n_threads) if n_threads is not None else os.cpu_count()
     with ProcessPoolExecutor(max_workers=n_threads) as executor:
         if len(fasta_files) > 1 and verb:
-            annotations = tqdm(executor.map(fasta_to_gr, fasta_files),
-                               total=len(fasta_files), desc='deepnog', unit='file')
+            annotations = tqdm(
+                executor.map(fasta_to_gr, fasta_files),
+                total=len(fasta_files),
+                desc='Annotating with DeepNOG',
+                unit='file'
+            )
         else:
             annotations = executor.map(fasta_to_gr, fasta_files)
     return list(annotations)

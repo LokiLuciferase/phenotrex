@@ -55,10 +55,13 @@ def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
     pipeline.named_steps["vec"].fixed_vocabulary_ = True
 
 
-def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipeline,
-                                  step: float = DEFAULT_STEP_SIZE,
-                                  n_features: int = None,
-                                  random_state: np.random.RandomState = None):
+def recursive_feature_elimination(
+    records: List[TrainingRecord],
+    pipeline: Pipeline,
+    step: float = DEFAULT_STEP_SIZE,
+    n_features: int = None,
+    random_state: np.random.RandomState = None
+):
     """
     Function to apply RFE to limit the vocabulary used by the CustomVectorizer, optional step.
 
@@ -89,22 +92,31 @@ def recursive_feature_elimination(records: List[TrainingRecord], pipeline: Pipel
 
     logger = get_logger(__name__, verb=True)
     split = StratifiedKFold(shuffle=True, n_splits=5, random_state=random_state)
-    selector = RFECV(estimator, step=step, min_features_to_select=n_features, cv=split, n_jobs=5,
-                     scoring=DEFAULT_SCORING_FUNCTION)
+    selector = RFECV(
+        estimator,
+        step=step,
+        min_features_to_select=n_features,
+        cv=split,
+        n_jobs=5,
+        scoring=DEFAULT_SCORING_FUNCTION
+    )
     selector = selector.fit(X=X_trans, y=y)
 
     original_size = len(previous_vocabulary)
     support = selector.get_support()
     support = support.nonzero()[0]
     new_id = {support[x]: x for x in range(len(support))}
-    vocabulary = {feature: new_id[i] for feature, i in previous_vocabulary.items() if
-                  not new_id.get(i) is None}
+    vocabulary = {
+        feature: new_id[i]
+        for feature, i in previous_vocabulary.items()
+        if not new_id.get(i) is None
+    }
     size_after = selector.n_features_
 
     t2 = time()
 
     logger.info(
-        f"{size_after} features were selected of {original_size} using Recursive Feature Eliminiation"
+        f"{size_after}/{original_size} features selected using Recursive Feature Eliminiation."
         f" in {np.round(t2 - t1, 2)} seconds.")
 
     # set vocabulary to vectorizer

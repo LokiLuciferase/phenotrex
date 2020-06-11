@@ -10,9 +10,17 @@ except ModuleNotFoundError:
     from phenotrex.util.helpers import fail_missing_dependency as fastas_to_grs
 
 
-def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
-            out_explain_per_sample=None, out_explain_summary=None,
-            shap_n_samples=None, n_max_explained_features=None, verb=False):
+def predict(
+    fasta_files=tuple(),
+    genotype=None,
+    classifier=None,
+    min_proba=0.5,
+    out_explain_per_sample=None,
+    out_explain_summary=None,
+    shap_n_samples=None,
+    n_max_explained_features=None,
+    verb=False
+):
     """
     Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files
     or a single genotype file. Optionally, compute SHAP explanations individually and/or summarily
@@ -54,8 +62,9 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
         except TypeError:
             raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
         sh = ShapHandler.from_clf(model)
-        sh.add_feature_data(sample_names=[x.identifier for x in gr],
-                            features=fs, shaps=sv, base_value=bv)
+        sh.add_feature_data(
+            sample_names=[x.identifier for x in gr], features=fs, shaps=sv, base_value=bv
+        )
         if out_explain_per_sample is not None:
             shap_df = pd.concat([
                 sh.get_shap_force(x.identifier, n_max_features=n_max_explained_features) for x in gr
@@ -66,8 +75,9 @@ def predict(fasta_files=tuple(), genotype=None, classifier=None, min_proba=0.5,
             sum_df.to_csv(out_explain_summary, sep='\t', index=False)
 
     preds, probas = model.predict(X=gr)
-    translate_output = {trait_id: trait_sign for trait_sign, trait_id in
-                        DEFAULT_TRAIT_SIGN_MAPPING.items()}
+    translate_output = {
+        trait_id: trait_sign for trait_sign, trait_id in DEFAULT_TRAIT_SIGN_MAPPING.items()
+    }
     print(f"# Trait: {model.trait_name}")
     print("Identifier\tTrait present\tConfidence")
     for record, result, probability in zip(gr, preds, probas):
