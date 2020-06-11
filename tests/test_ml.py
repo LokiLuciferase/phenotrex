@@ -18,7 +18,7 @@ from phenotrex.io.flat import (
 from phenotrex.io.serialization import save_classifier, load_classifier
 from phenotrex.ml import TrexSVM, TrexXGB
 from phenotrex.util.helpers import get_x_y_tn_ft
-from phenotrex.ml.feature_select import recursive_feature_elimination, compress_vocabulary
+from phenotrex.ml.feature_select import recursive_feature_elimination
 from phenotrex.ml.prediction import predict
 
 from . import DATA_PATH, FROM_FASTA
@@ -213,42 +213,6 @@ class TestTrexClassifier:
         raw_features, shaps, bias = clf.get_shap(training_records[:5], n_samples=50)
         print(shaps.shape)
         print(bias)
-
-    @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
-    @pytest.mark.parametrize("classifier", classifiers, ids=classifier_ids)
-    def test_compress_vocabulary(self, trait_name, classifier):
-        """
-        Perform feature compression tests
-
-        :param trait_name:
-        :param classifier:
-        :return:
-        """
-        training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
-        clf = classifier(verb=True, random_state=RANDOM_STATE)
-        compress_vocabulary(records=training_records, pipeline=clf.cv_pipeline)
-        vec = clf.cv_pipeline.named_steps["vec"]
-        vec._validate_vocabulary()
-
-        # check if vocabulary is set properly
-        assert vec.fixed_vocabulary_
-
-        # check if length of vocabulary is matching
-        assert len(vec.vocabulary_) == num_of_features_uncompressed[trait_name]
-
-        X, y, tn, ft = get_x_y_tn_ft(training_records)
-        X_trans = vec.transform(X)
-
-        # check if number of unique features is matching
-        assert X_trans.shape[1] == num_of_features_compressed[trait_name]
-
-        # check if all samples still have at least one feature present
-        one_is_zero = False
-        non_zero = X_trans.nonzero()
-        for x in non_zero:
-            if len(x) == 0:
-                one_is_zero = True
-        assert not one_is_zero
 
     @pytest.mark.parametrize("trait_name", trait_names, ids=trait_names)
     @pytest.mark.parametrize("n_features", [10_000])

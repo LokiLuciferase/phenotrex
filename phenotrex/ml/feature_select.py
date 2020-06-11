@@ -15,46 +15,6 @@ DEFAULT_STEP_SIZE = 0.0025
 DEFAULT_SCORING_FUNCTION = 'balanced_accuracy'
 
 
-def compress_vocabulary(records: List[TrainingRecord], pipeline: Pipeline):
-    """
-    Method to group features, that store redundant information,
-    to avoid overfitting and speed up process (in some cases).
-    Might be replaced or complemented by a feature selection method in future versions.
-
-    :param records: a list of TrainingRecord objects.
-    :param pipeline: the targeted pipeline where the vocabulary should be modified
-    :return: nothing, sets the vocabulary for CountVectorizer step
-    """
-    X, y, tn, ft = get_x_y_tn_ft(records)  # we actually only need X
-    vec = pipeline.named_steps["vec"]
-    if not vec.vocabulary:
-        vec.fit(X)
-        names = [name for name, i in vec.get_feature_names()]
-    else:
-        names = sorted(vec.vocabulary, key=vec.vocabulary.get)
-
-    X_trans = vec.transform(X)
-
-    seen = {}
-    new_vocabulary = {}
-    new_index = 0
-    for i in range(len(names)):
-        column = X_trans.getcol(i).nonzero()[0]
-        key = tuple(column)
-        found_id = seen.get(key)
-        if not found_id:
-            seen[key] = new_index
-            new_vocabulary[names[i]] = new_index
-            new_index += 1
-        else:
-            new_vocabulary[names[i]] = found_id
-
-    # set vocabulary to vectorizer
-    pipeline.named_steps["vec"].vocabulary = new_vocabulary
-    pipeline.named_steps["vec"].vocabulary_ = new_vocabulary
-    pipeline.named_steps["vec"].fixed_vocabulary_ = True
-
-
 def recursive_feature_elimination(
     records: List[TrainingRecord],
     pipeline: Pipeline,
