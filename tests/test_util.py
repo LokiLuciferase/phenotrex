@@ -5,6 +5,7 @@ from phenotrex.io.flat import load_training_files
 from phenotrex.util.plotting import compleconta_plot
 from phenotrex.ml.clf.xgbm import TrexXGB
 from phenotrex.io.serialization import save_classifier, load_classifier
+from phenotrex.util.external_data import Eggnog5TextAnnotator
 
 from .targets import cccv_scores_trex
 from . import DATA_PATH
@@ -38,3 +39,6 @@ class TestUtil:
         xgb = load_classifier(DATA_PATH/'Sulfate_reducer_xgb.pkl')
         preds = xgb.predict(td)
         assert preds is not None
+
+    def test_download_eggnog5_annot(self):
+        assert Eggnog5TextAnnotator().annotate(2, 'COG3520')

@@ -6,7 +6,7 @@ import shap
 from matplotlib import pyplot as plt
 
 from phenotrex.ml.trex_classifier import TrexClassifier
-
+from phenotrex.util.external_data import Eggnog5TextAnnotator
 
 class ShapHandler:
     """
@@ -23,11 +23,19 @@ class ShapHandler:
         fn = np.array(fn)
         used_fn = [k for k, v in clf.get_feature_weights().items() if v != 0]
         used_idxs = np.where(np.isin(fn, used_fn))[0]
-        return cls(fn, used_idxs)
+        feature_type = clf.feature_type
+        return cls(fn, used_idxs, feature_type=feature_type)
 
-    def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray):
+    def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray, feature_type: str = ''):
         self._used_idxs = used_idxs
         self._used_feature_names = feature_names[used_idxs]
+        self._feature_type = feature_type
+        if feature_type.startswith('eggNOG5'):
+            self._text_annotator = Eggnog5TextAnnotator()
+            self._feature_taxon = int(feature_type.split('-')[-1])
+        else:
+            self._text_annotator = None
+            self._feature_taxon = None
         self._sample_names = None
         self._used_features = None
         self._used_shaps = None
@@ -243,13 +251,19 @@ class ShapHandler:
         df_arrs = [sample_names, fns, feature_vals, *shap_vals]
         df_arrs = [np.array(x) for x in df_arrs]
         df_labels = [
-            'sample',
-            'feature',
-            'feature presence',
-            *[f'SHAP value (class={x})' for x in self._class_names]
+            'Sample',
+            'Feature',
+            'Feature Presence',
+            *[f'SHAP Value (class={x})' for x in self._class_names]
         ][:len(df_arrs)]
         df = pd.DataFrame(df_arrs, index=df_labels).T
         df.index.name = 'rank'
+        if self._text_annotator is not None:
+            annots = df['Feature'].apply(
+                lambda x: self._text_annotator.annotate(self._feature_taxon, x)[1]
+            )
+            if any(annots):
+                df['Feature Annotation'] = annots
         return df.reset_index(drop=False)
 
     def get_shap_summary(self, n_max_features: int = 50):
