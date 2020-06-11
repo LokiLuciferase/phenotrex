@@ -277,7 +277,7 @@ class ShapHandler:
         X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data()
         if n_max_features is None:
             n_max_features = len(feature_names_s)
-        columns = ['feature', 'mean_shap_present', 'mean_shap_absent', 'n_present', 'n_absent']
+        columns = ['Feature', 'Mean SHAP If Present', 'Mean SHAP If Absent', 'N(present)', 'N(absent)']
         lines = []
         for i in range(n_max_features):
             feature_name = feature_names_s[i]
@@ -292,4 +292,10 @@ class ShapHandler:
             lines.append([feature_name, mean_sv_present.round(5), mean_sv_absent.round(5),
                           n_where_present, n_where_absent])
         sh_df = pd.DataFrame(lines, columns=columns)
+        if self._text_annotator is not None:
+            annots = sh_df['Feature'].apply(
+                lambda x: self._text_annotator.annotate(self._feature_taxon, x)[1]
+            )
+            if any(annots):
+                sh_df['Feature Annotation'] = annots
         return sh_df
