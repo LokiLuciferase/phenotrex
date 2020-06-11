@@ -41,7 +41,7 @@ def cccv(inputs, out, title):
               help='The file to save the generated summary plot at.')
 @click.option('--n_max_features', type=int, default=20,
               help='The number of top most important features (by absolute SHAP value) to plot.')
-@click.option('--n_samples', type=int, default=None,
+@click.option('--n_samples', type=str, default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--title', type=str, default='', help='Plot title.')
@@ -66,7 +66,7 @@ def shap_summary(out, n_max_features, title, **kwargs):
               help='Path of pickled classifier file.')
 @click.option('--out_prefix', required=True, type=str,
               help='The prefix to generated SHAP force plots.')
-@click.option('--n_samples', type=int, default=None,
+@click.option('--n_samples', type=str, default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)

@@ -70,8 +70,13 @@ class TrexClassifier(ABC):
         X = vec.transform([" ".join(x.features) for x in records])
         return X
 
-    def train(self, records: List[TrainingRecord], reduce_features: bool = False,
-              n_features: int = 10000, **kwargs):
+    def train(
+        self,
+        records: List[TrainingRecord],
+        reduce_features: bool = False,
+        n_features: int = 10000,
+        **kwargs
+    ):
         """
         Fit CountVectorizer and train LinearSVC on a list of TrainingRecord.
 
@@ -90,7 +95,6 @@ class TrexClassifier(ABC):
             self.logger.info("using recursive feature elimination as feature selection strategy")
             # use non-calibrated classifier
             recursive_feature_elimination(records, self.cv_pipeline, n_features=n_features)
-            compress_vocabulary(records, self.pipeline)
 
         self.trait_name = tn
         self.feature_type = ft

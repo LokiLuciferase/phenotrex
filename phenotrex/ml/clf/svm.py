@@ -140,6 +140,8 @@ class TrexSVM(TrexClassifier):
             return None
         if n_samples is None:
             n_samples=SHAP_NSAMPLE_DEFAULT
+        elif isinstance(n_samples, str) and n_samples.isnumeric():
+            n_samples = int(n_samples)
         self.logger.info(f'Computing SHAP values for input using n_samples={n_samples}.'
                          f' This may take a long time.')
         raw_feats = self._get_raw_features(records).astype(int)  # numpy error if using bools
