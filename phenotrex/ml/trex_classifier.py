@@ -45,7 +45,7 @@ class TrexClassifier(ABC):
         self.random_state = np.random.RandomState(random_state)
         self.random_state_init = random_state
         self.verb = verb
-        self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool)
+        self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool, lowercase=False)
         self.default_search_params = None
         self.n_jobs = 1
 
