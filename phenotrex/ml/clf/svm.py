@@ -149,6 +149,6 @@ class TrexSVM(TrexClassifier):
             too_expensive = f"Attempting to compute SHAP explanation with KernelExplainer and " \
                             f"n_features={raw_feats.shape[1]}. This may take a _very_ long time."
             self.logger.warning(too_expensive)
-        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=n_samples)[0]
-        shap_bias = self.shap_explainer.expected_value[0]
+        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=n_samples)[1]
+        shap_bias = self.shap_explainer.expected_value[1]
         return raw_feats, shap_values, shap_bias
