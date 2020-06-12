@@ -4,6 +4,12 @@
 from pathlib import Path
 from typing import Dict, List, Union
 
+import matplotlib.pyplot as plt
+import pandas as pd
+from tqdm.auto import tqdm
+
+from phenotrex.structure.records import GenotypeRecord
+from phenotrex.ml.shap_handler import ShapHandler
 
 CccvType = Union[
     Dict[float, Dict[float, Dict[str, float]]],
@@ -93,3 +99,39 @@ def compleconta_plot(cccv_results: CccvType,
         plt.savefig(save_path)
     else:
         plt.show()
+
+
+def shap_summary_plot(
+    sh: ShapHandler,
+    title: str,
+    n_max_features: int,
+    out_summary_plot: Union[str, Path],
+    out_summary_txt: Union[str, Path] = None
+):
+    sh.plot_shap_summary(title=title, n_max_features=n_max_features)
+    plt.tight_layout()
+    plt.savefig(out_summary_plot)
+    if out_summary_txt is not None:
+        df = sh.get_shap_summary(n_max_features=n_max_features)
+        df.to_csv(out_summary_txt, sep='\t')
+
+
+def shap_force_plots(
+    gr: List[GenotypeRecord],
+    sh: ShapHandler,
+    n_max_features: int,
+    out_prefix: Union[str, Path],
+    out_individual_summary: Union[str, Path] = None
+):
+    summaries = []
+    for record in tqdm(gr, unit='samples', desc='Generating force plots'):
+        sh.plot_shap_force(record.identifier, n_max_features=n_max_features)
+        out_path = Path(f'{out_prefix}_{record.identifier}_force_plot.png')
+        out_path.parent.mkdir(exist_ok=True)
+        plt.savefig(out_path)
+        plt.close(plt.gcf())
+        if out_individual_summary is not None:
+            summaries.append(sh.get_shap_force(record.identifier, n_max_features=n_max_features))
+
+    if out_individual_summary is not None:
+        pd.concat(summaries, axis=0).to_csv(out_individual_summary, sep='\t', index=False)
