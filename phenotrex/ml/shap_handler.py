@@ -26,6 +26,27 @@ class ShapHandler:
         feature_type = clf.feature_type
         return cls(fn, used_idxs, feature_type=feature_type)
 
+    @staticmethod
+    def _fix_shap_force_figure(fig: plt.Figure) -> plt.Figure:
+        """
+        Replaces the figure annotation in shap force plots with "absent" if value = 0.0 and
+        "present" if value = 1.0.
+
+        :param fig: a matplotlib.pyplot.Figure as produced by shap.force_plot.
+        :return: The same fig, modified as described.
+        """
+        ax = fig.gca()
+        for c in ax.get_children():
+            if isinstance(c, plt.Text):
+                t = c.get_text()
+                if t.endswith(' = 1.0'):
+                    c.set_text(t.replace(' = 1.0', ' present'))
+                elif t.endswith(' = 0.0'):
+                    c.set_text(t.replace(' = 0.0', ' absent'))
+                else:
+                    pass
+        return fig
+
     def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray, feature_type: str = ''):
         self._used_idxs = used_idxs
         self._used_feature_names = feature_names[used_idxs]
@@ -148,7 +169,7 @@ class ShapHandler:
         return (X_agg[:, feature_sort_inds], shap_agg[..., feature_sort_inds],
                 self._used_feature_names[feature_sort_inds])
 
-    def plot_shap_force(self, sample_name: str, n_max_features: int = 20, **kwargs):
+    def plot_shap_force(self, sample_name: str, n_max_features: int = 20, **kwargs) -> plt.Figure:
         """
         Create force plot of the sample associated with the given sample name.
 
@@ -162,7 +183,7 @@ class ShapHandler:
         if n_max_features is None:
             n_max_features = len(feature_names_s)
 
-        shap.force_plot(
+        fig = shap.force_plot(
             base_value=self._shap_base_value,
             shap_values=shap_agg_s[i, :n_max_features],
             features=X_agg_s[i, :n_max_features],
@@ -172,6 +193,7 @@ class ShapHandler:
             text_rotation=45,
             **kwargs
         )
+        return self._fix_shap_force_figure(fig)
 
     def plot_shap_summary(
         self,
