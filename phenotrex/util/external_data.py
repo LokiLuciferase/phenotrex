@@ -2,6 +2,7 @@ import io
 import gzip
 from typing import Dict, Tuple
 import urllib.request
+import ssl
 from urllib.error import HTTPError
 
 from phenotrex.util.logging import get_logger
@@ -18,7 +19,9 @@ class Eggnog5TextAnnotator:
     @staticmethod
     def _download_and_zcat(http_path: str) -> str:
         try:
-            response = urllib.request.urlopen(http_path, timeout=5)
+            response = urllib.request.urlopen(
+                http_path, timeout=5, context=ssl._create_unverified_context()
+            )
             gz = io.BytesIO(response.read())
             with gzip.open(gz, mode='r') as gzf:
                 return gzf.read().decode('utf8')
