@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install pheno-trex, run this command in your terminal:
+To install phenotrex, run this command in your terminal:
 
 .. code-block:: console
 
     $ pip install phenotrex
 
-This is the preferred method to install pheno-trex, as it will always install the most recent stable release.
+This is the preferred method to install phenotrex, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,26 +26,26 @@ you through the process.
 From sources
 ------------
 
-The sources for pheno-trex can be downloaded from the `Github repo`_.
+The sources for phenotrex can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/univieCUBE/PICA2
+    $ git clone git://github.com/univieCUBE/phenotrex
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/univieCUBE/PICA2/tarball/master
+    $ curl  -OL https://github.com/univieCUBE/phenotrex/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ make install
 
 
-.. _Github repo: https://github.com/univieCUBE/PICA2
-.. _tarball: https://github.com/univieCUBE/PICA2/tarball/master
+.. _Github repo: https://github.com/univieCUBE/phenotrex
+.. _tarball: https://github.com/univieCUBE/phenotrex/tarball/master

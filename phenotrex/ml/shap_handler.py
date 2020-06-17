@@ -252,8 +252,7 @@ class ShapHandler:
         :param sample_name:
         :param n_max_features:
         :return: a dataframe of the n_max_features most influential features,
-                 their value in the sample, and the associated
-        SHAP value(s).
+                 their value in the sample, and the associated SHAP value(s).
         """
         i = self._get_sample_index_with_name(sample_name)
         X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data(sort_by_idx=i)

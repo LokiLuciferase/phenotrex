@@ -2,7 +2,7 @@
 Usage
 =====
 
-To use pheno-trex in a project::
+To use phenotrex in a project::
 
     from phenotrex.io import ...  #  file I/O
     from phenotrex.ml import ...  # classifiers and training/CV functionality
