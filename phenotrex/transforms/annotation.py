@@ -40,6 +40,7 @@ class PreloadedProteinIterator(ProteinIterator):
         self.start = 0
         self.pos = None
         self.step = 0
+        self.sequence = namedtuple('sequence', ['index', 'id', 'string', 'encoded'])
 
 
 class PreloadedProteinDataset(ProteinDataset):
