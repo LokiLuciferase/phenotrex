@@ -16,8 +16,8 @@ from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.util.logging import get_logger
 
 KMEANS_N_CLUSTERS = 10
-SHAP_NSAMPLE_DEFAULT = 'auto'  # considerably less than suggested by 'auto', but may be intractable else
-SHAP_TRACTABLE_N_FEATURES = 7500  # arbirary threshold after which users are warned that this may take forever
+SHAP_NSAMPLE_DEFAULT = 'auto'
+SHAP_TRACTABLE_N_FEATURES = 7500  # arbitrary threshold after which users are warned that this may take forever
 
 
 class TrexSVM(TrexClassifier):
@@ -149,10 +149,10 @@ class TrexSVM(TrexClassifier):
             too_expensive = f"Attempting to compute SHAP explanation with KernelExplainer and " \
                             f"n_features={raw_feats.shape[1]}. This may take a _very_ long time."
             self.logger.warning(too_expensive)
-        shap_values = self.shap_explainer.shap_values(
+        _, shap_values = self.shap_explainer.shap_values(
             raw_feats,
             nsamples=n_samples,
             # TODO: find good value for l1_reg
-        )[1]
-        shap_bias = self.shap_explainer.expected_value[1]
+        )
+        _, shap_bias = self.shap_explainer.expected_value
         return raw_feats, shap_values, shap_bias

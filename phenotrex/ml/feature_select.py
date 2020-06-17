@@ -69,7 +69,7 @@ def recursive_feature_elimination(
     vocabulary = {
         feature: new_id[i]
         for feature, i in previous_vocabulary.items()
-        if not new_id.get(i) is None
+        if new_id.get(i) is not None
     }
     size_after = selector.n_features_
 

@@ -43,7 +43,7 @@ def cccv(inputs, out, title):
               help='The file to save the generated summary at.')
 @click.option('--n_max_features', type=int, default=20,
               help='The number of top most important features (by absolute SHAP value) to plot.')
-@click.option('--n_samples', type=str, default='auto',
+@click.option('--n_samples', default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--title', type=str, default='', help='Plot title.')
@@ -76,7 +76,7 @@ def shap_summary(out_plot, out_summary, n_max_features, title, **kwargs):
               help='The path to save the generated summary at.')
 @click.option('--n_max_features', type=int, default=20,
               help='The number of top most important features (by absolute SHAP value) to plot.')
-@click.option('--n_samples', type=str, default='auto',
+@click.option('--n_samples', default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
@@ -119,7 +119,7 @@ def shap_force(out_prefix, out_summary, n_max_features, **kwargs):
 @click.option('--summary_plot_title', type=str, default='SHAP Summary')
 @click.option('--n_max_features', type=int, default=30,
               help='The number of top most important features (by absolute SHAP value) to plot.')
-@click.option('--n_samples', type=str, default='auto',
+@click.option('--n_samples', default='auto',
               help='The nsamples parameter of SHAP. '
                    'Only used by models which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
