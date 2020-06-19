@@ -55,13 +55,15 @@ class CompleContaCV:
         self.scoring_method = scoring_function
         self.logger = get_logger(__name__, verb=verb)
         if comple_steps < 1:
-            self.logger.warn(
-                f"Completeness steps parameter is out of range: {comple_steps}, was set to 1 instead"
+            self.logger.warning(
+                f"Completeness steps parameter is out of range: "
+                f"{comple_steps}, was set to 1 instead"
             )
             comple_steps = 1
         if conta_steps < 1:
-            self.logger.warn(
-                f"Contamination steps parameter is out of range: {conta_steps}, was set to 1 instead"
+            self.logger.warning(
+                f"Contamination steps parameter is out of range: "
+                f"{conta_steps}, was set to 1 instead"
             )
             conta_steps = 1
 
