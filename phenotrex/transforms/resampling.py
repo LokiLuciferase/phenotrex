@@ -15,14 +15,17 @@ class TrainingRecordResampler:
     """
     Instantiates an object which can generate versions of a TrainingRecord
     resampled to defined completeness and contamination levels.
-    Requires prior fitting with full List[TrainingRecord] to get sources of contamination for both classes.
+    Requires prior fitting with full List[TrainingRecord]
+    to get sources of contamination for both classes.
 
     :param random_state: Randomness seed to use while resampling
     :param verb: Toggle verbosity
     """
-    def __init__(self,
-                 random_state: float = None,
-                 verb: bool = False):
+    def __init__(
+        self,
+        random_state: float = None,
+        verb: bool = False
+    ):
         self.logger = get_logger(initname=self.__class__.__name__, verb=verb)
         self.random_state = random_state if type(random_state) is RandomState else RandomState(random_state)
         self.conta_source_pos = None
@@ -55,9 +58,12 @@ class TrainingRecordResampler:
         self.fitted = True
         return True
 
-    def get_resampled(self, record: TrainingRecord,
-                      comple: float = 1,
-                      conta: float = 0) -> TrainingRecord:
+    def get_resampled(
+        self,
+        record: TrainingRecord,
+        comple: float = 1.,
+        conta: float = 0.
+    ) -> TrainingRecord:
         """
         Resample a TrainingRecord to defined completeness and contamination levels.
         Comple=1, Conta=1 will double set size.
@@ -68,7 +74,9 @@ class TrainingRecordResampler:
         :return: a resampled TrainingRecord.
         """
         if not self.fitted:
-            raise RuntimeError("TrainingRecordResampler is not fitted on full TrainingRecord set. Aborting.")
+            raise RuntimeError(
+                "TrainingRecordResampler is not fitted on full TrainingRecord set. Aborting."
+            )
         if not 0 <= comple <= 1 or not 0 <= conta <= 1:
             raise RuntimeError("Invalid comple/conta settings. Must be between 0 and 1.")
 
@@ -76,17 +84,18 @@ class TrainingRecordResampler:
         n_features_comple = int(np.floor(len(features) * comple))
 
         # make incomplete
-        incomplete_features = resample(features,
-                                       replace=False,
-                                       n_samples=n_features_comple,
-                                       random_state=self.random_state)
-        self.logger.info(f"Reduced features of TrainingRecord {record.identifier} "
-                         f"from {len(features)} to {n_features_comple}.")
-
+        incomplete_features = resample(
+            features, replace=False, n_samples=n_features_comple, random_state=self.random_state
+        )
+        self.logger.info(
+            f"Reduced features of TrainingRecord {record.identifier} "
+            f"from {len(features)} to {n_features_comple}."
+        )
         # make contaminations
         record_class = record.trait_sign
         if record.trait_sign == 1:
-            if self.conta_source_neg.shape[0] == 1:  # guard against very small sample errors after StratifiedKFold
+            # guard against very small sample errors after StratifiedKFold
+            if self.conta_source_neg.shape[0] == 1:
                 source_set_id = 0
             else:
                 source_set_id = self.random_state.randint(0, self.conta_source_neg.shape[0] - 1)
@@ -101,19 +110,22 @@ class TrainingRecordResampler:
             raise RuntimeError(f"Unexpected record sign found: {record.trait_sign}. Aborting.")
 
         n_features_conta = min(len(conta_source), int(np.floor(len(conta_source) * conta)))
-        conta_features = list(self.random_state.choice(a=conta_source,
-                                                       size=n_features_conta,
-                                                       replace=False))
+        conta_features = list(self.random_state.choice(
+            a=conta_source, size=n_features_conta, replace=False
+        ))
         # TODO: what if not enough conta features?
-        self.logger.info(f"Enriched features of TrainingRecord {record.identifier} "
-                         f"with {len(conta_features)} features from "
-                         f"{'positive' if record_class == 0 else 'negative'} set.")
-
-        new_record = TrainingRecord(identifier=record.identifier,
-                                    trait_name=record.trait_name,
-                                    trait_sign=record.trait_sign,
-                                    feature_type=record.feature_type,
-                                    features=incomplete_features + conta_features,
-                                    group_name=None,
-                                    group_id=None)
+        self.logger.info(
+            f"Enriched features of TrainingRecord {record.identifier} "
+            f"with {len(conta_features)} features from "
+            f"{'positive' if record_class == 0 else 'negative'} set."
+        )
+        new_record = TrainingRecord(
+            identifier=record.identifier,
+            trait_name=record.trait_name,
+            trait_sign=record.trait_sign,
+            feature_type=record.feature_type,
+            features=incomplete_features + conta_features,
+            group_name=None,
+            group_id=None
+        )
         return new_record

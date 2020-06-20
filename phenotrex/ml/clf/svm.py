@@ -16,7 +16,8 @@ from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.util.logging import get_logger
 
 KMEANS_N_CLUSTERS = 10
-SHAP_NSAMPLE_DEFAULT = 100  # considerably less than suggested by 'auto', but may be intractable else
+SHAP_NSAMPLE_DEFAULT = 'auto'
+SHAP_TRACTABLE_N_FEATURES = 7500  # arbitrary threshold after which users are warned that this may take forever
 
 
 class TrexSVM(TrexClassifier):
@@ -139,10 +140,19 @@ class TrexSVM(TrexClassifier):
             self.logger.error('Cannot create shap values: no Shap explainer trained.')
             return None
         if n_samples is None:
-            n_samples=SHAP_NSAMPLE_DEFAULT
-        self.logger.info(f'Computing SHAP values for input using n_samples={n_samples}.'
-                         f' This may take a long time.')
+            n_samples = SHAP_NSAMPLE_DEFAULT
+        if isinstance(n_samples, str) and n_samples.isnumeric():
+            n_samples = int(n_samples)
+        self.logger.info(f'Computing SHAP values for input using n_samples={n_samples}.')
         raw_feats = self._get_raw_features(records).astype(int)  # numpy error if using bools
-        shap_values = self.shap_explainer.shap_values(raw_feats, nsamples=n_samples)[0]
-        shap_bias = self.shap_explainer.expected_value[0]
+        if raw_feats.shape[1] > SHAP_TRACTABLE_N_FEATURES:
+            too_expensive = f"Attempting to compute SHAP explanation with KernelExplainer and " \
+                            f"n_features={raw_feats.shape[1]}. This may take a _very_ long time."
+            self.logger.warning(too_expensive)
+        _, shap_values = self.shap_explainer.shap_values(
+            raw_feats,
+            nsamples=n_samples,
+            # TODO: find good value for l1_reg
+        )
+        _, shap_bias = self.shap_explainer.expected_value
         return raw_feats, shap_values, shap_bias

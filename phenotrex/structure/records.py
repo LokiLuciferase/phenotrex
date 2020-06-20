@@ -23,8 +23,10 @@ class PhenotypeRecord:
     """
     Ground truth labels of sample `identifier`,
     indicating presence/absence of trait `trait_name`:
+
       - 0 if trait is absent
       - 1 if trait is present
+
     """
     identifier: str
     trait_name: str

@@ -1,2 +1,2 @@
-deepnog>=1.1.0
+deepnog<1.2
 ete3

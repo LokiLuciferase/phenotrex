@@ -7,16 +7,14 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-from tests.targets import (first_genotype_accession, first_phenotype_accession)
 from phenotrex.io.flat import load_training_files
 from phenotrex.io.serialization import load_classifier
 from phenotrex.ml.shap_handler import ShapHandler
-from . import DATA_PATH
+from . import MODELS_PATH, FLAT_PATH
+
 
 trait_names = [
-    "Sulfate_reducer",
-    # "Aerobe",
-    # "sporulation",
+    "T3SS_trunc",
 ]
 
 classifier_ids = [
@@ -36,16 +34,14 @@ class TestShapHandler:
         :param classifier_type:
         :return:
         """
-        full_path_genotype = DATA_PATH / f"{trait_name}.genotype"
-        full_path_phenotype = DATA_PATH / f"{trait_name}.phenotype"
+        full_path_genotype = FLAT_PATH/trait_name/f"{trait_name}.genotype"
+        full_path_phenotype = FLAT_PATH/trait_name/f"{trait_name}.phenotype"
         training_records, genotype, phenotype, group = load_training_files(
             genotype_file=full_path_genotype,
             phenotype_file=full_path_phenotype,
             verb=True)
-        assert genotype[0].identifier == first_genotype_accession[trait_name]
-        assert phenotype[0].identifier == first_phenotype_accession[trait_name]
         tr = training_records[:3]
-        model_path = DATA_PATH / f'{trait_name}_{classifier_type.lower()}.pkl'
+        model_path = MODELS_PATH/trait_name/f'{trait_name}.{classifier_type.lower()}.pkl'
         clf = load_classifier(model_path, verb=True)
         sh = ShapHandler.from_clf(clf)
         fs, sv, bv = clf.get_shap(tr, n_samples=50)

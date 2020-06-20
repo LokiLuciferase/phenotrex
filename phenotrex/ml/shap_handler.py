@@ -6,7 +6,7 @@ import shap
 from matplotlib import pyplot as plt
 
 from phenotrex.ml.trex_classifier import TrexClassifier
-
+from phenotrex.util.external_data import Eggnog5TextAnnotator
 
 class ShapHandler:
     """
@@ -14,7 +14,8 @@ class ShapHandler:
     and enables plotting of shap values and summaries.
 
     :param feature_names: All feature names in the model feature space.
-    :param used_idxs: Indices into the feature_names array of features actually utilized by the model.
+    :param used_idxs: Indices into the feature_names array of features
+                      actually utilized by the model.
     """
     @classmethod
     def from_clf(cls, clf: TrexClassifier):
@@ -22,19 +23,53 @@ class ShapHandler:
         fn = np.array(fn)
         used_fn = [k for k, v in clf.get_feature_weights().items() if v != 0]
         used_idxs = np.where(np.isin(fn, used_fn))[0]
-        return cls(fn, used_idxs)
+        feature_type = clf.feature_type
+        return cls(fn, used_idxs, feature_type=feature_type)
 
-    def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray):
+    @staticmethod
+    def _fix_shap_force_figure(fig: plt.Figure) -> plt.Figure:
+        """
+        Replaces the figure annotation in shap force plots with "absent" if value = 0.0 and
+        "present" if value = 1.0.
+
+        :param fig: a matplotlib.pyplot.Figure as produced by shap.force_plot.
+        :return: The same fig, modified as described.
+        """
+        ax = fig.gca()
+        for c in ax.get_children():
+            if isinstance(c, plt.Text):
+                t = c.get_text()
+                if t.endswith(' = 1.0'):
+                    c.set_text(t.replace(' = 1.0', ' present'))
+                elif t.endswith(' = 0.0'):
+                    c.set_text(t.replace(' = 0.0', ' absent'))
+                else:
+                    pass
+        return fig
+
+    def __init__(self, feature_names: np.ndarray, used_idxs: np.ndarray, feature_type: str = ''):
         self._used_idxs = used_idxs
         self._used_feature_names = feature_names[used_idxs]
+        self._feature_type = feature_type
+        if feature_type.startswith('eggNOG5'):
+            self._text_annotator = Eggnog5TextAnnotator()
+            self._feature_taxon = int(feature_type.split('-')[-1])
+        else:
+            self._text_annotator = None
+            self._feature_taxon = None
         self._sample_names = None
         self._used_features = None
         self._used_shaps = None
         self._shap_base_value = None
-        self._class_names = ['binary']
+        self._class_names = ['YES']
 
-    def add_feature_data(self, sample_names: np.ndarray, features: np.ndarray, shaps: np.ndarray,
-                         base_value: float = None):
+    def add_feature_data(
+        self,
+        sample_names: np.ndarray,
+        features: np.ndarray,
+        shaps: np.ndarray,
+        base_value: float = None
+    ):
         """
         Add a new set of feature information to the ShapHandler.
 
@@ -42,7 +77,8 @@ class ShapHandler:
         :param features: a feature array of shape (n_sample_names, n_features_in_featurespace).
                          features will be pared down to those used by the model.
         :param shaps: a shap array of shape (n_sample_names, n_features_in_featurespace +1).
-                      shaps will be pared down to those produced by the model, mirroring the features.
+                      shaps will be pared down to those produced by the model,
+                      mirroring the features.
         :param base_value: If the base value has been split off the shaps before hand, pass it here.
         :return: None
         """
@@ -101,7 +137,9 @@ class ShapHandler:
         sample_names = self._sample_names
         return X_agg, shap_agg, sample_names
 
-    def _get_sorted_by_shap_data(self, sort_by_idx=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _get_sorted_by_shap_data(
+        self, sort_by_idx=None
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Sort features by absolute magnitude of shap values,
         and return sorted features, shap values and feature names.
@@ -122,7 +160,8 @@ class ShapHandler:
             feature_axis = shap_agg.ndim - 1
             nonfeature_axes = list(range(feature_axis))
             absshap = np.apply_along_axis(np.abs, feature_axis, shap_agg)
-            if sort_by_idx is None:  # sort features by absolute change in shap over all classes and samples
+            if sort_by_idx is None:
+                # sort features by absolute change in shap over all classes and samples
                 sort_criterion = np.apply_over_axes(np.sum, absshap, nonfeature_axes)
             else:  # sort features by absolute change in shap over all classes for given sample idx
                 sort_criterion = np.sum(absshap[sort_by_idx, ...], axis=0)
@@ -130,24 +169,39 @@ class ShapHandler:
         return (X_agg[:, feature_sort_inds], shap_agg[..., feature_sort_inds],
                 self._used_feature_names[feature_sort_inds])
 
-    def plot_shap_force(self, sample_name: str, **kwargs):
+    def plot_shap_force(self, sample_name: str, n_max_features: int = 20, **kwargs) -> plt.Figure:
         """
         Create force plot of the sample associated with the given sample name.
 
         :param sample_name:
+        :param n_max_features:
         :param kwargs: additional keyword arguments passed on to `shap.force_plot()`
         :return:
         """
-        counts, shaps, sample_names = self._get_feature_data()
         i = self._get_sample_index_with_name(sample_name)
+        X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data(sort_by_idx=i)
+        if n_max_features is None:
+            n_max_features = len(feature_names_s)
 
-        sample_feats, sample_svs = counts[i, ...], shaps[i, ...]
-        shap.force_plot(base_value=self._shap_base_value, shap_values=sample_svs, features=sample_feats,
-                        feature_names=self._used_feature_names, matplotlib=True, show=False, **kwargs)
+        fig = shap.force_plot(
+            base_value=self._shap_base_value,
+            shap_values=shap_agg_s[i, :n_max_features],
+            features=X_agg_s[i, :n_max_features],
+            feature_names=feature_names_s[:n_max_features],
+            matplotlib=True,
+            show=False,
+            text_rotation=45,
+            **kwargs
+        )
+        return self._fix_shap_force_figure(fig)
 
-    def plot_shap_summary(self, title=None, n_max_features: int = 20,
-                          plot_individual_classes: bool = False,
-                          **kwargs):
+    def plot_shap_summary(
+        self,
+        title=None,
+        n_max_features: int = 20,
+        plot_individual_classes: bool = False,
+        **kwargs
+    ):
         """
         Create summary plot of shap values over all predicted samples.
 
@@ -172,20 +226,23 @@ class ShapHandler:
                         feature_names=self._used_feature_names,
                         max_display=n_max_features,
                         show=False,
-                        **kwargs)
+                        **kwargs
+                    )
                     plt.title(f'SHAP Summary for Class {n}')
                     plt.show()
 
         if title is not None:
             plt.title(title)
-        shap.summary_plot(shap_values=shap_agg,
-                          features=X_agg,
-                          feature_names=self._used_feature_names,
-                          max_display=n_max_features,
-                          class_names=class_names,
-                          title=f'SHAP Summary',
-                          show=False,
-                          **kwargs)
+        shap.summary_plot(
+            shap_values=shap_agg,
+            features=X_agg,
+            feature_names=self._used_feature_names,
+            max_display=n_max_features,
+            class_names=class_names,
+            title=f'SHAP Summary',
+            show=False,
+            **kwargs
+        )
 
     def get_shap_force(self, sample_name: str, n_max_features: int = 20) -> pd.DataFrame:
         """
@@ -195,15 +252,16 @@ class ShapHandler:
         :param sample_name:
         :param n_max_features:
         :return: a dataframe of the n_max_features most influential features,
-                 their value in the sample, and the associated
-        SHAP value(s).
+                 their value in the sample, and the associated SHAP value(s).
         """
         i = self._get_sample_index_with_name(sample_name)
         X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data(sort_by_idx=i)
-        fns = feature_names_s[:n_max_features]
-        feature_vals = X_agg_s[i, :n_max_features]
+
         if n_max_features is None:
             n_max_features = len(feature_names_s)
+
+        fns = feature_names_s[:n_max_features]
+        feature_vals = X_agg_s[i, :n_max_features]
 
         if shap_agg_s.ndim == 3:
             shap_agg_s = np.swapaxes(shap_agg_s, 0, 1)
@@ -213,10 +271,20 @@ class ShapHandler:
         sample_names = [sample_name] * len(fns)
         df_arrs = [sample_names, fns, feature_vals, *shap_vals]
         df_arrs = [np.array(x) for x in df_arrs]
-        df_labels = ['sample', 'feature', 'feature_value',
-                     *[f'SHAP value ({x})' for x in self._class_names]][:len(df_arrs)]
+        df_labels = [
+            'Sample',
+            'Feature',
+            'Feature Presence',
+            *[f'SHAP Value (class={x})' for x in self._class_names]
+        ][:len(df_arrs)]
         df = pd.DataFrame(df_arrs, index=df_labels).T
         df.index.name = 'rank'
+        if self._text_annotator is not None:
+            annots = df['Feature'].apply(
+                lambda x: self._text_annotator.annotate(self._feature_taxon, x)[1]
+            )
+            if any(annots):
+                df['Feature Annotation'] = annots
         return df.reset_index(drop=False)
 
     def get_shap_summary(self, n_max_features: int = 50):
@@ -230,7 +298,7 @@ class ShapHandler:
         X_agg_s, shap_agg_s, feature_names_s = self._get_sorted_by_shap_data()
         if n_max_features is None:
             n_max_features = len(feature_names_s)
-        columns = ['feature', 'mean_shap_present', 'mean_shap_absent', 'n_present', 'n_absent']
+        columns = ['Feature', 'Mean SHAP If Present', 'Mean SHAP If Absent', 'N(present)', 'N(absent)']
         lines = []
         for i in range(n_max_features):
             feature_name = feature_names_s[i]
@@ -245,4 +313,10 @@ class ShapHandler:
             lines.append([feature_name, mean_sv_present.round(5), mean_sv_absent.round(5),
                           n_where_present, n_where_absent])
         sh_df = pd.DataFrame(lines, columns=columns)
+        if self._text_annotator is not None:
+            annots = sh_df['Feature'].apply(
+                lambda x: self._text_annotator.annotate(self._feature_taxon, x)[1]
+            )
+            if any(annots):
+                sh_df['Feature Annotation'] = annots
         return sh_df

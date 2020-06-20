@@ -24,29 +24,47 @@ class CompleContaCV:
     A class containing all custom completeness/contamination cross-validation functionality.
 
     :param pipeline: target pipeline which describes the vectorization and estimator/classifier used
-    :param scoring_function: Sklearn-like scoring function of crossvalidation. Default: Balanced Accuracy.
+    :param scoring_function: Sklearn-like scoring function of crossvalidation.
+                             Default: Balanced Accuracy.
     :param cv: Number of folds in crossvalidation. Default: 5
     :param comple_steps: number of steps between 0 and 1 (relative completeness) to be simulated
-    :param conta_steps: number of steps between 0 and 1 (relative contamination level) to be simulated
+    :param conta_steps: number of steps between 0 and 1 (relative contamination level)
+                        to be simulated
     :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
     :param n_replicates: Number of times the crossvalidation is repeated
     :param reduce_features: toggles feature reduction using recursive feature elimination
     :param n_features: minimal number of features to retain (if feature reduction is used)
     :param random_state: An integer random seed or instance of np.random.RandomState
     """
-    def __init__(self, pipeline: Pipeline, scoring_function: Callable = balanced_accuracy_score, cv: int = 5,
-                 comple_steps: int = 20, conta_steps: int = 20,
-                 n_jobs: int = -1, n_replicates: int = 10, random_state: np.random.RandomState = None,
-                 verb: bool = False, reduce_features: bool = False, n_features: int = 10000):
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        scoring_function: Callable = balanced_accuracy_score,
+        cv: int = 5,
+        comple_steps: int = 20,
+        conta_steps: int = 20,
+        n_jobs: int = -1,
+        n_replicates: int = 10,
+        random_state: np.random.RandomState = None,
+        verb: bool = False,
+        reduce_features: bool = False,
+        n_features: int = 10000
+    ):
         self.pipeline = pipeline
         self.cv = cv
         self.scoring_method = scoring_function
         self.logger = get_logger(__name__, verb=verb)
         if comple_steps < 1:
-            self.logger.warn(f"Completeness steps parameter is out of range: {comple_steps}, was set to 1 instead")
+            self.logger.warning(
+                f"Completeness steps parameter is out of range: "
+                f"{comple_steps}, was set to 1 instead"
+            )
             comple_steps = 1
         if conta_steps < 1:
-            self.logger.warn(f"Contamination steps parameter is out of range: {conta_steps}, was set to 1 instead")
+            self.logger.warning(
+                f"Contamination steps parameter is out of range: "
+                f"{conta_steps}, was set to 1 instead"
+            )
             conta_steps = 1
 
         self.comple_steps = comple_steps
@@ -116,7 +134,7 @@ class CompleContaCV:
         subprocesses using a ProcessPoolExecutor from concurrent.futures
 
         :param param: List [test_records, X_train, y_train, comple_steps, conta_steps, starting_message]
-            workaround to get multiple parameters into this function. (using processor.map)
+                      workaround to get multiple parameters into this function. (using processor.map)
         """
         # unpack parameters
         test_records, training_records, comple_steps, conta_steps, verb, starting_message = param
@@ -127,8 +145,12 @@ class CompleContaCV:
 
         classifier = copy.deepcopy(self.pipeline)
         if self.reduce_features:
-            recursive_feature_elimination(training_records, classifier, n_features=self.n_features,
-                                          random_state=self.random_state)
+            recursive_feature_elimination(
+                training_records,
+                classifier,
+                n_features=self.n_features,
+                random_state=self.random_state
+            )
 
         X_train, y_train, tn, ft = get_x_y_tn_ft(training_records)
         classifier.fit(X=X_train, y=y_train, **kwargs)
@@ -156,23 +178,32 @@ class CompleContaCV:
         :return: A dictionary with mean balanced accuracies
                  for each combination: dict[comple][conta]=mba
         """
-        # TODO: run compress_vocabulary before?
-
         self.logger.info(
             "Begin completeness/contamination matrix crossvalidation on training data.")
         t1 = time()
         if self.n_jobs is None:
-            cv_scores = map(self._completeness_cv, self._replicates(records, self.cv,
-                                                                    self.comple_steps,
-                                                                    self.conta_steps,
-                                                                    self.n_replicates))
+            cv_scores = map(
+                self._completeness_cv,
+                self._replicates(
+                    records,
+                    self.cv,
+                    self.comple_steps,
+                    self.conta_steps,
+                    self.n_replicates
+                )
+            )
         else:
             with ProcessPoolExecutor(max_workers=self.n_jobs) as executor:
-                cv_scores = executor.map(self._completeness_cv,
-                                         self._replicates(records, self.cv,
-                                                          self.comple_steps,
-                                                          self.conta_steps,
-                                                          self.n_replicates))
+                cv_scores = executor.map(
+                    self._completeness_cv,
+                    self._replicates(
+                        records,
+                        self.cv,
+                        self.comple_steps,
+                        self.conta_steps,
+                        self.n_replicates
+                    )
+                )
         t2 = time()
         mba = {}
         cv_scores_list = [x for x in cv_scores]
@@ -180,11 +211,15 @@ class CompleContaCV:
         for comple in cv_scores_list[0].keys():
             mba[comple] = {}
             for conta in cv_scores_list[0][comple].keys():
-                single_result = [cv_scores_list[r][comple][conta] for r in
-                                 range(self.n_replicates * self.cv)]
+                single_result = [
+                    cv_scores_list[r][comple][conta]
+                    for r in range(self.n_replicates * self.cv)
+                ]
                 mean_over_fold_and_replicates = np.mean(single_result)
                 std_over_fold_and_replicates = np.std(single_result)
-                mba[comple][conta] = {"score_mean": mean_over_fold_and_replicates,
-                                      "score_sd": std_over_fold_and_replicates}
+                mba[comple][conta] = {
+                    "score_mean": mean_over_fold_and_replicates,
+                    "score_sd": std_over_fold_and_replicates
+                }
         self.logger.info(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
         return mba

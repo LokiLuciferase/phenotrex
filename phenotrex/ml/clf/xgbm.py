@@ -45,14 +45,18 @@ class TrexXGB(TrexClassifier):
             'eval_metric'     : ['auc', 'aucpr']
         }
 
-        classifier = xgb.sklearn.XGBClassifier(missing=0, max_depth=max_depth,
-                                               learning_rate=learning_rate,
-                                               n_estimators=n_estimators, gamma=gamma,
-                                               min_child_weight=min_child_weight,
-                                               subsample=subsample,
-                                               colsample_bytree=colsample_bytree,
-                                               n_jobs=n_jobs, verbose=verb,
-                                               **kwargs)
+        classifier = xgb.sklearn.XGBClassifier(
+            missing=0,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            gamma=gamma,
+            min_child_weight=min_child_weight,
+            subsample=subsample,
+            colsample_bytree=colsample_bytree,
+            n_jobs=n_jobs,
+            **kwargs
+        )
 
         self.pipeline = Pipeline(steps=[
             ("vec", self.vectorizer),

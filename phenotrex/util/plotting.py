@@ -4,17 +4,32 @@
 from pathlib import Path
 from typing import Dict, List, Union
 
+import matplotlib.pyplot as plt
+import pandas as pd
+from tqdm.auto import tqdm
+
+from phenotrex.structure.records import GenotypeRecord
+from phenotrex.ml.shap_handler import ShapHandler
 
 CccvType = Union[
     Dict[float, Dict[float, Dict[str, float]]],
     List[Dict[float, Dict[float, Dict[str, float]]]]
 ]
 
-def compleconta_plot(cccv_results: CccvType,
-                     conditions: List[str] = (), each_n: List[int] = None,
-                     title: str = "", fontsize: int = 16, figsize=(10, 7),
-                     plot_comple: bool = True, plot_conta: bool = True,
-                     colors: List = None, save_path: Union[str, Path] = None, **kwargs):
+
+def compleconta_plot(
+    cccv_results: CccvType,
+    conditions: List[str] = (),
+    each_n: List[int] = None,
+    title: str = "",
+    fontsize: int = 16,
+    figsize=(10, 7),
+    plot_comple: bool = True,
+    plot_conta: bool = True,
+    colors: List = None,
+    save_path: Union[str, Path] = None,
+    **kwargs
+):
     """
     Plots Compleconta CV result for one or multiple models.
     For perfect completeness and variable contamination
@@ -64,7 +79,9 @@ def compleconta_plot(cccv_results: CccvType,
             else:
                 colormap = {"color": colors[i]} if i in colors else {"color": "grey"}
             com_ax.plot(x_comple_ticks, y_comple_mean, **kwargs, **colormap)
-            com_ax.fill_between(x_comple_ticks, y_comple_lbound, y_comple_ubound, alpha=0.35, **colormap)
+            com_ax.fill_between(
+                x_comple_ticks, y_comple_lbound, y_comple_ubound, alpha=0.35, **colormap
+            )
             com_ax.set_ylabel("Mean Balanced Accuracy", fontsize=fontsize)
             com_ax.set_xlabel("Completeness", fontsize=fontsize)
             com_ax.set_xlim([-0.05, 1])
@@ -82,14 +99,56 @@ def compleconta_plot(cccv_results: CccvType,
             else:
                 colormap = {"color": colors[i]} if i in colors else {"color": "grey"}
             con_ax.plot(x_conta_ticks, y_conta_mean, **kwargs, **colormap)
-            con_ax.fill_between(x_conta_ticks, y_conta_lbound, y_conta_ubound, alpha=0.35, **colormap)
+            con_ax.fill_between(
+                x_conta_ticks, y_conta_lbound, y_conta_ubound, alpha=0.35, **colormap
+            )
             con_ax.set_xlabel("Contamination", fontsize=fontsize)
             con_ax.set_xlim([0, 1.05])
 
     each_n = [f"(n={y})" for y in each_n] if each_n is not None else ["" for _ in conditions]
-    fig.legend([" ".join([x, y]) for x, y in zip(conditions, each_n)], loc=8, prop={"size": fontsize // 1.3})
+    fig.legend(
+        [" ".join([x, y]) for x, y in zip(conditions, each_n)],
+        loc=8,
+        prop={"size": fontsize // 1.3}
+    )
     plt.subplots_adjust(wspace=0.05, bottom=0.20)
     if save_path is not None:
         plt.savefig(save_path)
     else:
         plt.show()
+
+
+def shap_summary_plot(
+    sh: ShapHandler,
+    title: str,
+    n_max_features: int,
+    out_summary_plot: Union[str, Path],
+    out_summary_txt: Union[str, Path] = None
+):
+    sh.plot_shap_summary(title=title, n_max_features=n_max_features)
+    plt.tight_layout()
+    plt.savefig(out_summary_plot)
+    if out_summary_txt is not None:
+        df = sh.get_shap_summary(n_max_features=n_max_features)
+        df.to_csv(out_summary_txt, sep='\t')
+
+
+def shap_force_plots(
+    gr: List[GenotypeRecord],
+    sh: ShapHandler,
+    n_max_features: int,
+    out_prefix: Union[str, Path],
+    out_individual_summary: Union[str, Path] = None
+):
+    summaries = []
+    for record in tqdm(gr, unit='samples', desc='Generating force plots'):
+        sh.plot_shap_force(record.identifier, n_max_features=n_max_features)
+        out_path = Path(f'{out_prefix}_{record.identifier}_force_plot.png')
+        out_path.parent.mkdir(exist_ok=True)
+        plt.savefig(out_path)
+        plt.close(plt.gcf())
+        if out_individual_summary is not None:
+            summaries.append(sh.get_shap_force(record.identifier, n_max_features=n_max_features))
+
+    if out_individual_summary is not None:
+        pd.concat(summaries, axis=0).to_csv(out_individual_summary, sep='\t', index=False)

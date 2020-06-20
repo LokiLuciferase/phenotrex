@@ -9,3 +9,6 @@ except TypeError:
     FROM_FASTA = True
 
 DATA_PATH = (Path(__file__).parent/'test_data')
+GENOMIC_PATH = DATA_PATH/'genomic'
+MODELS_PATH = DATA_PATH/'models'
+FLAT_PATH = DATA_PATH/'flat'
