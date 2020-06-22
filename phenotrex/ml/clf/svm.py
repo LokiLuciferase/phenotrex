@@ -115,21 +115,14 @@ class TrexSVM(TrexClassifier):
             self.logger.error("Pipeline is not fitted. Cannot retrieve weights.")
             return {}
 
-        mean_weights = self._get_coef_()
-
-        # get original names of the features from vectorization step, they might be compressed
         names = self.pipeline.named_steps["vec"].get_feature_names()
-
-        # decompress
-        weights = {feature: mean_weights[i] for feature, i in names}
+        weights = self._get_coef_()
 
         # sort by absolute value
         sorted_weights = {
-            feature: weights[feature] for feature in sorted(
-                weights, key=lambda key: abs(weights[key]), reverse=True
-            )}
-        # TODO: weights should be adjusted if multiple original features were grouped together. probably not needed
-        #  if we rely on feature selection in near future
+            f: w for f, w in sorted(zip(names, weights), key=lambda kv: abs(kv[1]), reverse=True)
+        }
+
         return sorted_weights
 
     def get_shap(
