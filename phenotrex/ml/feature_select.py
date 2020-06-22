@@ -38,12 +38,9 @@ def recursive_feature_elimination(
     vec = pipeline.named_steps["vec"]
     estimator = pipeline.named_steps["clf"]
 
-    # get previous vocabulary (might be already compressed)
     if not vec.vocabulary:
         vec.fit(X)
-        previous_vocabulary = {name: i for name, i in vec.get_feature_names()}
-    else:
-        previous_vocabulary = vec.vocabulary
+    previous_vocabulary = vec.vocabulary_
 
     if not n_features:
         n_features = len(previous_vocabulary) // 2

@@ -73,7 +73,7 @@ class TrexXGB(TrexClassifier):
         names = self.pipeline.named_steps["vec"].get_feature_names()
         weights = sorted(list(self.pipeline.named_steps['clf'].get_booster().get_fscore().items()),
                          key=lambda x: x[1], reverse=True)
-        sorted_weights = {names[int(y[0].replace('f', ''))][0]: y[1] for x, y in
+        sorted_weights = {names[int(y[0].replace('f', ''))]: y[1] for x, y in
                           zip(names, weights)}
         return sorted_weights
 

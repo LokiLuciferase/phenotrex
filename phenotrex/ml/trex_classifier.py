@@ -12,8 +12,8 @@ from sklearn.base import clone
 from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score
 from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut, RandomizedSearchCV
 from sklearn.feature_selection import RFECV
+from sklearn.feature_extraction.text import CountVectorizer
 
-from phenotrex.ml.vectorizer import CustomVectorizer
 from phenotrex.structure.records import TrainingRecord, GenotypeRecord
 from phenotrex.ml.cccv import CompleContaCV
 from phenotrex.util.helpers import get_x_y_tn_ft, get_groups
@@ -45,7 +45,7 @@ class TrexClassifier(ABC):
         self.random_state = np.random.RandomState(random_state)
         self.random_state_init = random_state
         self.verb = verb
-        self.vectorizer = CustomVectorizer(binary=True, dtype=np.bool, lowercase=False)
+        self.vectorizer = CountVectorizer(binary=True, dtype=np.bool, lowercase=False)
         self.default_search_params = None
         self.n_jobs = 1
 
