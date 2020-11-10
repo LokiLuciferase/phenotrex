@@ -9,10 +9,10 @@ from subprocess import check_call, DEVNULL
 from concurrent.futures import ProcessPoolExecutor
 
 import torch
-from deepnog.inference import load_nn, predict
-from deepnog.io import create_df, get_weights_path
-from deepnog.utils import set_device
-from deepnog.dataset import ProteinDataset, ProteinIterator
+from deepnog.learning.inference import predict
+from deepnog.utils import create_df, get_weights_path
+from deepnog.utils import load_nn, set_device
+from deepnog.data.dataset import ProteinDataset, ProteinIterator
 from Bio.SeqIO import SeqRecord, parse, write
 from tqdm.auto import tqdm
 
@@ -46,7 +46,7 @@ class PreloadedProteinIterator(ProteinIterator):
 class PreloadedProteinDataset(ProteinDataset):
     """Hack ProteinDataset to load from list directly."""
     def __init__(self, protein_list: List[SeqRecord]):
-        super().__init__(file=None)
+        super().__init__(sequences=protein_list)
         self.protein_list = protein_list
 
     def __iter__(self):
@@ -148,14 +148,18 @@ def annotate_with_deepnog(
         database=database, level=str(tax_level), architecture=DEEPNOG_ARCH,
     )
     model_dict = torch.load(weights_path, map_location=device)
-    model = load_nn(DEEPNOG_ARCH, model_dict, device)
+    model = load_nn(
+        architecture=DEEPNOG_ARCH,
+        model_dict=model_dict,
+        device=device,
+    )
     class_labels = model_dict['classes']
     dataset = PreloadedProteinDataset(protein_list)
     preds, confs, ids, indices = predict(
         model, dataset, device, batch_size=1, num_workers=1, verbose=3 if verb else 0
     )
     threshold = float(model.threshold) if hasattr(model, 'threshold') else None
-    df = create_df(class_labels, preds, confs, ids, indices,threshold=threshold, verbose=0)
+    df = create_df(class_labels, preds, confs, ids, indices, threshold=threshold, )
 
     cogs = [x for x in df.prediction.unique() if x]
     feature_type_str = f'{database}-tax-{tax_level}'
