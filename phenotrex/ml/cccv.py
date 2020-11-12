@@ -110,7 +110,11 @@ class CompleContaCV:
         """
         for r in range(n_replicates):
             X, y, tn, ft = get_x_y_tn_ft(records)
-            skf = StratifiedKFold(n_splits=cv, random_state=self.random_state)
+            skf = StratifiedKFold(
+                n_splits=cv,
+                shuffle=self.random_state is not None,
+                random_state=self.random_state,
+            )
             fold = 0
             for train_index, test_index in skf.split(X, y):
                 fold += 1
