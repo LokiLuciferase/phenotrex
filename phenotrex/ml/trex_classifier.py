@@ -9,7 +9,7 @@ from scipy.sparse import csr_matrix
 import numpy as np
 
 from sklearn.base import clone
-from sklearn.metrics import balanced_accuracy_score, accuracy_score, f1_score
+from sklearn.metrics import balanced_accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import StratifiedKFold, LeaveOneGroupOut, RandomizedSearchCV
 from sklearn.feature_selection import RFECV
 from sklearn.feature_extraction.text import CountVectorizer
@@ -21,14 +21,23 @@ from phenotrex.ml.feature_select import recursive_feature_elimination, DEFAULT_S
     DEFAULT_SCORING_FUNCTION
 
 
+def specificity_score(y, y_pred, **kwargs) -> float:
+    """
+    Method for binary classification to get specificity: recall of the negative class
+    """
+    return recall_score(y, y_pred, pos_label=0, **kwargs)
+
+
 class TrexClassifier(ABC):
     """
     Abstract base class of Trex classifier.
     """
     scoring_function_mapping = {
-        'accuracy': accuracy_score,
         'balanced_accuracy': balanced_accuracy_score,
-        'f1': f1_score
+        'f1': f1_score,
+        'precision': precision_score,
+        'recall': recall_score,
+        'specificity': specificity_score
     }
 
     @classmethod
@@ -210,12 +219,10 @@ class TrexClassifier(ABC):
                                      verb=self.verb)
         return best_params
 
-    # TODO: add more complex scoring/reporting, e.g. AUC
     def crossvalidate(
         self,
         records: List[TrainingRecord],
         cv: int = 5,
-        scoring: Union[str, Callable] = DEFAULT_SCORING_FUNCTION,
         n_jobs=-1,
         n_replicates: int = 10,
         groups: bool = False,
@@ -223,15 +230,11 @@ class TrexClassifier(ABC):
         n_features: int = 10000,
         demote=False,
         **kwargs
-    ) -> Tuple[float, float, np.ndarray]:
+    ) -> Tuple[Dict[str, Tuple[float, float]], np.ndarray]:
         """
         Perform cv-fold crossvalidation or leave-one(-group)-out validation if groups == True
 
         :param records: training records to perform crossvalidation on.
-        :param scoring: String identifying scoring function of crossvalidation, or Callable.
-                        If a callable is passed, it must take two parameters `y_true` and `y_pred`
-                        (iterables of true and predicted class labels, respectively) and return a
-                        (numeric) score.
         :param cv: Number of folds in crossvalidation. Default: 5
         :param n_jobs: Number of parallel jobs. Default: -1 (All processors used)
         :param n_replicates: Number of replicates of the crossvalidation
@@ -247,11 +250,6 @@ class TrexClassifier(ABC):
             self.logger.info(f'Will use selected classifier parallelism instead of multithreading.')
             n_jobs = self.n_jobs
 
-        if hasattr(scoring, '__call__'):
-            scoring_func = scoring
-        else:
-            scoring_func = self.scoring_function_mapping.get(scoring)
-        assert scoring_func is not None, f'invalid or missing scoring function: {scoring}.'
         log_function = self.logger.debug if demote else self.logger.info
         t1 = time()
         X, y, tn, ft = get_x_y_tn_ft(records)
@@ -266,7 +264,7 @@ class TrexClassifier(ABC):
         X_trans = vec.transform(X)
 
         misclassifications = np.zeros(len(y))
-        scores = []
+        scores = {k: [] for k, _ in self.scoring_function_mapping.items()}
 
         if groups:
             log_function("Begin Leave-One-Group-Out validation on training data.")
@@ -302,16 +300,19 @@ class TrexClassifier(ABC):
                 mismatch = np.logical_xor(y[ts], y_pred)
                 mismatch_indices = ts[np.where(mismatch)]
                 misclassifications[mismatch_indices] += 1
-                score = scoring_func(y[ts], y_pred)
-                scores.append(score)
+                for score_name, scoring_func in self.scoring_function_mapping.items():
+                    score = scoring_func(y[ts], y_pred)
+                    scores[score_name].append(score)
             log_function(f"Finished replicate {i + 1} of {n_replicates}")
 
         misclassifications /= n_replicates
-        score_mean, score_sd = float(np.mean(scores)), float(np.std(scores))
+        score_mean_sd = {}
+        for score_name, scores in scores.items():
+            score_mean_sd[score_name] = float(np.mean(scores)), float(np.std(scores))
         t2 = time()
         log_function(f"Cross-validation completed.")
         log_function(f"Total duration of cross-validation: {np.round(t2 - t1, 2)} seconds.")
-        return score_mean, score_sd, misclassifications
+        return score_mean_sd, misclassifications
 
     def crossvalidate_cc(
         self,
