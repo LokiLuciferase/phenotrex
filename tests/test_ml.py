@@ -123,13 +123,13 @@ class TestTrexClassifier:
         """
         training_records, genotype, phenotype, group = self.test_load_data(trait_name, False)
         clf = classifier(verb=True, random_state=RANDOM_STATE)
-        score_pred = clf.crossvalidate(
+        score_pred, missclassfcs = clf.crossvalidate(
             records=training_records,
             cv=cv,
             scoring=scoring_methods[0],
             groups=use_groups,
             n_jobs=min(4, os.cpu_count())
-        )[:2]
+        )
         if classifier.identifier in cv_scores_trex and not use_groups:
             score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring_methods[0]]
             for stat in score_target.keys():
@@ -137,7 +137,7 @@ class TestTrexClassifier:
         with TemporaryDirectory() as tmpdir:
             misclass_path = Path(tmpdir)/'misclassifications.tsv'
             write_misclassifications_file(
-                misclass_path, training_records, score_pred, use_groups=use_groups
+                misclass_path, training_records, missclassfcs, use_groups=use_groups
             )
             assert misclass_path.is_file()
 
