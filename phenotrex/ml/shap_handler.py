@@ -19,7 +19,7 @@ class ShapHandler:
     """
     @classmethod
     def from_clf(cls, clf: TrexClassifier):
-        fn = clf.pipeline.named_steps["vec"].get_feature_names()
+        fn = np.array(clf.pipeline.named_steps["vec"].get_feature_names())
         used_fn = [k for k, v in clf.get_feature_weights().items() if v != 0]
         used_idxs = np.where(np.isin(fn, used_fn))[0]
         feature_type = clf.feature_type
