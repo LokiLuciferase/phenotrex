@@ -132,7 +132,8 @@ class TestTrexClassifier:
         )[:2]
         if classifier.identifier in cv_scores_trex and not use_groups:
             score_target = cv_scores_trex[classifier.identifier][trait_name][cv][scoring_methods[0]]
-            np.testing.assert_almost_equal(actual=score_pred, desired=score_target, decimal=1)
+            for stat in score_target.keys():
+                np.testing.assert_almost_equal(actual=score_pred[stat], desired=score_target[stat], decimal=1)
         with TemporaryDirectory() as tmpdir:
             misclass_path = Path(tmpdir)/'misclassifications.tsv'
             write_misclassifications_file(
