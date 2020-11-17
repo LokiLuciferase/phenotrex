@@ -141,7 +141,7 @@ class TrexClassifier(ABC):
         pass
 
     def get_shap(
-        self, records: List[GenotypeRecord], n_samples=None
+        self, records: List[GenotypeRecord], n_samples=None, n_features=None
     ) -> Tuple[np.ndarray, np.ndarray, float]:
         """
         Compute SHAP (SHapley Additive exPlanations) values for the given input data with the fitted
@@ -151,6 +151,9 @@ class TrexClassifier(ABC):
         :param n_samples: the n_samples parameter to be passed to the Explainer.
                           Only used if the model in question relies on a
                           KernelExplainer (e.g. TrexSVM).
+        :param n_features: The number of features to consider for Explaining.
+                           Only used if the model in question
+                           relies on a KernelExplainer (e.g. TrexSVM).
         :returns: transformed feature array, computed shap values and expected value.
         """
         pass

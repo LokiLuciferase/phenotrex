@@ -15,10 +15,10 @@ import click
               help='Write SHAP explanations for each predicted sample to file (optional).')
 @click.option('--out_explain_summary', type=click.Path(dir_okay=False),
               help='Write SHAP explanations summarized over all samples (optional).')
-@click.option('--n_max_explained_features', type=int, default=None,
+@click.option('--n_max_explained_features', type=int, default=50,
               help='Limit output number of features in SHAP explanation files. '
-                   'Default: show explanations for all model features.')
-@click.option('--shap_n_samples', type=str, default='auto',
+                   'Also used to constrain the complexity of SHAP computations with TrexSVMs.')
+@click.option('--shap_n_samples', type=str, default=16000,
               help='The nsamples parameter of SHAP. Only used by models '
                    'which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)

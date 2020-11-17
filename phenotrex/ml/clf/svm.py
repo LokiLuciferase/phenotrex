@@ -126,7 +126,7 @@ class TrexSVM(TrexClassifier):
         return sorted_weights
 
     def get_shap(
-        self, records: List[GenotypeRecord], n_samples=None
+        self, records: List[GenotypeRecord], n_samples=None, n_features=None
     ) -> Optional[Tuple[np.ndarray, np.ndarray, float]]:
         self._check_mismatched_feature_type(records)
         if self.shap_explainer is None:
@@ -142,10 +142,12 @@ class TrexSVM(TrexClassifier):
             too_expensive = f"Attempting to compute SHAP explanation with KernelExplainer and " \
                             f"n_features={raw_feats.shape[1]}. This may take a _very_ long time."
             self.logger.warning(too_expensive)
+
+        l1_reg = f'num_features({n_features})' if n_features is not None else 'auto'
         _, shap_values = self.shap_explainer.shap_values(
             raw_feats,
             nsamples=n_samples,
-            # TODO: find good value for l1_reg
+            l1_reg=l1_reg
         )
         _, shap_bias = self.shap_explainer.expected_value
         return raw_feats, shap_values, shap_bias

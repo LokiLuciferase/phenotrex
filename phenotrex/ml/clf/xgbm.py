@@ -78,7 +78,7 @@ class TrexXGB(TrexClassifier):
         return sorted_weights
 
     def get_shap(
-        self, records: List[GenotypeRecord], n_samples=None
+        self, records: List[GenotypeRecord], n_samples=None, n_features=None
     ) -> Tuple[csr_matrix, np.ndarray, float]:
         self._check_mismatched_feature_type(records)
         clf = self.pipeline.named_steps['clf']

@@ -58,7 +58,9 @@ def predict(
     model = load_classifier(filename=classifier, verb=verb)
     if out_explain_per_sample is not None or out_explain_summary is not None:
         try:
-            fs, sv, bv = model.get_shap(gr, n_samples=shap_n_samples)
+            fs, sv, bv = model.get_shap(
+                gr, n_samples=shap_n_samples, n_features=n_max_explained_features
+            )
         except TypeError:
             raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
         sh = ShapHandler.from_clf(model)
