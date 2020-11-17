@@ -7,7 +7,7 @@ from phenotrex.io.flat import (load_training_files, load_genotype_file, load_par
 from phenotrex.io.serialization import save_classifier, load_classifier
 from phenotrex.util.logging import get_logger
 from phenotrex.ml import TrexSVM, TrexXGB, ShapHandler
-from phenotrex.transforms.annotation import fastas_to_grs
+from phenotrex.transforms import fastas_to_grs
 
 CLF_MAPPER = {'svm': TrexSVM, 'xgb': TrexXGB}
 logger = get_logger("phenotrex", verb=True)
