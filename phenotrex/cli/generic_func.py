@@ -83,13 +83,17 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
     reduce_features = True if n_features is not None else False
     use_groups = groups is not None
     logger.info(f'Running CV...')
-    score_mean, score_sd, misclass = clf.crossvalidate(records=training_records, cv=folds,
+    #TODO change return fields
+    score_mean_sd, misclass = clf.crossvalidate(records=training_records, cv=folds,
                                                        n_replicates=replicates, groups=use_groups,
                                                        n_jobs=threads,
                                                        reduce_features=reduce_features,
                                                        n_features=n_features,
                                                        demote=not verb)
-    logger.info(f"CV score: {round(score_mean, 4)} +/- {round(score_sd, 4)}")
+
+    for score_name, score in score_mean_sd.items():
+        score_mean, score_sd = score
+        logger.info(f"CV {score_name}: {round(score_mean, 4)} +/- {round(score_sd, 4)}")
     if out is not None:
         write_misclassifications_file(out, training_records, misclass, use_groups=use_groups)
 

@@ -6,3 +6,4 @@ shap>=0.34,<0.36
 click>=7.0
 biopython>=1.74,<=1.77
 tqdm>=4.26.0
+pandas>=1.0
