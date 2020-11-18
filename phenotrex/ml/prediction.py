@@ -64,9 +64,9 @@ def predict(
             )
         except TypeError:
             raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
-        except MemoryError:
+        except MemoryError as e:
             os._exit(137)  # exit immediately with catchable exit code
-            raise RuntimeError
+            raise e
         sh = ShapHandler.from_clf(model)
         sh.add_feature_data(
             sample_names=[x.identifier for x in gr], features=fs, shaps=sv, base_value=bv
