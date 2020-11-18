@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 from phenotrex.io.flat import load_genotype_file, DEFAULT_TRAIT_SIGN_MAPPING
@@ -63,6 +64,9 @@ def predict(
             )
         except TypeError:
             raise RuntimeError('This TrexClassifier is not capable of generating SHAP explanations.')
+        except MemoryError:
+            os._exit(137)  # exit immediately with catchable exit code
+            raise RuntimeError
         sh = ShapHandler.from_clf(model)
         sh.add_feature_data(
             sample_names=[x.identifier for x in gr], features=fs, shaps=sv, base_value=bv
