@@ -23,7 +23,7 @@ from phenotrex.ml.feature_select import recursive_feature_elimination, DEFAULT_S
 
 def specificity_score(y, y_pred, **kwargs) -> float:
     """
-    Method for binary classification to get specificity: recall of the negative class
+    Compute specificity. In binary classification this is equivalent to the recall of the negative class.
     """
     return recall_score(y, y_pred, pos_label=0, **kwargs)
 
@@ -37,7 +37,7 @@ class TrexClassifier(ABC):
         'f1': f1_score,
         'precision': precision_score,
         'recall': recall_score,
-        'specificity': specificity_score
+        'specificity': specificity_score,
     }
 
     @classmethod

@@ -84,12 +84,16 @@ def generic_cv(type, genotype, phenotype, folds, replicates, threads, verb, opti
     use_groups = groups is not None
     logger.info(f'Running CV...')
     #TODO change return fields
-    score_mean_sd, misclass = clf.crossvalidate(records=training_records, cv=folds,
-                                                       n_replicates=replicates, groups=use_groups,
-                                                       n_jobs=threads,
-                                                       reduce_features=reduce_features,
-                                                       n_features=n_features,
-                                                       demote=not verb)
+    score_mean_sd, misclass = clf.crossvalidate(
+        records=training_records,
+        cv=folds,
+        n_replicates=replicates,
+        groups=use_groups,
+        n_jobs=threads,
+        reduce_features=reduce_features,
+        n_features=n_features,
+        demote=not verb,
+    )
 
     for score_name, score in score_mean_sd.items():
         score_mean, score_sd = score
