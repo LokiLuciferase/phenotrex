@@ -44,17 +44,6 @@ def load_classifier(filename: str, verb=False):
     logger = get_logger(initname=__name__, verb=verb)
     if not os.path.isfile(filename):
         raise RuntimeError(f"Input file does not exist: {filename}")
-    try:
-        obj = joblib.load(filename)
-    except ModuleNotFoundError:  # load old models
-        sys.modules['pica'] = phenotrex
-        obj = joblib.load(filename)
-    if not hasattr(obj, 'feature_type'):
-        obj.feature_type = 'legacy'
-        logger.warning(
-            'The loaded classifier does not advertise the feature_type it was trained on. Consider'
-            're-training it with a .genotype file containing the requisite metadata to ensure '
-            'feature types of the model and the data it is applied to are aligned.'
-        )
+    obj = joblib.load(filename)
     logger.info(f"Successfully loaded classifier (feature_type={obj.feature_type}).")
     return obj
