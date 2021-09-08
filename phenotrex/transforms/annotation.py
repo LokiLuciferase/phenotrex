@@ -6,7 +6,6 @@ from pathlib import Path
 from pkg_resources import resource_filename
 from tempfile import NamedTemporaryFile
 from subprocess import check_call, DEVNULL
-from concurrent.futures import ProcessPoolExecutor
 
 import torch
 from deepnog.learning.inference import predict
@@ -14,7 +13,7 @@ from deepnog.utils import create_df, get_weights_path
 from deepnog.utils import load_nn, set_device
 from deepnog.data.dataset import ProteinDataset, ProteinIterator
 from Bio.SeqIO import SeqRecord, parse, write
-from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from phenotrex.io.flat import load_fasta_file
 from phenotrex.structure.records import GenotypeRecord
@@ -70,17 +69,18 @@ def fastas_to_grs(
     :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
     """
     n_threads = min(os.cpu_count(), n_threads) if n_threads is not None else os.cpu_count()
-    with ProcessPoolExecutor(max_workers=n_threads) as executor:
-        if len(fasta_files) > 1 and verb:
-            annotations = tqdm(
-                executor.map(fasta_to_gr, fasta_files),
-                total=len(fasta_files),
-                desc='Annotating with DeepNOG',
-                unit='file'
-            )
-        else:
-            annotations = executor.map(fasta_to_gr, fasta_files)
-    return list(annotations)
+    if len(fasta_files) > 1:
+        annotations = process_map(
+            fasta_to_gr,
+            fasta_files,
+            max_workers=n_threads,
+            total=len(fasta_files),
+            desc='Annotating with DeepNOG',
+            unit='file'
+        )
+    else:
+        annotations = list(map(fasta_to_gr, fasta_files))
+    return annotations
 
 
 def fasta_to_gr(fasta_file: str, verb: bool = False) -> GenotypeRecord:
