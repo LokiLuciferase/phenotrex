@@ -20,7 +20,8 @@ def predict(
     out_explain_summary=None,
     shap_n_samples=None,
     n_max_explained_features=None,
-    verb=False
+    deepnog_threshold=None,
+    verb=False,
 ):
     """
     Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files
@@ -38,18 +39,24 @@ def predict(
     :param fasta_files: An iterable of fasta file paths
     :param genotype: A genotype file path
     :param classifier: A pickled classifier file path
+    :param min_proba: the threshold of confidence of the phenotrex prediction below which the
+                      prediction will be masked by 'N/A'.
     :param out_explain_per_sample: Where to save the most influential features by SHAP for each
                                    predicted sample.
     :param out_explain_summary: Where to save the SHAP summary of the predictions.
     :param shap_n_samples: The n_samples parameter -
                            only used by models which incorporate a `shap.KernelExplainer`.
     :param n_max_explained_features: How many of the most influential features by SHAP to consider.
+    :param deepnog_threshold: The threshold of confidence above which to keep an output of
+                              deepnog annotation.
     :param verb: Whether to show progress of fasta file annotation.
     """
     if not len(fasta_files) and genotype is None:
         raise RuntimeError('Must supply FASTA file(s) and/or single genotype file for prediction.')
     if len(fasta_files):
-        grs_from_fasta = fastas_to_grs(fasta_files, n_threads=None, verb=verb)
+        grs_from_fasta = fastas_to_grs(
+            fasta_files, confidence_threshold=deepnog_threshold, n_threads=None, verb=verb
+        )
     else:
         grs_from_fasta = []
 
