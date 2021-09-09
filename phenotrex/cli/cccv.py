@@ -23,9 +23,9 @@ def cccv_options(f):
     """CCCV-specific CLI options."""
     f = click.option('--out', type=click.Path(), required=True,
                      help='Output file path for CCCV results.')(f)
-    f = click.option('--conta-steps', type=int, default=20,
+    f = click.option('--conta_steps', type=int, default=20,
                      help='Number of equidistant contamination levels to resample to.')(f)
-    f = click.option('--comple-steps', type=int, default=20,
+    f = click.option('--comple_steps', type=int, default=20,
                      help='Number of equidistant completeness levels to resample to.')(f)
     return f
 
