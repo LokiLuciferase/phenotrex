@@ -1,11 +1,12 @@
 #
 # Created by Lukas Lüftinger on 2/5/19.
 #
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from collections import Counter
 import json
 import gzip
 
+import pandas as pd
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC, HasStopCodon, _verify_alphabet
 import numpy as np
@@ -314,19 +315,23 @@ def load_training_files(
     return tr, gr, pr, gp
 
 
-def write_weights_file(weights_file: str, weights: Dict):
+def write_weights_file(weights_file: str, weights: Dict, annots: List[Optional[str]] = None):
     """
     Function to write the weights to specified file in tab-separated fashion with header
 
     :param weights_file: The path to the file to which the output will be written
     :param weights: sorted dictionary storing weights with feature names as indices
+    :param annots: annotations for the features names. Optional.
     :return: nothing
     """
-    header = ["Rank", "Feature_name", "Weight"]
-    with open(weights_file, "w") as output_file:
-        output_file.write("%s\n" % "\t".join(header))
-        for rank, (name, weight) in enumerate(weights.items()):
-            output_file.write(f"{rank + 1}\t{name.upper()}\t{weight}\n")
+    names, weight_vals = zip(*list(weights.items()))
+    out = pd.DataFrame({'Feature Name': names, 'Weight': weight_vals})
+    if annots is not None:
+        out['Feature Annotation'] = annots
+    out.index.name = 'Rank'
+    out = out.reset_index(drop=False)
+    out['Rank'] += 1
+    out.to_csv(weights_file, sep='\t', index=False)
 
 
 def write_cccv_accuracy_file(output_file: str, cccv_results):
