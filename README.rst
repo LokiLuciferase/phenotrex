@@ -3,7 +3,7 @@ phenotrex
 =========
 
 
-.. image:: https://img.shields.io/pypi/v/phenotrex.svg
+.. image:: https://badge.fury.io/py/phenotrex.svg
    :target: https://pypi.python.org/pypi/phenotrex
    :alt: PyPI
 
@@ -30,5 +30,38 @@ phenotrex
 
 End-to-end Microbial Phenotypic Trait Prediction.
 
-* Supported platforms: Linux, MacOS, Windows
-* Free software: GPLv3 license
+Installation
+------------
+
+.. code-block::
+
+    $ pip install phenotrex[fasta]
+
+Usage
+-----
+
+Phenotrex is a component of the `PhenDB`_ web server, which performs phenotypic trait prediction on
+user-uploaded metagenomic bins. To try out phenotrex with PhenDB's pre-trained and curated set of
+trait models, genomes may thus simply be `submitted to PhenDB`_.
+
+Basic Usage
+~~~~~~~~~~~
+To use a trained phenotrex model ``MY_TRAIT.pkl`` for prediction of a phenotypic trait with a
+given genome ``genome.fna``:
+
+.. code-block::
+
+    $ phenotrex predict --classifier MY_TRAIT.pkl genome.fna > predictions.tsv
+
+
+This yields a tabular file containing a prediction regarding the presence of the trait (YES or NO),
+as well as a confidence value the model ascribes to this prediction, ranging from 0.5 to 1.0.
+
+Advanced Usage
+~~~~~~~~~~~~~~
+For training, evaluation and introspection of phenotrex models on user data, please refer to the
+full usage tutorial `here`_.
+
+.. _PhenDB: https://www.phendb.org/
+.. _submitted to PhenDB: https://phen.csb.univie.ac.at/phendb/
+.. _here: https://phenotrex.readthedocs.io/en/latest/usage.html

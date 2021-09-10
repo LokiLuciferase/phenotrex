@@ -1,8 +1,8 @@
-=====
-Usage
-=====
+==============
+Usage Tutorial
+==============
 
-The following quick start example shows training, evaluation and inference with phenotrex models
+The following tutorial illustrates training, evaluation, inference and model introspection with phenotrex
 using the phenotrex command line interface. For further information on flags and parameters used
 in this tutorial, please consult the relevant CLI documentation available via
 ``phenotrex <command> --help``.
@@ -78,7 +78,7 @@ Training of Phenotrex Classifiers
 ---------------------------------
 To train a phenotrex classifier, two tabular input files are required: The ``genotype`` file
 (created from FASTA files in the last section), containing representations of the input genomes; and
-the ``phenotype`` file, containing true phenotypes for each input genome on which to train and
+the ``phenotype`` file, containing true phenotypic trait values for each input genome on which to train and
 evaluate the model. For this tutorial, we provide a phenotype file containing information on Type 3
 secretion system (T3SS) presence in each of the input genomes.
 
@@ -98,8 +98,8 @@ The tabular phenotype file required for training and model evaluation has the fo
     GCA_003096415.1.fna.gz	NO
 
 The first column of the file contains identifiers (file names) mapping to those in the genotype file,
-and the second column contains true phenotypes. During training, the model will store the header of
-column 2 as the name of the phenotype.
+and the second column contains true phenotypic trait values. During training, the model will store the header of
+column 2 as the name of the trait.
 
 Phenotrex implements model training using two different machine learning algorithms:
 `XGBoost`_ (XGB) and `Support Vector Machine`_ (SVM). For each algorithm, a number of hyperparameters
@@ -144,7 +144,7 @@ cross-validation like so:
 
 After training, predictive performance metrics averaged over outer CV folds will be printed
 to stderr, and a new tabular file ``T3SS.misclassifications.tsv`` will be created. This file
-contains the identifiers, phenotype label and fraction of misclassifications of the sample over
+contains the identifiers, phenotypic trait label and fraction of misclassifications of the sample over
 outer CV folds.
 
 .. note::
@@ -217,7 +217,7 @@ with confidence below this threshold are then masked with 'N/A'.
     by the model. For such cases, the external confidence measure for the given completeness/contamination level as
     computed by ``phenotrex cccv {xgb,svm}`` should be considered as well.
 
-Prediction of phenotypes with a pre-computed genotype file derived from genomes in the
+Prediction of phenotypic traits with a pre-computed genotype file derived from genomes in the
 ``test/genomes`` directory (see section `Creation of Phenotrex Input Features`_):
 
 .. code-block:: console
@@ -250,7 +250,7 @@ Lines starting with ``#`` represent metadata, in this case the trait name saved 
 
 Explanation of Phenotrex Predictions
 ------------------------------------
-In addition to providing predicted phenotype labels and confidence measures,
+In addition to providing predicted trait labels and confidence measures,
 phenotrex can provide additional explanations of its decision process.
 This can help debug faulty hyperparameter configurations and help identify errors in the training data.
 Model explanation is done by gauging the importance of input features identified in genomes at training and prediction time.
@@ -262,7 +262,7 @@ The relative impact of features learned by phenotrex models is output at trainin
 differs depending on the selected ML algorithm: when using XGB, the measure represents the overall
 importance of that feature in the decision process of the model (irrespective of the final prediction),
 when using SVM, the measure correlates with the probability of calling YES (positive
-values) or NO (negative values) for the phenotype in question.
+values) or NO (negative values) for the trait in question.
 
 Feature Importance at Prediction Time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -271,7 +271,7 @@ For each predicted genome, a list of features is created which, either by presen
 contributed most to the prediction output for that genome.
 Feature importance is represented by `SHAP`_ (SHapley Additive exPlanations) values.
 The sum of SHAP values of all features considered by the model is directly related to the probability
-of calling YES for the phenotype and genome in question.
+of calling YES for the trait and genome in question.
 
 .. note::
 
