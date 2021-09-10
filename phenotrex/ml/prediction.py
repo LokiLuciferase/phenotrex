@@ -39,16 +39,16 @@ def predict(
     :param fasta_files: An iterable of fasta file paths
     :param genotype: A genotype file path
     :param classifier: A pickled classifier file path
-    :param min_proba: the threshold of confidence of the phenotrex prediction below which the
-                      prediction will be masked by 'N/A'.
+    :param min_proba: Confidence threshold of the phenotrex prediction below which
+                      predictions will be masked by 'N/A'.
     :param out_explain_per_sample: Where to save the most influential features by SHAP for each
                                    predicted sample.
     :param out_explain_summary: Where to save the SHAP summary of the predictions.
     :param shap_n_samples: The n_samples parameter -
                            only used by models which incorporate a `shap.KernelExplainer`.
     :param n_max_explained_features: How many of the most influential features by SHAP to consider.
-    :param deepnog_threshold: The threshold of confidence above which to keep an output of
-                              deepnog annotation.
+    :param deepnog_threshold: Confidence threshold of deepnog annotations below which annotations
+                              will be discarded.
     :param verb: Whether to show progress of fasta file annotation.
     """
     if not len(fasta_files) and genotype is None:

@@ -67,8 +67,8 @@ def fastas_to_grs(
 
     :param fasta_files: a list of DNA and/or protein FASTA files to be converted into
                         GenotypeRecords.
-    :param confidence_threshold: The threshold of confidence above which to keep an output of
-                                 deepnog annotation.
+    :param confidence_threshold: Confidence threshold of deepnog annotations below which annotations
+                                 will be discarded.
     :param verb: Whether to display progress of annotation with tqdm.
     :param n_threads: Number of parallel threads. Default, use all available CPU cores.
     :returns: A list of GenotypeRecords corresponding with supplied FASTA files.
@@ -98,27 +98,20 @@ def fasta_to_gr(
     GenotypeRecord (output of deepnog) of the file.
 
     :param fasta_file: A DNA or protein fasta file to be converted into GenotypeRecord.
-    :param confidence_threshold: The threshold of confidence above which to keep an output of
-                                 deepnog annotation.
+    :param confidence_threshold: Confidence threshold of deepnog annotations below which annotations
+                                 will be discarded.
     :param verb: Whether to display progress of annotation with tqdm.
     :returns: A single GenotypeRecord representing the sample.
     """
     fname = Path(str(fasta_file)).name
     seqtype, seqs = load_fasta_file(fasta_file)
-    if seqtype == 'protein':
-        return annotate_with_deepnog(
-            fname,
-            seqs,
-            confidence_threshold=confidence_threshold,
-            verb=verb
-        )
-    else:
-        return annotate_with_deepnog(
-            fname,
-            call_proteins(seqs),
-            confidence_threshold=confidence_threshold,
-            verb=verb
-        )
+    seqs = seqs if seqtype == 'protein' else call_proteins(seqs)
+    return annotate_with_deepnog(
+        fname,
+        seqs,
+        confidence_threshold=confidence_threshold,
+        verb=verb
+    )
 
 
 def call_proteins(seqs: List[SeqRecord]) -> List[SeqRecord]:
@@ -151,13 +144,14 @@ def annotate_with_deepnog(
     verb: bool = True
 ) -> GenotypeRecord:
     """
-    Perform calling of clusters on a list of SeqRecords belonging to a sample using deepnog.
+    Assign proteins belonging to a sample to orthologous groups using deepnog.
 
     :param identifier: The name associated with the sample.
     :param protein_list: A list of SeqRecords containing protein sequences.
     :param database: Orthologous group/family database to use.
     :param tax_level: The NCBI taxon ID of the taxonomic level to use from the given database.
-    :param confidence_threshold: The confidence threshold above which to report a hit.
+    :param confidence_threshold: Confidence threshold of deepnog annotations below which annotations
+                                 will be discarded.
     :param verb: Whether to print verbose progress messages.
     :returns: a GenotypeRecord suitable for use with phenotrex.
     """
