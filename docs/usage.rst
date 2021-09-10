@@ -21,8 +21,8 @@ in a new virtual environment:
 
 .. code-block:: console
 
-    $ python3 -m venv env
-    $ source ./env/bin/activate
+    $ python3 -m venv phenotrex-env
+    $ source ./phenotrex-env/bin/activate
     $ pip install phenotrex[fasta]
 
 
@@ -31,7 +31,7 @@ Creation of Phenotrex Input Features
 Phenotrex operates on presence/absence patterns of `eggNOG`_ cluster IDs in the passed genome.
 If a DNA FASTA file is passed to phenotrex,
 `Prodigal`_ is first used to find protein sequences - this step is skipped if a protein FASTA file
-is passed instead. To then find eggNOG cluster IDs from protein sequences, `deepnog`_ is utilized.
+is passed instead. To then find eggNOG cluster IDs from protein sequences, `deepnog`_ is used.
 Input files to feature creation may thus be DNA or protein multi-FASTA files, which may optionally
 be gzipped.
 
@@ -47,11 +47,11 @@ To create a tabular genotype file suitable for use in phenotrex training:
 
     $ phenotrex compute-genotype \
         --out T3SS.train_eval.genotype \
-        --n_threads 4 \
+        --threads 4 \
         train_eval/genomes/*.fna.gz
 
 After some time, this will create a new tab-separated values (TSV) file ``T3SS.train_eval.genotype``
-in the directory, of the following shape:
+in the current directory, of the following shape:
 
 .. code-block::
 
@@ -90,12 +90,16 @@ The tabular phenotype file required for training and model evaluation has the fo
     GCF_000012905.2.fna.gz	NO
     GCF_000195735.1.fna.gz	NO
     GCF_000060345.1.fna.gz	NO
+    GCF_000959505.1.fna.gz	YES
     GCF_000220235.1.fna.gz	NO
     GCF_000190695.1.fna.gz	NO
+    GCF_000007605.1.fna.gz	YES
+    GCF_000195995.1.fna.gz	YES
     GCF_000015365.1.fna.gz	NO
     GCF_000173115.1.fna.gz	NO
     GCF_000173095.1.fna.gz	NO
     GCA_003096415.1.fna.gz	NO
+    ...
 
 The first column of the file contains identifiers (file names) mapping to those in the genotype file,
 and the second column contains true phenotypic trait values. During training, the model will store the header of
@@ -118,7 +122,7 @@ To train an XGB classifier with the previously created genotype and the given ph
         --weights \
         --out T3SS.pkl
 
-This will create a new model artifact ``T3SS.pkl`` in the directory, and a
+This will create a new model artifact ``T3SS.pkl`` in the current directory, and a
 tabular file ``T3SS.pkl.rank`` representing the relative impact of input features on prediction
 output as learned by the model.
 
@@ -144,7 +148,7 @@ cross-validation like so:
 
 After training, predictive performance metrics averaged over outer CV folds will be printed
 to stderr, and a new tabular file ``T3SS.misclassifications.tsv`` will be created. This file
-contains the identifiers, phenotypic trait label and fraction of misclassifications of the sample over
+contains the identifiers, phenotypic trait labels and fractions of misclassifications of the sample over
 outer CV folds.
 
 .. note::
@@ -159,7 +163,7 @@ outer CV folds.
 
 Performance Estimation for Metagenomic Phenotrex Classifiers
 ------------------------------------------------------------
-For phenotrex models intended to be applied to metagenomic bins, it is useful to estimate the impact
+For phenotrex models intended to be applied to metagenome assembled genomes, it is useful to estimate the impact
 of missing and/or contaminating genomic features on the model output. In phenotrex, this is achieved
 by randomly resampling the features of validation genomes to simulate incompleteness and contamination
 (see `Feldbauer et al. 2015`_). For example, to estimate performance of a model on 80% complete and
@@ -278,7 +282,7 @@ of calling YES for the trait and genome in question.
     Feature explanation at prediction time is implemented by the `shap package`_, which efficiently
     computes the required explanations for XGB models with de facto zero overhead.
     For SVM models however, this calculation can be extremely costly. We thus suggest that for
-    use cases where model introspectability is important, XGB should be preferred over SVM.
+    use cases where model explainability is important, XGB should be preferred over SVM.
 
 To create feature explanations at prediction time:
 

@@ -59,7 +59,7 @@ as well as a confidence value the model ascribes to this prediction, ranging fro
 
 Advanced Usage
 ~~~~~~~~~~~~~~
-For training, evaluation and introspection of phenotrex models on user data, please refer to the
+For training, evaluation and explanation of phenotrex models on user data, please refer to the
 full usage tutorial `here`_.
 
 .. _PhenDB: https://www.phendb.org/
