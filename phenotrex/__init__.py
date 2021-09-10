@@ -4,5 +4,5 @@
 
 __author__ = """Lukas Lüftinger"""
 __email__ = 'lukas.lueftinger@outlook.com'
-__version__ = '0.5.1'
+__version__ = '0.6.0'
 __all__ = ['io', 'ml', 'util', 'transforms']

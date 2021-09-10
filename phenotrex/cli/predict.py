@@ -1,5 +1,7 @@
 import click
 
+from phenotrex.cli.generic_opt import common_deepnog_options
+
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]),
                short_help="Prediction of phenotypes with classifier")
@@ -22,6 +24,7 @@ import click
               help='The nsamples parameter of SHAP. Only used by models '
                    'which utilize a `shap.KernelExplainer` (e.g. TrexSVM).')
 @click.option('--verb', is_flag=True)
+@common_deepnog_options
 def predict(*args, **kwargs):
     """
     Predict phenotype from a set of (possibly gzipped) DNA or protein FASTA files

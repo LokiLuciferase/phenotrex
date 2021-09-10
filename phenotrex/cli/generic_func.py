@@ -5,6 +5,7 @@ from phenotrex.io.flat import (load_training_files, load_genotype_file, load_par
                                write_misclassifications_file,
                                write_cccv_accuracy_file)
 from phenotrex.io.serialization import save_classifier, load_classifier
+from phenotrex.util.external_data import Eggnog5TextAnnotator
 from phenotrex.util.logging import get_logger
 from phenotrex.ml import TrexSVM, TrexXGB, ShapHandler
 from phenotrex.transforms import fastas_to_grs
@@ -43,7 +44,15 @@ def generic_train(type, genotype, phenotype, verb, weights, out,
     if weights:
         weights = clf.get_feature_weights()
         weights_file_name = f"{out}.rank"
-        write_weights_file(weights_file=weights_file_name, weights=weights)
+        if clf.feature_type.startswith('eggNOG5'):
+            text_annotator = Eggnog5TextAnnotator()
+            feature_taxon = int(clf.feature_type.split('-')[-1])
+            annots = [
+                text_annotator.annotate(taxon_id=feature_taxon, enog_id=x)[1] for x in weights.keys()
+            ]
+        else:
+            annots = None
+        write_weights_file(weights_file=weights_file_name, weights=weights, annots=annots)
     save_classifier(obj=clf, filename=out, verb=verb)
 
 

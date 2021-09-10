@@ -34,3 +34,16 @@ def common_cv_options(f):
     f = click.option('--phenotype', type=click.Path(exists=True),
                      required=True, help='Phenotype file path.')(f)
     return f
+
+
+def common_deepnog_options(f):
+    """Options added to commands which make use of deepnog."""
+    f = click.option(
+        '--deepnog_threshold',
+        type=click.FloatRange(min=0.0, max=1.0),
+        default=None,
+        help='The confidence cutoff for feature creation directly from FASTA files.'
+             ' Only features identfied in the genome with a confidence greater than'
+             ' this are considered.'
+    )(f)
+    return f
